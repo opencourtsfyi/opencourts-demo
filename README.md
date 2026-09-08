@@ -1,7 +1,8 @@
 # SC Probate Monthly Caseload Pipeline
 
-An ETL pipeline that ingests South Carolina Probate Court monthly caseload
-reports and produces a clean, analysis-ready dataset of estate, guardian,
+An ETL pipeline that ingests the [South Carolina Probate Court monthly caseload
+reports](https://www.sccourts.org/about/statistics-reports/archived-reports-statistics/annual-reports/) 
+and produces a clean, analysis-ready dataset of estate, guardian,
 conservator, and mental health case volumes by county, month, and year.
 
 Part of the [Open Courts](https://github.com/opencourtsfyi) data
@@ -70,7 +71,8 @@ source PDFs.
 ├── orchestrator.py         # Runs the full pipeline end to end
 ├── provenance.py           # Provenance and lineage utilities
 ├── logging_config.py       # Shared logging configuration
-├── requirements.txt        # Project dependencies (requests, pdfplumber, pandas, pyarrow)
+├── pyproject.toml          # Project metadata and dependencies
+├── uv.lock                 # Locked dependency versions
 └── data/
     ├── pdfs_bronze/        # Raw downloaded PDF reports
     ├── cases_silver/       # Extracted raw table data (Parquet)
@@ -84,18 +86,20 @@ source PDFs.
 ## Installation
 
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
-Requires Python 3.10 or later (uses the walrus operator and modern
-`pathlib` conventions).
+This project uses [uv](https://docs.astral.sh/uv/) to manage Python and
+dependencies. The required Python version is defined in `.python-version`,
+and `uv.lock` provides reproducible dependency versions. Requires Python 3.12
+or a working uv installation that can provision it.
 
 ## Usage
 
 Run the full pipeline:
 
 ```bash
-python orchestrator.py
+uv run python orchestrator.py
 ```
 
 This downloads any source reports not already present, extracts and
@@ -108,10 +112,10 @@ Individual stages can also be run independently, which is useful when
 iterating on a single part of the pipeline:
 
 ```bash
-python downloader.py           # Bronze only
-python pdf_extraction.py       # Silver only
-python normalize_parquets.py   # Gold only
-python validate_pipeline.py    # Validate an existing Gold dataset
+uv run python downloader.py           # Bronze only
+uv run python pdf_extraction.py       # Silver only
+uv run python normalize_parquets.py   # Gold only
+uv run python validate_pipeline.py    # Validate an existing Gold dataset
 ```
 
 ---

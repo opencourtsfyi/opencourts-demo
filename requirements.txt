@@ -1,4 +1,0 @@
-requests 
-pdfplumber 
-pandas 
-pyarrow
