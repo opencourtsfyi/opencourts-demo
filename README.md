@@ -1,7 +1,8 @@
 # SC Probate Monthly Caseload Pipeline
 
-An ETL pipeline that ingests South Carolina Probate Court monthly caseload
-reports and produces a clean, analysis-ready dataset of estate, guardian,
+An ETL pipeline that ingests the [South Carolina Probate Court monthly caseload
+reports](https://www.sccourts.org/about/statistics-reports/archived-reports-statistics/annual-reports/) 
+and produces a clean, analysis-ready dataset of estate, guardian,
 conservator, and mental health case volumes by county, month, and year.
 
 Part of the [Open Courts](https://github.com/opencourtsfyi) data

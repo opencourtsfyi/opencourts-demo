@@ -1,7 +1,7 @@
 [project]
 name = "sccourts-probate-monthly-caseloads"
 version = "0.1.0"
-description = "Add your description here"
+description = "An ETL pipeline for the South Carolina Supreme Court's Estate Workload Report at https://www.sccourts.org/about/statistics-reports/archived-reports-statistics/annual-reports/"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
