@@ -56,7 +56,10 @@ def get_logger(name, log_dir=None):
     if resolved_log_dir is not None and not has_file:
         resolved_log_dir = Path(resolved_log_dir)
         resolved_log_dir.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(resolved_log_dir / "pipeline.log")
+        file_handler = logging.FileHandler(
+            resolved_log_dir / "pipeline.log",
+            encoding="utf-8",
+        )
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
