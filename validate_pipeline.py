@@ -85,7 +85,7 @@ def validate_gold_csv(gold_csv_path, logger=None):
 
     invalid_values = df[~df["value"].apply(value_is_valid)]
     if not invalid_values.empty:
-        issues.append(f"{len(invalid_values)} row(s) have a value that isn't numeric, "", DNR, or TI")
+        issues.append(f"{len(invalid_values)} row(s) have a value that isn't numeric, \" \", DNR, or TI")
 
     # No two rows should describe the exact same data point — that would
     # indicate a row got processed twice (e.g. a bug in the state-machine loop)
