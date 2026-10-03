@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project Overview
-Backend service web api
+Extract-transform-load for south carolina probate courts.
 
 ## Tech Stack
 <!-- - **Framework:** Flask -->
