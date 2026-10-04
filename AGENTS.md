@@ -2,9 +2,11 @@
 
 ## Project Overview
 This repository contains a full-stack application of a local-only demonstration of the Bronze -> Silver -> Gold transformation of reports on probate cases opened and closed in the South Carolina's Supreme Court. We want a simple, usable demo to convey the idea of OpenCourts early rather than waiting until the project is complete. The project is split into frontend and backend concerns:
-- `frontend/`: TypeScript single-page app built with Vite
-- `backend/`: Python flask web api and pipeline for ETL processing
+The project is split into frontend, backend, and ETL concerns:
 - root: shared repo-level configuration, tooling, and documentation
+- `etl/`: ETL pipeline for data processing
+- `frontend/`: a single page application in typescript for visualization of probate data
+- `backend/`: a web api for browsing and downloading data
 
 ## Shared Principles
 - Keep the frontend and backend contracts aligned.
@@ -19,6 +21,7 @@ This repository contains a full-stack application of a local-only demonstration 
 /
 ├── backend/                 # Python Flask web api with ETL pipeline for data transformation
 ├── frontend/                # TypeScript single page app
+├── etl/                     # ETL pipeline for data transformation
 ├── .gitignore
 ├── AGENTS.md                # Shared repo guidance
 ├── README.md
@@ -30,10 +33,6 @@ This repository contains a full-stack application of a local-only demonstration 
 - If a backend change affects UI assumptions, validate the frontend behavior.
 - Prefer shared naming and route conventions that are easy to reason about across both layers.
 - Preserve compatibility unless the feature explicitly requires a breaking change.
-
-<!-- ## Commands
-### Root-level repo tasks
-- TODO -->
 
 ## Autonomy rules:
 - Do not ask for permission before running build/test/lint.

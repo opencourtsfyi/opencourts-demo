@@ -4,17 +4,10 @@
 Extract-transform-load for south carolina probate courts.
 
 ## Tech Stack
-<!-- - **Framework:** Flask -->
 - **Languages:** Python
 
-<!-- ## Commands
-- **Test:** TODO
-- **Run:** TODO
-- **Lint:** TODO -->
-
-## Testing Instructions
-- Every bug fix or new feature must include a corresponding unit or integration test.
-- Coverage: 70%
+## Commands
+- **Run:** python orchestrator.py
 
 ## Boundaries
 
