@@ -11,6 +11,10 @@
 		{
 			"path": "./backend/",
 			"name": "backend"
+		},
+		{
+			"path": "./etl/",
+			"name": "etl"
 		}
 	],
 	"settings": {}
