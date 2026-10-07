@@ -78,14 +78,19 @@ def validate_gold_csv(gold_csv_path, error_report_path=None, logger=None):
             if "category" in df.columns and "metric" in df.columns:
                 category = row["category"]
                 metric = row["metric"]
-                if category in ("Estate", "Guardian", "Conservator"):
-                    metric_is_valid = metric in EXPECTED_METRICS
-                elif category == "Mental Health":
-                    metric_is_valid = metric in EXPECTED_METRICS_MENTAL_HEALTH
-                else:
-                    metric_is_valid = False
-                if not metric_is_valid:
-                    add_error(f"Metric {metric!r} does not match category {category!r}", row_number, row)
+                
+                # Only check the metric if the category is actually recognized. 
+                # Otherwise, it produces a redundant error on top of the category error.
+                if category in CATEGORY:
+                    if category in ("Estate", "Guardian", "Conservator"):
+                        metric_is_valid = metric in EXPECTED_METRICS
+                    elif category == "Mental Health":
+                        metric_is_valid = metric in EXPECTED_METRICS_MENTAL_HEALTH
+                    else:
+                        metric_is_valid = False
+                    
+                    if not metric_is_valid:
+                        add_error(f"Metric {metric!r} does not match category {category!r}", row_number, row)
 
             if "value" in df.columns:
                 value = row["value"]
