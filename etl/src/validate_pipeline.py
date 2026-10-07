@@ -13,6 +13,15 @@ from logging_config import get_logger
 
 logger = get_logger(__name__)
 
+def write_error_report(errors, output_path):
+    """Writes the structured error report to a CSV file."""
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(errors, columns=["filename", "row_number", "error_details"]).to_csv(
+        output_path,
+        index=False,
+    )
+
 def validate_gold_csv(gold_csv_path):
     """Validate the Gold CSV and write a CSV report for each detected error."""
     issues = []
