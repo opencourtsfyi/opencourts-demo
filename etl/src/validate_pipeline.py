@@ -9,9 +9,11 @@ from pathlib import Path
 import pandas as pd
 
 from normalize_parquets import CATEGORY, SC_COUNTIES, EXPECTED_METRICS, EXPECTED_METRICS_MENTAL_HEALTH, SCHEMA
+from logging_config import get_logger
 
+logger = get_logger(__name__)
 
-def validate_gold_csv(gold_csv_path, error_report_path=None, logger=None):
+def validate_gold_csv(gold_csv_path, error_report_path=None):
     """Validate the Gold CSV and write a CSV report for each detected error."""
     issues = []
     errors = []
@@ -118,24 +120,20 @@ def validate_gold_csv(gold_csv_path, error_report_path=None, logger=None):
         index=False,
     )
 
-    if logger:
-        if issues:
-            for issue in issues:
-                logger.warning(f"VALIDATION: {issue}")
-        else:
-            row_count = len(df) if df is not None else 0
-            logger.info(f"VALIDATION: all checks passed ({row_count} rows)")
+    if issues:
+        for issue in issues:
+            logger.warning(f"VALIDATION: {issue}")
+    else:
+        row_count = len(df) if df is not None else 0
+        logger.info(f"VALIDATION: all checks passed ({row_count} rows)")
 
     return issues
 
 
 if __name__ == "__main__":
-    from logging_config import get_logger
-
     base_dir = Path(__file__).parent
     gold_csv = base_dir / "data/cases_gold/caseloads_normalized.csv"
-    logger = get_logger(__name__, log_dir=base_dir / "data/logs")
 
-    issues = validate_gold_csv(gold_csv, logger=logger)
+    issues = validate_gold_csv(gold_csv)
     # Non-zero exit code lets this be used as a CI/CD gate later (e.g. Issue 19's QA pipeline)
     exit(1 if issues else 0)
