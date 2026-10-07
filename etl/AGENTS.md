@@ -25,3 +25,6 @@ Extract-transform-load for south carolina probate courts.
 - Commit secrets, API keys, or connection strings
 - Edit generated migration files
 - Push directly to master branch
+## Commands
+- **Run:** python orchestrator.py
+- **Test:** pytest
