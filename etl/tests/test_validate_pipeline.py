@@ -1,4 +1,5 @@
 import pandas as pd
+from pathlib import Path
 import pytest
 
 from normalize_parquets import SCHEMA
@@ -37,9 +38,9 @@ def write_gold_data(data, path):
 
 def test_clean_data_creates_empty_error_report(tmp_path, clean_gold_data):
     gold_path = write_gold_data(clean_gold_data, tmp_path / "gold.csv")
-    report_path = tmp_path / "validation" / "errors.csv"
+    report_path = Path(__file__).parent.parent / "src/data/validation/errors.csv"
 
-    assert validate_gold_csv(gold_path, error_report_path=report_path) == []
+    assert validate_gold_csv(gold_path) == []
 
     report = pd.read_csv(report_path)
     assert list(report.columns) == ["filename", "row_number", "error_details"]
@@ -48,9 +49,9 @@ def test_clean_data_creates_empty_error_report(tmp_path, clean_gold_data):
 
 def test_dirty_data_reports_each_offending_row(tmp_path, dirty_gold_data):
     gold_path = write_gold_data(dirty_gold_data, tmp_path / "gold.csv")
-    report_path = tmp_path / "errors.csv"
+    report_path = Path(__file__).parent.parent / "src/data/validation/errors.csv"
 
-    issues = validate_gold_csv(gold_path, error_report_path=report_path)
+    issues = validate_gold_csv(gold_path)
     report = pd.read_csv(report_path, dtype=str)
 
     assert issues
@@ -80,13 +81,13 @@ def test_dirty_data_reports_each_offending_row(tmp_path, dirty_gold_data):
 
 def test_clean_run_overwrites_previous_errors(tmp_path, dirty_gold_data, clean_gold_data):
     gold_path = tmp_path / "gold.csv"
-    report_path = tmp_path / "errors.csv"
+    report_path = Path(__file__).parent.parent / "src/data/validation/errors.csv"
     write_gold_data(dirty_gold_data, gold_path)
-    validate_gold_csv(gold_path, error_report_path=report_path)
+    validate_gold_csv(gold_path)
     assert len(pd.read_csv(report_path)) > 0
 
     write_gold_data(clean_gold_data, gold_path)
-    assert validate_gold_csv(gold_path, error_report_path=report_path) == []
+    assert validate_gold_csv(gold_path) == []
 
     report = pd.read_csv(report_path)
     assert list(report.columns) == ["filename", "row_number", "error_details"]

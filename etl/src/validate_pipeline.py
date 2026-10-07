@@ -13,14 +13,14 @@ from logging_config import get_logger
 
 logger = get_logger(__name__)
 
-def validate_gold_csv(gold_csv_path, error_report_path=None):
+def validate_gold_csv(gold_csv_path):
     """Validate the Gold CSV and write a CSV report for each detected error."""
     issues = []
     errors = []
     gold_csv_path = Path(gold_csv_path)
-    if error_report_path is None:
-        error_report_path = Path(__file__).resolve().parent / "data/validation/errors.csv"
-    error_report_path = Path(error_report_path)
+    
+    # Hardcode the path directly since we removed the argument
+    error_report_path = Path(__file__).resolve().parent / "data/validation/errors.csv"
 
     def add_error(details, row_number=1, row=None):
         filename = gold_csv_path.name
