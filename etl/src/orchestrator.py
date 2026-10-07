@@ -20,7 +20,7 @@ os.environ.setdefault("PIPELINE_LOG_DIR", str(_base_dir / "data" / "logs"))
 from downloader import download_pdfs
 from pdf_extraction import extract_pdfs_to_silver
 from normalize_parquets import normalize_silver_to_gold
-from validate_pipeline import validate_gold_csv
+from validate_pipeline import validate_gold_csv, write_error_report
 from logging_config import get_logger
 
 
@@ -45,10 +45,11 @@ def run_pipeline():
     normalize_silver_to_gold(silver_dir, gold_dir, provenance_dir)
 
     logger.info("=== Step 4: Validating Gold output ===")
-    issues = validate_gold_csv(gold_dir / "caseloads_normalized.csv", logger=logger)
+    errors = validate_gold_csv(gold_dir / "caseloads_normalized.csv")
+    write_error_report(errors, base_dir / "data/validation/errors.csv")
 
-    if issues:
-        logger.error(f"Pipeline completed with {len(issues)} validation issue(s). Review before publishing.")
+    if errors:
+        logger.error(f"Pipeline completed with {len(errors)} validation issue(s). Review before publishing.")
     else:
         logger.info("Pipeline completed successfully. All validation checks passed.")
 

@@ -27,9 +27,6 @@ def validate_gold_csv(gold_csv_path):
     issues = []
     errors = []
     gold_csv_path = Path(gold_csv_path)
-    
-    # Hardcode the path directly since we removed the argument
-    error_report_path = Path(__file__).resolve().parent / "data/validation/errors.csv"
 
     def add_error(details, row_number=1, row=None):
         filename = gold_csv_path.name
@@ -123,12 +120,6 @@ def validate_gold_csv(gold_csv_path):
                     row,
                 )
 
-    error_report_path.parent.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(errors, columns=["filename", "row_number", "error_details"]).to_csv(
-        error_report_path,
-        index=False,
-    )
-
     if issues:
         for issue in issues:
             logger.warning(f"VALIDATION: {issue}")
@@ -136,13 +127,13 @@ def validate_gold_csv(gold_csv_path):
         row_count = len(df) if df is not None else 0
         logger.info(f"VALIDATION: all checks passed ({row_count} rows)")
 
-    return issues
+    return errors
 
 
 if __name__ == "__main__":
     base_dir = Path(__file__).parent
     gold_csv = base_dir / "data/cases_gold/caseloads_normalized.csv"
 
-    issues = validate_gold_csv(gold_csv)
-    # Non-zero exit code lets this be used as a CI/CD gate later (e.g. Issue 19's QA pipeline)
-    exit(1 if issues else 0)
+    errors = validate_gold_csv(gold_csv)
+    write_error_report(errors, base_dir / "data/validation/errors.csv")
+    exit(1 if errors else 0)
