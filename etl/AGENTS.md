@@ -8,6 +8,7 @@ Extract-transform-load for south carolina probate courts.
 
 ## Commands
 - **Run:** python orchestrator.py
+- **Test:** pytest
 
 ## Boundaries
 

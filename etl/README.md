@@ -170,3 +170,9 @@ All pipeline activity is logged to both the console and
 each run — downloads attempted, pages extracted, rows normalized, and
 validation results — independent of whether the console output is
 still available afterward.
+## Testing
+To run the ETL tests, install the developer dependencies and run pytest:
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
