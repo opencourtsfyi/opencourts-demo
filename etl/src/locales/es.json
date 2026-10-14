@@ -16,5 +16,10 @@
   "orchestrator": {
     "cli_description": "Ejecutar la canalización ETL de OpenCourts.",
     "cli_help_overwrite_existing": "Sobrescribir los archivos descargados existentes en lugar de omitirlos."
+  },
+  "pdf_extraction": {
+    "log_no_table_found": "No se encontró ninguna tabla en la página {table_index} de {filename}, omitiendo",
+    "log_saved": "Guardado {filename}",
+    "log_starting_extraction": "Iniciando extracción en: {filename}"
   }
 }
