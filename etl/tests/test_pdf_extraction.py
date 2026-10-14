@@ -6,7 +6,11 @@ import pyarrow.parquet as pq
 import pytest
 
 import pdf_extraction
-from pdf_extraction import extract_pdfs_to_silver
+from pdf_extraction import (
+    BronzeToSilverExtractor,
+    TableExtractor,
+    extract_pdfs_to_silver,
+)
 
 FIRST_PAGE_NUMBER = 1
 SECOND_PAGE_NUMBER = 2
@@ -14,6 +18,8 @@ THIRD_PAGE_NUMBER = 3
 FIRST_ROW_INDEX = 0
 EXPECTED_SINGLE_RECORD = 1
 EXPECTED_TWO_FILES = 2
+EXPECTED_NO_FILES = 0
+CUSTOM_PAGE_OFFSET = 10
 SILVER_COLUMNS = ["table_index", "row_index", "raw_row"]
 PDF_BYTES = b"%PDF-1.4 fake"
 PROVENANCE_LOG_NAME = "provenance_log.jsonl"
@@ -135,35 +141,53 @@ class TestExtractPdfsToSilver:
         assert len(read_rows(output_dir / "a.parquet")) == EXPECTED_SINGLE_RECORD
         mock_logger.warning.assert_not_called()
 
-    def test_pdf_with_no_tables_crashes_with_key_error(self, dirs, mock_open):
-        """BUG (characterized): an all-blank PDF yields an empty DataFrame with no columns,
-        so Table.from_pandas(schema=...) raises KeyError and no Parquet is written."""
+    def test_pdf_with_no_tables_writes_empty_parquet(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
         (input_dir / "a.pdf").write_bytes(PDF_BYTES)
         mock_open.return_value = make_pdf([None, None])
 
-        with pytest.raises(KeyError, match="table_index"):
-            extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
+        extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        assert not (output_dir / "a.parquet").exists()
-        assert not prov_dir.exists()
+        parquet_path = output_dir / "a.parquet"
+        assert parquet_path.exists()
+        assert read_rows(parquet_path) == []
+        schema = pq.read_table(parquet_path).schema
+        assert str(schema.field("table_index").type) == "int64"
+        assert str(schema.field("row_index").type) == "int64"
+        assert str(schema.field("raw_row").type) == "list<element: string>"
+        assert len(read_provenance(prov_dir)) == EXPECTED_SINGLE_RECORD
 
-    def test_pdf_with_zero_pages_crashes_with_key_error(self, dirs, mock_open):
-        """BUG (characterized): same empty-DataFrame failure for a PDF with zero pages."""
+    def test_pdf_with_zero_pages_writes_empty_parquet(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
         (input_dir / "a.pdf").write_bytes(PDF_BYTES)
         mock_open.return_value = make_pdf([])
 
-        with pytest.raises(KeyError):
-            extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
+        extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-    def test_pdf_with_only_empty_tables_crashes_with_key_error(self, dirs, mock_open):
+        parquet_path = output_dir / "a.parquet"
+        assert parquet_path.exists()
+        assert read_rows(parquet_path) == []
+        schema = pq.read_table(parquet_path).schema
+        assert str(schema.field("table_index").type) == "int64"
+        assert str(schema.field("row_index").type) == "int64"
+        assert str(schema.field("raw_row").type) == "list<element: string>"
+        assert len(read_provenance(prov_dir)) == EXPECTED_SINGLE_RECORD
+
+    def test_pdf_with_only_empty_tables_writes_empty_parquet(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
         (input_dir / "a.pdf").write_bytes(PDF_BYTES)
         mock_open.return_value = make_pdf([[]])
 
-        with pytest.raises(KeyError):
-            extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
+        extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
+
+        parquet_path = output_dir / "a.parquet"
+        assert parquet_path.exists()
+        assert read_rows(parquet_path) == []
+        schema = pq.read_table(parquet_path).schema
+        assert str(schema.field("table_index").type) == "int64"
+        assert str(schema.field("row_index").type) == "int64"
+        assert str(schema.field("raw_row").type) == "list<element: string>"
+        assert len(read_provenance(prov_dir)) == EXPECTED_SINGLE_RECORD
 
     def test_parquet_schema_types(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
@@ -235,15 +259,6 @@ class TestExtractPdfsToSilver:
         extract_pdfs_to_silver(input_dir, nested, prov_dir)
 
         assert nested.is_dir()
-
-    def test_accepts_string_paths(self, dirs, mock_open):
-        input_dir, output_dir, prov_dir = dirs
-        (input_dir / "a.pdf").write_bytes(PDF_BYTES)
-        mock_open.return_value = make_pdf([[["x"]]])
-
-        extract_pdfs_to_silver(str(input_dir), str(output_dir), str(prov_dir))
-
-        assert (output_dir / "a.parquet").exists()
 
     def test_filename_stem_with_dots_is_preserved(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
@@ -392,6 +407,89 @@ class TestMainEntryPoint:
 
         extract_mock.assert_not_called()  # run_path rebinds the function; real one ran with empty glob
 
+class TestTableExtractor:
+    def test_custom_page_offset(self, tmp_path, mock_open):
+        pdf_path = tmp_path / "doc.pdf"
+        pdf_path.write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([[["row1"]]])
+
+        extractor = TableExtractor(page_index_offset=CUSTOM_PAGE_OFFSET)
+        records = extractor.extract_from_pdf(pdf_path)
+
+        assert len(records) == EXPECTED_SINGLE_RECORD
+        assert records[0]["table_index"] == CUSTOM_PAGE_OFFSET
+        assert records[0]["row_index"] == FIRST_ROW_INDEX
+        assert records[0]["raw_row"] == ["row1"]
+
+    def test_skips_none_tables_with_warning(self, tmp_path, mock_open, mock_logger):
+        pdf_path = tmp_path / "doc.pdf"
+        pdf_path.write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([None])
+
+        extractor = TableExtractor()
+        records = extractor.extract_from_pdf(pdf_path)
+
+        assert records == []
+        mock_logger.warning.assert_called_once()
+
+    def test_image_pdf_with_no_text_returns_empty_and_warns(self, tmp_path, mock_open, mock_logger):
+        """
+        Simulates an image-only / scanned PDF 
+        """
+        pdf_path = tmp_path / "scanned_image.pdf"
+        pdf_path.write_bytes(PDF_BYTES)
+
+        # Scanned/image-only PDF: contains no extractable text or tables
+        page = MagicMock()
+        page.extract_text.return_value = ""
+        page.extract_table.return_value = None
+        pdf = MagicMock()
+        pdf.pages = [page]
+        pdf.__enter__.return_value = pdf
+        pdf.__exit__.return_value = False
+        mock_open.return_value = pdf
+
+        extractor = TableExtractor()
+        records = extractor.extract_from_pdf(pdf_path)
+
+        assert records == []
+        mock_logger.warning.assert_called_once()
+        assert "scanned_image.pdf" in mock_logger.warning.call_args[0][0]
+
+
+class TestBronzeToSilverExtractor:
+    def test_find_pdf_files_matches_case_insensitively(self, tmp_path):
+        (tmp_path / "lower.pdf").write_bytes(PDF_BYTES)
+        (tmp_path / "UPPER.PDF").write_bytes(PDF_BYTES)
+        (tmp_path / "other.txt").write_text("text")
+
+        extractor = BronzeToSilverExtractor()
+        found = extractor.find_pdf_files(tmp_path)
+
+        assert len(found) == EXPECTED_TWO_FILES
+        assert [f.name for f in found] == ["UPPER.PDF", "lower.pdf"]
+
+    def test_find_pdf_files_missing_directory_returns_empty(self, tmp_path):
+        extractor = BronzeToSilverExtractor()
+        found = extractor.find_pdf_files(tmp_path / "missing")
+        assert len(found) == EXPECTED_NO_FILES
+
+    def test_custom_injected_table_extractor(self, dirs):
+        input_dir, output_dir, prov_dir = dirs
+        pdf_path = input_dir / "custom.pdf"
+        pdf_path.write_bytes(PDF_BYTES)
+
+        mock_table_extractor = MagicMock(spec=TableExtractor)
+        mock_table_extractor.extract_from_pdf.return_value = [
+            {"table_index": FIRST_PAGE_NUMBER, "row_index": FIRST_ROW_INDEX, "raw_row": ["val"]}
+        ]
+
+        extractor = BronzeToSilverExtractor(table_extractor=mock_table_extractor)
+        extractor.extract_all(input_dir, output_dir, prov_dir)
+
+        mock_table_extractor.extract_from_pdf.assert_called_once_with(pdf_path)
+        assert (output_dir / "custom.parquet").exists()
+    
 # TODO integrate James' findings
 # import sys
 # from pathlib import Path

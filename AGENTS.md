@@ -17,6 +17,7 @@ The project is split into frontend, backend, and ETL concerns:
 - Keep commits and changes scoped to the relevant app area.
 - Use the appropriate project-level AGENTS.md in each folder for local conventions.
 - Keep modules, classes, and functions deep: hide complexity behind a simple, intuitive interface. Avoid shallow code that forces implementation details onto the caller or introduces unnecessary architectural abstractions.
+- Keep method and function signatures small and intuitive. Give optional arguments a default only when it is stable and domain-appropriate; keep caller-specific or required values explicit.
  
 
 ## Coding Rules
@@ -24,6 +25,8 @@ The project is split into frontend, backend, and ETL concerns:
 ### No Magic Values
 - Never use hardcoded numeric values.
 - Extract all domain thresholds, configurations, and business values into explicitly named constants or enumerations.
+- If a constant is used only within a class, declare it in that class rather than at the top of the file.
+- Do not extract constants, strings or enumerations in tests.
 - Log, debug, and internal diagnostic messages may be written inline at their call sites; do not move them into module-level constants solely to avoid string literals.
 
 ### i18n Readiness
