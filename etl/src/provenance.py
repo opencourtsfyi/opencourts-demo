@@ -10,30 +10,168 @@ so the log can be safely appended to across many separate pipeline runs
 without needing to read and rewrite the whole file each time.
 """
 
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 import hashlib
 import json
-from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Sequence
 
-PIPELINE_NAME = "sc_probate_caseload_etl"
-PIPELINE_VERSION = "1.0.0"  # Bump this when pipeline logic changes meaningfully
+PIPELINE_NAME: str = "sc_probate_caseload_etl"
+PIPELINE_VERSION: str = "1.0.0"  # Bump this when pipeline logic changes meaningfully
+
+DEFAULT_HASH_ALGORITHM: str = "sha256"
+DEFAULT_HASH_CHUNK_SIZE_BYTES: int = 8192
+DEFAULT_PROVENANCE_LOG_FILENAME: str = "provenance_log.jsonl"
+LOG_ENCODING: str = "utf-8"
+
+FILE_MODE_READ_BINARY: str = "rb"
+FILE_MODE_APPEND: str = "a"
+RECORD_DELIMITER: str = "\n"
+EMPTY_BYTES_SENTINEL: bytes = b""
+
+STAGE_BRONZE: str = "bronze"
+STAGE_SILVER: str = "silver"
+STAGE_GOLD: str = "gold"
 
 
-def compute_file_hash(file_path, algo="sha256"):
-    """Computes a hash of the file's exact contents, used to verify integrity
-    and detect if two files claiming to be the same artifact actually differ.
+@dataclass(frozen=True)
+class ProvenanceRecord:
+    """Represents an immutable provenance record for a pipeline artifact."""
 
-    Reads the file in 8KB chunks rather than loading it all into memory at
-    once, so this works safely even on large PDFs or Parquet files.
+    pipeline_name: str
+    pipeline_version: str
+    stage: str | None
+    filename: str
+    file_hash: str
+    retrieved_at: str
+    source_url: str | None = None
+    derived_from: Sequence[str] | Any = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serializes the record to a dictionary matching the lineage schema."""
+        return {
+            "pipeline_name": self.pipeline_name,
+            "pipeline_version": self.pipeline_version,
+            "stage": self.stage,
+            "filename": self.filename,
+            "file_hash": self.file_hash,
+            "retrieved_at": self.retrieved_at,
+            "source_url": self.source_url,
+            "derived_from": self.derived_from if self.derived_from is not None else [],
+        }
+
+
+def compute_file_hash(
+    file_path: str | Path,
+    algo: str = DEFAULT_HASH_ALGORITHM,
+    chunk_size: int = DEFAULT_HASH_CHUNK_SIZE_BYTES,
+) -> str:
+    """Computes a cryptographic hash of a file's contents in chunks.
+
+    Reads the file in binary chunks rather than loading it all into memory
+    at once, working safely even on large PDFs or Parquet files.
+    Validates algorithm name prior to opening the file.
+
+    Args:
+        file_path: Path to the target file.
+        algo: Name of the hashing algorithm supported by hashlib.
+        chunk_size: Chunk size in bytes for streaming file reads.
+
+    Returns:
+        Hexadecimal hash digest string.
     """
-    h = hashlib.new(algo)
-    with open(file_path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    hasher = hashlib.new(algo)
+    with open(file_path, FILE_MODE_READ_BINARY) as f:
+        for chunk in iter(lambda: f.read(chunk_size), EMPTY_BYTES_SENTINEL):
+            hasher.update(chunk)
+    return hasher.hexdigest()
 
 
-def log_provenance(provenance_dir, stage, file_path, source_url=None, derived_from=None):
+class ProvenanceTracker:
+    """Tracks and logs data provenance and lineage across ETL pipeline stages.
+
+    Encapsulates artifact hashing, metadata record generation, and appending
+    to the JSON Lines log file.
+    """
+
+    def __init__(
+        self,
+        provenance_dir: str | Path,
+        log_filename: str = DEFAULT_PROVENANCE_LOG_FILENAME,
+        pipeline_name: str = PIPELINE_NAME,
+        pipeline_version: str = PIPELINE_VERSION,
+        chunk_size: int = DEFAULT_HASH_CHUNK_SIZE_BYTES,
+        encoding: str = LOG_ENCODING,
+    ) -> None:
+        self.provenance_dir = Path(provenance_dir)
+        self.log_filename = log_filename
+        self.pipeline_name = pipeline_name
+        self.pipeline_version = pipeline_version
+        self.chunk_size = chunk_size
+        self.encoding = encoding
+
+    @property
+    def log_path(self) -> Path:
+        """Returns the full path to the provenance log file."""
+        return self.provenance_dir / self.log_filename
+
+    def record_artifact(
+        self,
+        stage: str | None,
+        file_path: str | Path,
+        source_url: str | None = None,
+        derived_from: Any = None,
+        hash_algo: str = DEFAULT_HASH_ALGORITHM,
+    ) -> dict[str, Any]:
+        """Appends one provenance record describing a single artifact.
+
+        Args:
+            stage: "bronze" | "silver" | "gold" — pipeline tier that produced the file.
+            file_path: Path to the artifact that was written.
+            source_url: Original download URL (only meaningful for Bronze artifacts).
+            derived_from: List of filenames this artifact was built from.
+            hash_algo: Hashing algorithm to use.
+
+        Returns:
+            The serialized record as a dictionary.
+        """
+        self.provenance_dir.mkdir(parents=True, exist_ok=True)
+
+        artifact_path = Path(file_path)
+        file_hash = compute_file_hash(
+            artifact_path,
+            algo=hash_algo,
+            chunk_size=self.chunk_size,
+        )
+
+        record = ProvenanceRecord(
+            pipeline_name=self.pipeline_name,
+            pipeline_version=self.pipeline_version,
+            stage=stage,
+            filename=artifact_path.name,
+            file_hash=file_hash,
+            retrieved_at=datetime.now(timezone.utc).isoformat(),
+            source_url=source_url,
+            derived_from=derived_from,
+        )
+        record_dict = record.to_dict()
+
+        # Append mode ensures each call adds one line without disturbing prior records.
+        # Opening before serializing guarantees deterministic file creation semantics.
+        with open(self.log_path, FILE_MODE_APPEND, encoding=self.encoding) as f:
+            f.write(json.dumps(record_dict) + RECORD_DELIMITER)
+
+        return record_dict
+
+
+def log_provenance(
+    provenance_dir: str | Path,
+    stage: str | None,
+    file_path: str | Path,
+    source_url: str | None = None,
+    derived_from: Any = None,
+) -> dict[str, Any]:
     """Appends one provenance record describing a single artifact.
 
     stage: "bronze" | "silver" | "gold" — which pipeline tier produced this file
@@ -44,23 +182,10 @@ def log_provenance(provenance_dir, stage, file_path, source_url=None, derived_fr
                   points at the one Bronze PDF it came from, and a Gold
                   file's derived_from lists every Silver file that fed it.
     """
-    provenance_dir = Path(provenance_dir)
-    provenance_dir.mkdir(parents=True, exist_ok=True)
-    log_path = provenance_dir / "provenance_log.jsonl"
-
-    record = {
-        "pipeline_name": PIPELINE_NAME,
-        "pipeline_version": PIPELINE_VERSION,
-        "stage": stage,
-        "filename": Path(file_path).name,
-        "file_hash": compute_file_hash(file_path),
-        "retrieved_at": datetime.now(timezone.utc).isoformat(),  # UTC, timezone-aware
-        "source_url": source_url,
-        "derived_from": derived_from or [],
-    }
-
-    # "a" = append mode, so each call adds one line without disturbing prior records
-    with open(log_path, "a") as f:
-        f.write(json.dumps(record) + "\n")
-
-    return record
+    tracker = ProvenanceTracker(provenance_dir=provenance_dir)
+    return tracker.record_artifact(
+        stage=stage,
+        file_path=file_path,
+        source_url=source_url,
+        derived_from=derived_from,
+    )
