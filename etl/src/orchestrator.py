@@ -6,6 +6,7 @@ Gold normalization, and final validation. All paths are defined once,
 here, and passed down to each stage function.
 """
 
+import argparse
 import os
 from pathlib import Path
 
@@ -22,9 +23,10 @@ from pdf_extraction import extract_pdfs_to_silver
 from normalize_parquets import normalize_silver_to_gold
 from validate_pipeline import validate_gold_csv, write_error_report
 from logging_config import get_logger
+from i18n import t
 
-
-def run_pipeline():
+#TODO internationalize user facing strings in this file
+def run_pipeline(overwrite_existing: bool = False) -> None:
     base_dir = Path(__file__).parent
     bronze_dir = base_dir / "data/pdfs_bronze"
     silver_dir = base_dir / "data/cases_silver"
@@ -36,7 +38,7 @@ def run_pipeline():
     logger = get_logger("orchestrator", log_dir=log_dir)
 
     logger.info("=== Step 1: Bronze — Downloading PDFs ===")
-    download_pdfs(bronze_dir, provenance_dir)
+    download_pdfs(bronze_dir, provenance_dir, overwrite_existing=overwrite_existing)
 
     logger.info("=== Step 2: Silver — Extracting tables from PDFs ===")
     extract_pdfs_to_silver(bronze_dir, silver_dir, provenance_dir)
@@ -54,5 +56,25 @@ def run_pipeline():
         logger.info("Pipeline completed successfully. All validation checks passed.")
 
 
+def parse_args(args: list[str] | None = None) -> argparse.Namespace:
+    """Parses command-line arguments for orchestrator.py."""
+    parser = argparse.ArgumentParser(description=t("orchestrator.cli_description"))
+    parser.add_argument(
+        "--overwrite-existing",
+        "--overwrite",
+        dest="overwrite_existing",
+        action="store_true",
+        default=False,
+        help=t("orchestrator.cli_help_overwrite_existing"),
+    )
+    return parser.parse_args(args)
+
+
+def main(args: list[str] | None = None) -> None:
+    """CLI entry point for orchestrator.py."""
+    cli_args = parse_args(args)
+    run_pipeline(overwrite_existing=cli_args.overwrite_existing)
+
+
 if __name__ == "__main__":
-    run_pipeline()
+    main()
