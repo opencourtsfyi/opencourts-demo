@@ -57,6 +57,11 @@ pip install -r requirements.txt
 Requires Python 3.10 or later (uses the walrus operator and modern
 `pathlib` conventions).
 
+The downloader uses `python-magic` to identify PDF content. On Windows,
+`python-magic-bin` supplies the required libmagic binary. On macOS and
+Linux, install the system `libmagic` library before installing the Python
+requirements.
+
 ## Usage
 
 Run the full pipeline:
@@ -81,6 +86,8 @@ python normalize_parquets.py   # Gold only
 python validate_pipeline.py    # Validate an existing Gold dataset
 ```
 
+> [!NOTE]
+> `orchestrator.py` and `downloader.py` support command line options. You can view opttions with the `--help` argument.
 ---
 
 ## Output schema
