@@ -6,15 +6,15 @@ preserved source artifact (Bronze tier of the Medallion architecture).
 Also logs a provenance record for every successfully downloaded file.
 """
 
+import logging
 import requests
 import time
 import random
 from pathlib import Path
 
 from provenance import log_provenance
-from logging_config import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def download_pdfs(output_dir, provenance_dir, start_year=2007, end_year=None):

@@ -9,6 +9,7 @@ formats can never drift apart from each other. Also logs a provenance/
 lineage record linking the Gold output back to every Silver file that fed it.
 """
 
+import logging
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -16,9 +17,8 @@ from pathlib import Path
 import re
 
 from provenance import log_provenance
-from logging_config import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 # --- Reference data used to recognize and label rows during normalization ---
