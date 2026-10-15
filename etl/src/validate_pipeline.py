@@ -5,13 +5,13 @@ catch a broken or malformed output before anyone downstream trusts it.
 Run standalone for a quick check, or as the orchestrator's final step.
 """
 
+import logging
 from pathlib import Path
 import pandas as pd
 
 from normalize_parquets import CATEGORY, SC_COUNTIES, EXPECTED_METRICS, EXPECTED_METRICS_MENTAL_HEALTH, SCHEMA
-from logging_config import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 def write_error_report(errors, output_path):
     """Writes the structured error report to a CSV file."""
