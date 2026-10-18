@@ -29,7 +29,7 @@ back to the exact source file and download it came from.
 | Stage | Responsibility | Module | Output |
 |---|---|---|---|
 | **Bronze** | Ingest raw source PDFs | `downloader.py` | `data/pdfs_bronze/*.pdf` |
-| **Silver** | Extract raw tabular data from each PDF | `pdf_extraction.py` | `data/cases_silver/*.parquet` |
+| **Silver** | Extract raw tabular data from each PDF | `pdf_extraction.py` | `data/cases_silver/*.csv` |
 | **Gold** | Normalize and publish the final dataset | `normalize_parquets.py` | `data/cases_gold/caseloads_normalized.{csv,parquet}` |
 | **Validation** | Verify structural and content integrity of the Gold dataset | `validate_pipeline.py` | Pass/fail report, logged |
 | **Orchestration** | Run all stages in sequence | `orchestrator.py` | — |
@@ -137,7 +137,7 @@ Every file the pipeline produces is recorded in
   "pipeline_name": "sc_probate_caseload_etl",
   "pipeline_version": "1.0.0",
   "stage": "silver",
-  "filename": "estate_monthly_caseload_2023_to_2024_bronze.parquet",
+  "filename": "estate_monthly_caseload_2023_to_2024_bronze.csv",
   "file_hash": "sha256...",
   "retrieved_at": "2026-07-06T18:03:11+00:00",
   "source_url": null,

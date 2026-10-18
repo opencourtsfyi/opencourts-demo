@@ -1,6 +1,6 @@
 # normalize_parquets.py
 """
-Gold stage: reads Silver Parquet files (raw extracted PDF tables) and
+Gold stage: reads Silver CSV files (raw extracted PDF tables) and
 normalizes them into a long-format dataset, one row per (county, metric,
 month, year) data point, matching the project's target schema.
 
@@ -9,6 +9,7 @@ formats can never drift apart from each other. Also logs a provenance/
 lineage record linking the Gold output back to every Silver file that fed it.
 """
 
+import json
 import logging
 import pandas as pd
 import pyarrow as pa
@@ -80,9 +81,9 @@ def match_metric(item, metrics_lower_dict):
 
 
 def normalize_silver_to_gold(input_dir, output_dir, provenance_dir, output_filename="caseloads_normalized"):
-    """Reads Silver Parquet files and writes a normalized Gold CSV and Parquet.
+    """Reads Silver CSV files and writes a normalized Gold CSV and Parquet.
 
-    Walks each Silver Parquet file row by row. Since the raw PDF table
+    Walks each Silver CSV file row by row. Since the raw PDF table
     doesn't repeat context (category/county) on every row, this function
     tracks "current state" as it moves through the rows, updating that
     state whenever it recognizes a title, header, or county row, and
@@ -99,7 +100,7 @@ def normalize_silver_to_gold(input_dir, output_dir, provenance_dir, output_filen
     silver_files_used = []   # Lineage: every Silver file that contributed to this Gold output
 
     # sorted() for deterministic, reproducible output across runs
-    for file_path in sorted(input_dir.glob("*.parquet")):
+    for file_path in sorted(input_dir.glob("*.csv")):
         logger.info(f"Starting extraction on: {file_path.name}")
         silver_files_used.append(file_path.name)
 
@@ -115,10 +116,12 @@ def normalize_silver_to_gold(input_dir, output_dir, provenance_dir, output_filen
         current_month_positions = {}  # {column_index: month_number}, set when a header row is seen
         current_year_map = {year1: [], year2: []}  # which months belong to which fiscal year
 
-        df = pq.read_table(file_path).to_pandas()
+        df = pd.read_csv(file_path, encoding="utf-8")
 
         for _, row in df.iterrows():
-            raw_row = row["raw_row"]  # One row from the original PDF table, as a list of cell strings
+            # Silver stores each PDF row as a JSON array. Restore the list so
+            # cell indexing, empty cells, and embedded newlines match extraction.
+            raw_row = json.loads(row["raw_row"])
 
             # --- Detect a title row and extract the category ---
             # Title looks like: "South Carolina Court Administration\n{Category} Monthly Caseload Report\nPeriod ..."
@@ -195,8 +198,8 @@ def normalize_silver_to_gold(input_dir, output_dir, provenance_dir, output_filen
     gold_df = pd.DataFrame(collected_rows, columns=SCHEMA)
     gold_df.to_csv(output_csv, index=False)
 
-    # Explicit schema at write time, same reasoning as Silver: enforced at
-    # write time rather than silently inferred/miscast at read time
+    # Explicit schema so Gold Parquet types are enforced at write time
+    # rather than silently inferred at read time
     gold_schema = pa.schema([
         ("file", pa.string()), ("category", pa.string()),
         ("month", pa.int64()), ("year", pa.int64()),

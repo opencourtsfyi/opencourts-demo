@@ -1,17 +1,16 @@
 # pdf_extraction.py
 """
 Silver stage: extracts raw tables from each Bronze PDF using pdfplumber
-and saves them as Parquet files, preserving the table structure exactly
+and saves them as CSV files, preserving the table structure exactly
 as pdfplumber found it (no interpretation or cleanup happens here).
 Also logs a provenance/lineage record linking each Silver file back to
 the one Bronze PDF it was derived from.
 """
 
+import json
 import logging
 import pdfplumber
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 from pathlib import Path
 
 from provenance import log_provenance
@@ -19,8 +18,11 @@ from provenance import log_provenance
 logger = logging.getLogger(__name__)
 
 
+SILVER_COLUMNS = ("table_index", "row_index", "raw_row")
+
+
 def extract_pdfs_to_silver(input_dir, output_dir, provenance_dir):
-    """Extracts raw tables from all PDFs in input_dir and saves them as Parquet in output_dir."""
+    """Extracts raw tables from all PDFs in input_dir and saves them as CSV in output_dir."""
     input_dir = Path(input_dir)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -47,23 +49,20 @@ def extract_pdfs_to_silver(input_dir, output_dir, provenance_dir):
                     collected_records.append({
                         "table_index": table_index,
                         "row_index": row_index,
-                        "raw_row": raw_row
+                        "raw_row": json.dumps(raw_row),
                     })
 
-        # Explicit schema keeps Parquet output consistent even if a page
-        # produces an empty or unusually shaped table
-        parquet_schema = pa.schema([
-            ('table_index', pa.int64()),
-            ('row_index', pa.int64()),
-            ('raw_row', pa.list_(pa.string()))
-        ])
+        # A PDF with no tables still gets a header-only file so every Bronze
+        # input produces a Silver artifact. raw_row is a JSON array because a
+        # CSV column cannot store the original list, including empty cells,
+        # commas, and newlines.
+        if collected_records:
+            df = pd.DataFrame(collected_records, columns=SILVER_COLUMNS)
+        else:
+            df = pd.DataFrame(columns=SILVER_COLUMNS)
 
-        df = pd.DataFrame(collected_records)
-        arrow_table = pa.Table.from_pandas(df, schema=parquet_schema)
-
-        # One Silver Parquet file per source PDF, same base filename
-        output_file_path = output_dir / f"{file_path.stem}.parquet"
-        pq.write_table(arrow_table, output_file_path)
+        output_file_path = output_dir / f"{file_path.stem}.csv"
+        df.to_csv(output_file_path, index=False, encoding="utf-8")
         logger.info(f"Saved {output_file_path.name}")
 
         # Lineage: this Silver file was derived from exactly one Bronze PDF
