@@ -131,6 +131,9 @@ def validate_gold_csv(gold_csv_path):
 
 
 if __name__ == "__main__":
+    from logging_config import setup_logging
+    setup_logging()
+
     base_dir = Path(__file__).parent
     gold_csv = base_dir / "data/cases_gold/caseloads_normalized.csv"
 

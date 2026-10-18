@@ -76,6 +76,9 @@ def extract_pdfs_to_silver(input_dir, output_dir, provenance_dir):
 
 
 if __name__ == "__main__":
+    from logging_config import setup_logging
+    setup_logging()
+
     base_dir = Path(__file__).parent
     extract_pdfs_to_silver(
         base_dir / "data/pdfs_bronze",
