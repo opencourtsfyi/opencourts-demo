@@ -1,0 +1,37 @@
+
+# these are commonly ignored python files
+*.pyc
+*.pyo
+*.swp
+doc/*/_build
+doc/*/.doctrees
+build/
+dist/
+*.egg-info
+.cache
+__pycache__/
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# environments
+.env
+.venv
+env/
+
+# UV artifacts. Ignoring for now since we haven't discussed
+# managing python version and dependencies as a team yet.
+# See Github issue #33
+.python-version
+pyproject.toml 
+uv.lock
+
+# Editors
+.idea
+.project
+.settings
+.vscode
+.claude/settings.local.json

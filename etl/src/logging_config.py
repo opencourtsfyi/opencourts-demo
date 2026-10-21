@@ -8,6 +8,7 @@ so every stage's output goes to both the console and a persistent log file.
 import logging
 import os
 from pathlib import Path
+import sys
 
 # Env var used to inject a log destination without code changes, e.g. a path
 # mounted/synced to a central location in the cloud (see issue #2). If set,
@@ -15,6 +16,9 @@ from pathlib import Path
 # addition to the console, even if that module builds its logger at import
 # time with no explicit log_dir argument.
 LOG_DIR_ENV_VAR = "PIPELINE_LOG_DIR"
+LOG_FILE_NAME = "pipeline.log"
+LOG_ENCODING = "utf-8"
+LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 
 
 def get_logger(name, log_dir=None):
@@ -35,7 +39,7 @@ def get_logger(name, log_dir=None):
     """
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+    formatter = logging.Formatter(LOG_FORMAT)
 
     resolved_log_dir = log_dir if log_dir is not None else os.environ.get(LOG_DIR_ENV_VAR)
 
@@ -47,6 +51,11 @@ def get_logger(name, log_dir=None):
 
     # Always log to console, but only attach once
     if not has_console:
+        if sys.stderr is not None and hasattr(sys.stderr, "reconfigure"):
+            try:
+                sys.stderr.reconfigure(encoding=LOG_ENCODING, errors="backslashreplace")
+            except Exception:
+                pass
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
@@ -56,7 +65,10 @@ def get_logger(name, log_dir=None):
     if resolved_log_dir is not None and not has_file:
         resolved_log_dir = Path(resolved_log_dir)
         resolved_log_dir.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(resolved_log_dir / "pipeline.log")
+        file_handler = logging.FileHandler(
+            resolved_log_dir / LOG_FILE_NAME,
+            encoding=LOG_ENCODING,
+        )
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 

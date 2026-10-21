@@ -1,0 +1,21 @@
+{
+  "downloader": {
+    "log_attempt_download": "Attempting to download: {filename}",
+    "log_download_success": "✅ Downloaded: {filename}",
+    "log_skip_already_exists": "⏭️ Skipping: {filename} (already exists)",
+    "log_failed_download_attempts": "❌ Failed to download {filename} after {attempts} attempts.",
+    "log_failed_download_error": "❌ Failed to download {filename}: {error}",
+    "error_url_required": "URL must be provided to perform download.",
+    "error_destination_required": "Destination path must be provided to perform download.",
+    "error_filename_required": "URL must include a filename when destination is not provided.",
+    "error_mime_mismatch": "MIME type '{detected}' is not supported; supported types are {supported} for URL: {url}",
+    "cli_description": "Download SC Probate court reports.",
+    "cli_help_overwrite_existing": "Overwrite existing downloaded files instead of skipping them.",
+    "cli_help_output_dir": "Directory to save downloaded PDFs (default: data/pdfs_bronze).",
+    "cli_help_provenance_dir": "Directory to save provenance logs (default: data/provenance)."
+  },
+  "orchestrator": {
+    "cli_description": "Run the OpenCourts ETL pipeline.",
+    "cli_help_overwrite_existing": "Overwrite existing downloaded files instead of skipping them."
+  }
+}

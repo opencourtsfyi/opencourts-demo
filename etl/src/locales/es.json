@@ -1,0 +1,20 @@
+{
+  "downloader": {
+    "log_attempt_download": "Intentando descargar: {filename}",
+    "log_download_success": "✅ Descargado: {filename}",
+    "log_skip_already_exists": "⏭️ Omitiendo: {filename} (ya existe)",
+    "log_failed_download_attempts": "❌ Error al descargar {filename} tras {attempts} intentos.",
+    "log_failed_download_error": "❌ Error al descargar {filename}: {error}",
+    "error_url_required": "Se debe proporcionar una URL para realizar la descarga.",
+    "error_destination_required": "Se debe proporcionar una ruta de destino para realizar la descarga.",
+    "error_filename_required": "La URL debe incluir un nombre de archivo cuando no se proporciona el destino.",
+    "error_mime_mismatch": "El tipo MIME '{detected}' no es compatible; los tipos compatibles son {supported} para la URL: {url}",
+    "cli_description": "Descargar informes de los tribunales de sucesiones de SC.",
+    "cli_help_overwrite_existing": "Sobrescribir los archivos descargados existentes en lugar de omitirlos.",
+    "cli_help_output_dir": "Directorio para guardar los archivos PDF descargados (predeterminado: data/pdfs_bronze)."
+  },
+  "orchestrator": {
+    "cli_description": "Ejecutar la canalización ETL de OpenCourts.",
+    "cli_help_overwrite_existing": "Sobrescribir los archivos descargados existentes en lugar de omitirlos."
+  }
+}
