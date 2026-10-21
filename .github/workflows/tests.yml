@@ -40,7 +40,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r etl/requirements-dev.txt
 
-      - name: Run tests and enforce coverage threshold (>= 70%)
+      - name: Run tests
         working-directory: etl
         run: |
           pytest -v
+
+      - name: Run tests with coverage, enforce coverage threshold (>= 70%)
+        run: |
+          coverage run -m pytest -v
+          coverage report -m --fail-under=70
