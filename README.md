@@ -1,7 +1,6 @@
 # OpenCourts Demo
 
 [![Tests](https://github.com/opencourtsfyi/opencourts-demo/actions/workflows/tests.yml/badge.svg)](https://github.com/opencourtsfyi/opencourts-demo/actions/workflows/tests.yml)
-[![Coverage](.github/badges/coverage.svg)](https://github.com/opencourtsfyi/opencourts-demo/actions/workflows/tests.yml)
 
 A fullstack demonstration of opencourts.
 
