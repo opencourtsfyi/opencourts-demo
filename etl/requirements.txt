@@ -4,4 +4,5 @@ pandas==3.0.6
 pyarrow==25.0.1
 tenacity==9.2.1
 python-magic==0.4.27
-python-magic-bin==0.4.14; sys_platform == "win32"
+python-magic==0.4.27; sys_platform != "win32"
+python-magic-standalone==0.4.28; sys_platform == "win32"
