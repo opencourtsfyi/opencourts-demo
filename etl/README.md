@@ -165,11 +165,32 @@ every other stage's activity.
 
 ## Logging
 
-All pipeline activity is logged to both the console and
-`data/logs/pipeline.log`, providing a complete, timestamped record of
-each run — downloads attempted, pages extracted, rows normalized, and
-validation results — independent of whether the console output is
-still available afterward.
+The full pipeline run logs to the console and to
+`data/logs/pipeline.log`. Logging can be configured with these process
+environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `PIPELINE_LOG_LEVEL` | `INFO` | Python logging level, such as `DEBUG`, `INFO`, `WARNING`, or `ERROR`. |
+| `PIPELINE_LOG_DIR` | No default for individual stages | Directory for `pipeline.log` when a stage does not provide its own log directory. The full pipeline always uses `data/logs`, which takes precedence over this variable. |
+
+Set the log level before starting the pipeline. In Git Bash:
+
+```bash
+PIPELINE_LOG_LEVEL=DEBUG python orchestrator.py
+```
+
+In PowerShell:
+
+```powershell
+$env:PIPELINE_LOG_LEVEL = "DEBUG"
+python orchestrator.py
+```
+
+The ETL reads these values from the process environment; it does not load
+`.env` files. Logging is configured on the first setup call in each
+process, and later calls do not replace that configuration.
+
 ## Testing
 To run the ETL tests, install the developer dependencies and run pytest:
 ```bash
