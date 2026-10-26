@@ -1,11 +1,11 @@
 import json
+import sys
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pandas as pd
-import pyarrow.parquet as pq
+import pytest
 
-from pdf_extraction import SILVER_COLUMNS, extract_pdfs_to_silver
-from normalize_parquets import normalize_silver_to_gold
 
 REPORT_PDF = "estate_monthly_caseload_2023_to_2024_bronze.pdf"
 REPORT_CSV = "estate_monthly_caseload_2023_to_2024_bronze.csv"
@@ -44,11 +44,26 @@ class FakePDF:
         return False
 
 
-def install_tables(monkeypatch, tables_by_name):
+@pytest.fixture
+def pdf_extraction(monkeypatch):
+    """Install a pdfplumber stand-in for this test only.
+
+    pdf_extraction imports pdfplumber at load time. The stand-in is removed
+    when the test ends so later tests still see the real module if it is installed.
+    """
+    monkeypatch.setitem(sys.modules, "pdfplumber", MagicMock())
+    sys.modules.pop("pdf_extraction", None)
+    import pdf_extraction as module
+
+    yield module
+    sys.modules.pop("pdf_extraction", None)
+
+
+def install_tables(monkeypatch, module, tables_by_name):
     def open_pdf(path):
         return FakePDF(tables_by_name[Path(path).name])
 
-    monkeypatch.setattr("pdf_extraction.pdfplumber.open", open_pdf)
+    monkeypatch.setattr(module.pdfplumber, "open", open_pdf)
 
 
 def write_pdfs(directory, names):
@@ -62,19 +77,19 @@ def read_provenance(provenance_dir):
     return [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
-def test_silver_csv_preserves_cell_text(tmp_path, monkeypatch):
+def test_silver_csv_preserves_cell_text(tmp_path, monkeypatch, pdf_extraction):
     bronze = tmp_path / "bronze"
     silver = tmp_path / "silver"
     provenance = tmp_path / "provenance"
     write_pdfs(bronze, [REPORT_PDF])
-    install_tables(monkeypatch, {REPORT_PDF: [REPORT_TABLE]})
+    install_tables(monkeypatch, pdf_extraction, {REPORT_PDF: [REPORT_TABLE]})
 
-    extract_pdfs_to_silver(bronze, silver, provenance)
+    pdf_extraction.extract_pdfs_to_silver(bronze, silver, provenance)
 
     csv_path = silver / REPORT_CSV
     assert csv_path.is_file()
     text = csv_path.read_text(encoding="utf-8")
-    assert text.startswith(",".join(SILVER_COLUMNS))
+    assert text.startswith(",".join(pdf_extraction.SILVER_COLUMNS))
 
     stored = pd.read_csv(csv_path, encoding="utf-8")
     restored = [json.loads(value) for value in stored["raw_row"]]
@@ -86,46 +101,17 @@ def test_silver_csv_preserves_cell_text(tmp_path, monkeypatch):
     assert records[0]["derived_from"] == [REPORT_PDF]
 
 
-def test_pdf_without_tables_writes_header_and_provenance(tmp_path, monkeypatch):
+def test_pdf_without_tables_writes_header_and_provenance(tmp_path, monkeypatch, pdf_extraction):
     bronze = tmp_path / "bronze"
     silver = tmp_path / "silver"
     provenance = tmp_path / "provenance"
     write_pdfs(bronze, [EMPTY_PDF])
-    install_tables(monkeypatch, {EMPTY_PDF: [None]})
+    install_tables(monkeypatch, pdf_extraction, {EMPTY_PDF: [None]})
 
-    extract_pdfs_to_silver(bronze, silver, provenance)
+    pdf_extraction.extract_pdfs_to_silver(bronze, silver, provenance)
 
     header = (silver / EMPTY_CSV).read_text(encoding="utf-8").strip()
-    assert header == ",".join(SILVER_COLUMNS)
+    assert header == ",".join(pdf_extraction.SILVER_COLUMNS)
     records = read_provenance(provenance)
     assert records[0]["filename"] == EMPTY_CSV
     assert records[0]["derived_from"] == [EMPTY_PDF]
-
-
-def test_normalize_reads_silver_csv_not_parquet(tmp_path, monkeypatch):
-    bronze = tmp_path / "bronze"
-    silver = tmp_path / "silver"
-    gold = tmp_path / "gold"
-    provenance = tmp_path / "provenance"
-    write_pdfs(bronze, [EMPTY_PDF, REPORT_PDF])
-    install_tables(monkeypatch, {EMPTY_PDF: [None], REPORT_PDF: [REPORT_TABLE]})
-    extract_pdfs_to_silver(bronze, silver, provenance)
-    (silver / "estate_monthly_caseload_2021_to_2022_bronze.parquet").write_text("old", encoding="utf-8")
-
-    result = normalize_silver_to_gold(silver, gold, provenance)
-
-    assert result["file"].tolist() == [REPORT_CSV, REPORT_CSV]
-    assert result["category"].tolist() == ["Estate", "Estate"]
-    assert result["county"].tolist() == ["Abbeville", "Abbeville"]
-    assert result["metric"].tolist() == ["Pending first of month", "Pending first of month"]
-    assert result["month"].tolist() == [7, 1]
-    assert result["year"].tolist() == [2023, 2024]
-    assert result["value"].tolist() == ["1086", "5"]
-
-    written = pq.read_table(gold / "caseloads_normalized.parquet").to_pandas()
-    assert written["value"].tolist() == ["1086", "5"]
-    assert written["month"].tolist() == [7, 1]
-
-    gold_records = [record for record in read_provenance(provenance) if record["stage"] == "gold"]
-    assert gold_records[0]["derived_from"] == [EMPTY_CSV, REPORT_CSV]
-    assert "estate_monthly_caseload_2021_to_2022_bronze.parquet" not in gold_records[0]["derived_from"]

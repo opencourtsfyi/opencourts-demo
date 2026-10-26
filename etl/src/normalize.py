@@ -1,4 +1,4 @@
-# normalize_parquets.py
+# normalize.py
 """
 Gold stage: reads Silver CSV files (raw extracted PDF tables) and
 normalizes them into a long-format dataset, one row per (county, metric,
@@ -80,7 +80,12 @@ def match_metric(item, metrics_lower_dict):
     return None
 
 
-def normalize_silver_to_gold(input_dir, output_dir, provenance_dir, output_filename="caseloads_normalized"):
+def normalize_silver_to_gold(
+    input_dir: Path | str,
+    output_dir: Path | str,
+    provenance_dir: Path | str,
+    output_filename: str = "caseloads_normalized",
+) -> pd.DataFrame:
     """Reads Silver CSV files and writes a normalized Gold CSV and Parquet.
 
     Walks each Silver CSV file row by row. Since the raw PDF table
@@ -116,12 +121,26 @@ def normalize_silver_to_gold(input_dir, output_dir, provenance_dir, output_filen
         current_month_positions = {}  # {column_index: month_number}, set when a header row is seen
         current_year_map = {year1: [], year2: []}  # which months belong to which fiscal year
 
-        df = pd.read_csv(file_path, encoding="utf-8")
+        # dtype + keep_default_na=False: pandas otherwise turns the cell
+        # values "NA", "null", and "" into NaN, and json.loads raises TypeError.
+        df = pd.read_csv(
+            file_path,
+            encoding="utf-8",
+            dtype={"raw_row": str},
+            keep_default_na=False,
+        )
 
-        for _, row in df.iterrows():
+        for raw_row_json in df["raw_row"]:
             # Silver stores each PDF row as a JSON array. Restore the list so
             # cell indexing, empty cells, and embedded newlines match extraction.
-            raw_row = json.loads(row["raw_row"])
+            try:
+                raw_row = json.loads(raw_row_json)
+            except json.JSONDecodeError:
+                logger.warning(f"Skipping unreadable raw_row in {file_path.name}")
+                continue
+            if not isinstance(raw_row, list):
+                logger.warning(f"Skipping non-list raw_row in {file_path.name}")
+                continue
 
             # --- Detect a title row and extract the category ---
             # Title looks like: "South Carolina Court Administration\n{Category} Monthly Caseload Report\nPeriod ..."

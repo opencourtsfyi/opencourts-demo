@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 
 from validate_pipeline import validate_gold_csv, write_error_report
-from normalize_parquets import SCHEMA
+from normalize import SCHEMA
 
 def make_gold_row(**overrides):
     """Test Data Builder: sensible clean defaults, override only the field under test."""

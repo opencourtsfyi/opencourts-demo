@@ -30,7 +30,7 @@ back to the exact source file and download it came from.
 |---|---|---|---|
 | **Bronze** | Ingest raw source PDFs | `downloader.py` | `data/pdfs_bronze/*.pdf` |
 | **Silver** | Extract raw tabular data from each PDF | `pdf_extraction.py` | `data/cases_silver/*.csv` |
-| **Gold** | Normalize and publish the final dataset | `normalize_parquets.py` | `data/cases_gold/caseloads_normalized.{csv,parquet}` |
+| **Gold** | Normalize and publish the final dataset | `normalize.py` | `data/cases_gold/caseloads_normalized.{csv,parquet}` |
 | **Validation** | Verify structural and content integrity of the Gold dataset | `validate_pipeline.py` | Pass/fail report, logged |
 | **Orchestration** | Run all stages in sequence | `orchestrator.py` | — |
 
@@ -77,7 +77,7 @@ iterating on a single part of the pipeline:
 ```bash
 python downloader.py           # Bronze only
 python pdf_extraction.py       # Silver only
-python normalize_parquets.py   # Gold only
+python normalize.py           # Gold only
 python validate_pipeline.py    # Validate an existing Gold dataset
 ```
 

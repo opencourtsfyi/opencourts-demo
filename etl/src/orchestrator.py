@@ -19,7 +19,7 @@ os.environ.setdefault("PIPELINE_LOG_DIR", str(_base_dir / "data" / "logs"))
 
 from downloader import download_pdfs
 from pdf_extraction import extract_pdfs_to_silver
-from normalize_parquets import normalize_silver_to_gold
+from normalize import normalize_silver_to_gold
 from validate_pipeline import validate_gold_csv, write_error_report
 from logging_config import get_logger
 

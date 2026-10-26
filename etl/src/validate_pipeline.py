@@ -8,7 +8,7 @@ Run standalone for a quick check, or as the orchestrator's final step.
 from pathlib import Path
 import pandas as pd
 
-from normalize_parquets import CATEGORY, SC_COUNTIES, EXPECTED_METRICS, EXPECTED_METRICS_MENTAL_HEALTH, SCHEMA
+from normalize import CATEGORY, SC_COUNTIES, EXPECTED_METRICS, EXPECTED_METRICS_MENTAL_HEALTH, SCHEMA
 from logging_config import get_logger
 
 logger = get_logger(__name__)
