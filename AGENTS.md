@@ -2,11 +2,12 @@
 
 ## Project Overview
 This repository contains a full-stack application of a local-only demonstration of the Bronze -> Silver -> Gold transformation of reports on probate cases opened and closed in the South Carolina's Supreme Court. We want a simple, usable demo to convey the idea of OpenCourts early rather than waiting until the project is complete. The project is split into frontend and backend concerns:
+
 The project is split into frontend, backend, and ETL concerns:
 - root: shared repo-level configuration, tooling, and documentation
-- `etl/`: ETL pipeline for data processing
-- `frontend/`: a single page application in typescript for visualization of probate data
-- `backend/`: a web api for browsing and downloading data
+- `etl/`: ETL pipeline for data processing. Python is the primary language.
+- `frontend/`: a single page application in typescript for visualization of probate data. Typescript is the primary language.
+- `backend/`: a web api for browsing and downloading data. Python is the primary language.
 
 ## Shared Principles
 - Keep the frontend and backend contracts aligned.
@@ -15,13 +16,26 @@ The project is split into frontend, backend, and ETL concerns:
 - Never commit secrets, API keys, tokens, or local connection strings.
 - Keep commits and changes scoped to the relevant app area.
 - Use the appropriate project-level AGENTS.md in each folder for local conventions.
+- Keep modules, classes, and functions deep: hide complexity behind a simple, intuitive interface. Avoid shallow code that forces implementation details onto the caller or introduces unnecessary architectural abstractions.
+ 
+
+## Coding Rules
+
+### No Magic Values
+- Never use hardcoded numeric values.
+- Extract all domain thresholds, configurations, and business values into explicitly named constants or enumerations.
+- Log, debug, and internal diagnostic messages may be written inline at their call sites; do not move them into module-level constants solely to avoid string literals.
+
+### i18n Readiness
+- Never hardcode user-facing strings; use locale files.
+- Use standard libraries for date/currency formatting and ensure UTF-8 support.
 
 ## Repository Structure
 ```text
 /
 ├── backend/                 # Python Flask web api with ETL pipeline for data transformation
 ├── frontend/                # TypeScript single page app
-├── etl/                     # ETL pipeline for data transformation
+├── etl/                     # ETL pipeline for data transformation using Python
 ├── .gitignore
 ├── AGENTS.md                # Shared repo guidance
 ├── README.md

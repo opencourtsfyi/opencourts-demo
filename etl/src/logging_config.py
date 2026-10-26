@@ -3,6 +3,7 @@
 import logging
 import os
 from pathlib import Path
+import sys
 
 LOG_DIR_ENV_VAR = "PIPELINE_LOG_DIR"
 LOG_LEVEL_ENV_VAR = "PIPELINE_LOG_LEVEL"
