@@ -40,6 +40,11 @@ def test_validation_flags_invalid_field(tmp_path, invalid_field, override_val, e
     assert len(errors) == 1
     assert expected_error in errors[0]["error_details"]
 
+@pytest.mark.parametrize("allowed_value", ["DNR", "TI", "N/A", ""])
+def test_non_numeric_placeholder_values_are_valid(tmp_path, allowed_value):
+    gold_path = write_gold_data([make_gold_row(value=allowed_value)], tmp_path / "gold.csv")
+    assert validate_gold_csv(gold_path) == []
+
 def test_clean_run_creates_empty_report(tmp_path):
     gold_path = write_gold_data([make_gold_row()], tmp_path / "gold.csv")
     errors = validate_gold_csv(gold_path)

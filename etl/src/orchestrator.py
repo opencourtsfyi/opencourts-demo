@@ -22,7 +22,7 @@ from i18n import t
 
 #TODO internationalize user facing strings in this file
 def run_pipeline(overwrite_existing: bool = False) -> None:
-    base_dir = Path(__file__).parent
+    base_dir = Path(__file__).resolve().parent.parent
     bronze_dir = base_dir / "data/pdfs_bronze"
     silver_dir = base_dir / "data/cases_silver"
     gold_dir = base_dir / "data/cases_gold"
