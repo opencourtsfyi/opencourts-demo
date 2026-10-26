@@ -7,6 +7,7 @@ Also logs a provenance/lineage record linking each Silver file back to
 the one Bronze PDF it was derived from.
 """
 
+import logging
 import pdfplumber
 import pandas as pd
 import pyarrow as pa
@@ -14,9 +15,8 @@ import pyarrow.parquet as pq
 from pathlib import Path
 
 from provenance import log_provenance
-from logging_config import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def extract_pdfs_to_silver(input_dir, output_dir, provenance_dir):
@@ -76,6 +76,9 @@ def extract_pdfs_to_silver(input_dir, output_dir, provenance_dir):
 
 
 if __name__ == "__main__":
+    from logging_config import setup_logging
+    setup_logging()
+
     base_dir = Path(__file__).parent
     extract_pdfs_to_silver(
         base_dir / "data/pdfs_bronze",
