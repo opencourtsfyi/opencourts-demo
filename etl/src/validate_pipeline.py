@@ -9,7 +9,7 @@ import logging
 from pathlib import Path
 import pandas as pd
 
-from normalize_parquets import CATEGORY, SC_COUNTIES, EXPECTED_METRICS, EXPECTED_METRICS_MENTAL_HEALTH, SCHEMA
+from normalize import CATEGORY, SC_COUNTIES, EXPECTED_METRICS, EXPECTED_METRICS_MENTAL_HEALTH, SCHEMA
 
 logger = logging.getLogger(__name__)
 

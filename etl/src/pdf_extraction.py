@@ -21,7 +21,11 @@ logger = logging.getLogger(__name__)
 SILVER_COLUMNS = ("table_index", "row_index", "raw_row")
 
 
-def extract_pdfs_to_silver(input_dir, output_dir, provenance_dir):
+def extract_pdfs_to_silver(
+    input_dir: Path | str,
+    output_dir: Path | str,
+    provenance_dir: Path | str,
+) -> None:
     """Extracts raw tables from all PDFs in input_dir and saves them as CSV in output_dir."""
     input_dir = Path(input_dir)
     output_dir = Path(output_dir)
