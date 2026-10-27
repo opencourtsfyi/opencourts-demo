@@ -16,6 +16,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from provenance import log_provenance
+from i18n import t
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,12 @@ class TableExtractor:
 
                 if table_data is None:
                     logger.warning(
-                        f"No table found on page {table_index} of {file_path.name}, skipping"
+                        t(
+                            "pdf_extraction.log_no_table_found",
+                            table_index=table_index,
+                            page=table_index,
+                            filename=file_path.name,
+                        )
                     )
                     continue
 
@@ -116,7 +122,7 @@ class PdfSilverExtractor:
 
         output_file_path = output_dir / f"{file_path.stem}{PARQUET_FILE_EXTENSION}"
         pq.write_table(arrow_table, output_file_path)
-        logger.info(f"Saved {output_file_path.name}")
+        logger.info(t("pdf_extraction.log_saved", filename=output_file_path.name))
 
         log_provenance(
             provenance_dir,
@@ -141,7 +147,7 @@ class PdfSilverExtractor:
 
         output_files: list[Path] = []
         for file_path in self.find_pdf_files(input_dir):
-            logger.info(f"Starting extraction on: {file_path.name}")
+            logger.info(t("pdf_extraction.log_starting_extraction", filename=file_path.name))
             output_file = self.extract_file(file_path, output_dir, provenance_dir)
             output_files.append(output_file)
 
