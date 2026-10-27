@@ -9,7 +9,7 @@ the one Bronze PDF it was derived from.
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 import pdfplumber
 import pyarrow as pa
@@ -22,26 +22,16 @@ logger = logging.getLogger(__name__)
 # Constants to eliminate magic numbers and domain literals
 PAGE_INDEX_OFFSET = 1  # 1-based page/table numbering for human-readable indexing
 ROW_INDEX_START = 0  # 0-based row numbering within each extracted table
-STAGE_SILVER = "silver"
 
 COLUMN_TABLE_INDEX = "table_index"
 COLUMN_ROW_INDEX = "row_index"
 COLUMN_RAW_ROW = "raw_row"
 
 PARQUET_FILE_EXTENSION = ".parquet"
-PDF_FILE_PATTERNS = ("*.pdf", "*.PDF")
 
 DEFAULT_BRONZE_DIR = "data/pdfs_bronze"
 DEFAULT_SILVER_DIR = "data/cases_silver"
 DEFAULT_PROVENANCE_DIR = "data/provenance"
-
-# Canonical PyArrow schema for Silver tier extracted tables
-SILVER_SCHEMA = pa.schema([
-    (COLUMN_TABLE_INDEX, pa.int64()),
-    (COLUMN_ROW_INDEX, pa.int64()),
-    (COLUMN_RAW_ROW, pa.list_(pa.string())),
-])
-
 
 class TableExtractor:
     """Extracts raw tables from PDF pages using pdfplumber."""
@@ -79,7 +69,18 @@ class TableExtractor:
 
 
 class PdfSilverExtractor:
-    """Coordinates extraction of Bronze PDFs into Silver Parquet files with provenance tracking."""
+    """Coordinates extraction of Bronze files into Silver files with provenance tracking."""
+
+    # Canonical PyArrow schema for Silver tier extracted tables
+    SILVER_SCHEMA: Final[pa.Schema] = pa.schema([
+        (COLUMN_TABLE_INDEX, pa.int64()),
+        (COLUMN_ROW_INDEX, pa.int64()),
+        (COLUMN_RAW_ROW, pa.list_(pa.string())),
+    ])
+
+    PDF_FILE_PATTERNS: Final[tuple[str, str]] = ("*.pdf", "*.PDF")
+
+    STAGE_SILVER = "silver"
 
     def __init__(
         self,
@@ -95,7 +96,7 @@ class PdfSilverExtractor:
             return []
 
         matched_files: set[Path] = set()
-        for pattern in PDF_FILE_PATTERNS:
+        for pattern in self.PDF_FILE_PATTERNS:
             for file_path in input_dir.glob(pattern):
                 if file_path.is_file():
                     matched_files.add(file_path)
@@ -119,7 +120,7 @@ class PdfSilverExtractor:
 
         log_provenance(
             provenance_dir,
-            stage=STAGE_SILVER,
+            stage=self.STAGE_SILVER,
             file_path=output_file_path,
             derived_from=[file_path.name],
         )
