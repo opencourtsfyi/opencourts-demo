@@ -520,8 +520,10 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
 def main(args: list[str] | None = None) -> None:
     """CLI entry point for downloader.py."""
     cli_args = parse_args(args)
+    base_dir = Path(__file__).resolve().parent.parent
     download_pdfs(
-        output_dir=cli_args.output_dir,
+        output_dir=cli_args.output_dir or base_dir / DEFAULT_PDF_DIR,
+        provenance_dir=base_dir / DEFAULT_PROVENANCE_DIR,
         overwrite_existing=cli_args.overwrite_existing,
     )
 

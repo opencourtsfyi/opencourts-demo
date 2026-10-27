@@ -79,7 +79,7 @@ if __name__ == "__main__":
     from logging_config import setup_logging
     setup_logging()
 
-    base_dir = Path(__file__).parent
+    base_dir = Path(__file__).resolve().parent.parent
     extract_pdfs_to_silver(
         base_dir / "data/pdfs_bronze",
         base_dir / "data/cases_silver",
