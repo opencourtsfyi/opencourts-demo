@@ -218,7 +218,7 @@ if __name__ == "__main__":
     from logging_config import setup_logging
     setup_logging()
 
-    base_dir = Path(__file__).parent
+    base_dir = Path(__file__).resolve().parent.parent
     normalize_silver_to_gold(
         base_dir / "data/cases_silver",
         base_dir / "data/cases_gold",

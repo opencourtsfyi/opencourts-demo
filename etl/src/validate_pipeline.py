@@ -106,9 +106,9 @@ def validate_gold_csv(gold_csv_path):
                     int(value)
                     value_is_valid = True
                 except (ValueError, TypeError):
-                    value_is_valid = value in ("DNR", "TI", "")
+                    value_is_valid = value in ("DNR", "TI", "N/A", "")
                 if not value_is_valid:
-                    add_error(f"Invalid value {value!r}; expected an integer, blank, 'DNR', or 'TI'", row_number, row)
+                    add_error(f"Invalid value {value!r}; expected an integer, blank, 'DNR', 'TI', or 'N/A'", row_number, row)
 
         duplicate_keys = ["file", "category", "month", "year", "county", "metric"]
         if all(column in df.columns for column in duplicate_keys):
@@ -134,7 +134,7 @@ if __name__ == "__main__":
     from logging_config import setup_logging
     setup_logging()
 
-    base_dir = Path(__file__).parent
+    base_dir = Path(__file__).resolve().parent.parent
     gold_csv = base_dir / "data/cases_gold/caseloads_normalized.csv"
 
     errors = validate_gold_csv(gold_csv)
