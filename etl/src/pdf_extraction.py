@@ -21,18 +21,18 @@ from i18n import t
 logger = logging.getLogger(__name__)
 
 # Constants to eliminate magic numbers and domain literals
-PAGE_INDEX_OFFSET = 1  # 1-based page/table numbering for human-readable indexing
-ROW_INDEX_START = 0  # 0-based row numbering within each extracted table
+PAGE_INDEX_OFFSET: Final[int] = 1  # 1-based page/table numbering for human-readable indexing
+ROW_INDEX_START: Final[int] = 0  # 0-based row numbering within each extracted table
 
-COLUMN_TABLE_INDEX = "table_index"
-COLUMN_ROW_INDEX = "row_index"
-COLUMN_RAW_ROW = "raw_row"
+COLUMN_TABLE_INDEX: Final[str] = "table_index"
+COLUMN_ROW_INDEX: Final[str] = "row_index"
+COLUMN_RAW_ROW: Final[str] = "raw_row"
 
-PARQUET_FILE_EXTENSION = ".parquet"
+PARQUET_FILE_EXTENSION: Final[str] = ".parquet"
 
-DEFAULT_BRONZE_DIR = "data/pdfs_bronze"
-DEFAULT_SILVER_DIR = "data/cases_silver"
-DEFAULT_PROVENANCE_DIR = "data/provenance"
+DEFAULT_BRONZE_DIR: Final[str] = "data/pdfs_bronze"
+DEFAULT_SILVER_DIR: Final[str] = "data/cases_silver"
+DEFAULT_PROVENANCE_DIR: Final[str] = "data/provenance"
 
 class TableExtractor:
     """Extracts raw tables from PDF pages using pdfplumber."""
@@ -74,7 +74,7 @@ class TableExtractor:
         return collected_records
 
 
-class PdfSilverExtractor:
+class PDFSilverExtractor:
     """Coordinates extraction of Bronze files into Silver files with provenance tracking."""
 
     # Canonical PyArrow schema for Silver tier extracted tables
@@ -86,7 +86,7 @@ class PdfSilverExtractor:
 
     PDF_FILE_PATTERNS: Final[tuple[str, str]] = ("*.pdf", "*.PDF")
 
-    STAGE_SILVER = "silver"
+    STAGE_SILVER: Final[str] = "silver"
 
     def __init__(
         self,
@@ -134,14 +134,11 @@ class PdfSilverExtractor:
 
     def extract_all(
         self,
-        input_dir: Path | str,
-        output_dir: Path | str,
-        provenance_dir: Path | str,
+        input_dir: Path,
+        output_dir: Path,
+        provenance_dir: Path,
     ) -> list[Path]:
         """Extracts all PDFs in input_dir to Parquet in output_dir, logging provenance."""
-        input_dir = Path(input_dir)
-        output_dir = Path(output_dir)
-        provenance_dir = Path(provenance_dir)
 
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -155,12 +152,12 @@ class PdfSilverExtractor:
 
 
 def extract_pdfs_to_silver(
-    input_dir: Path | str,
-    output_dir: Path | str,
-    provenance_dir: Path | str,
+    input_dir: Path,
+    output_dir: Path,
+    provenance_dir: Path,
 ) -> list[Path]:
     """Extracts raw tables from all PDFs in input_dir and saves them as Parquet in output_dir."""
-    extractor = PdfSilverExtractor()
+    extractor = PDFSilverExtractor()
     return extractor.extract_all(input_dir, output_dir, provenance_dir)
 
 

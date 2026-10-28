@@ -6,7 +6,7 @@ import pytest
 
 import pdf_extraction
 from pdf_extraction import (
-    PdfSilverExtractor,
+    PDFSilverExtractor,
     TableExtractor,
     extract_pdfs_to_silver,
 )
@@ -259,15 +259,6 @@ class TestExtractPdfsToSilver:
 
         assert nested.is_dir()
 
-    def test_accepts_string_paths(self, dirs, mock_open):
-        input_dir, output_dir, prov_dir = dirs
-        (input_dir / "a.pdf").write_bytes(PDF_BYTES)
-        mock_open.return_value = make_pdf([[["x"]]])
-
-        extract_pdfs_to_silver(str(input_dir), str(output_dir), str(prov_dir))
-
-        assert (output_dir / "a.parquet").exists()
-
     def test_filename_stem_with_dots_is_preserved(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
         (input_dir / "report.2024.01.pdf").write_bytes(PDF_BYTES)
@@ -448,14 +439,14 @@ class TestPdfSilverExtractor:
         (tmp_path / "UPPER.PDF").write_bytes(PDF_BYTES)
         (tmp_path / "other.txt").write_text("text")
 
-        extractor = PdfSilverExtractor()
+        extractor = PDFSilverExtractor()
         found = extractor.find_pdf_files(tmp_path)
 
         assert len(found) == EXPECTED_TWO_FILES
         assert [f.name for f in found] == ["UPPER.PDF", "lower.pdf"]
 
     def test_find_pdf_files_missing_directory_returns_empty(self, tmp_path):
-        extractor = PdfSilverExtractor()
+        extractor = PDFSilverExtractor()
         found = extractor.find_pdf_files(tmp_path / "missing")
         assert len(found) == EXPECTED_NO_FILES
 
@@ -469,7 +460,7 @@ class TestPdfSilverExtractor:
             {"table_index": FIRST_PAGE_NUMBER, "row_index": FIRST_ROW_INDEX, "raw_row": ["val"]}
         ]
 
-        extractor = PdfSilverExtractor(table_extractor=mock_table_extractor)
+        extractor = PDFSilverExtractor(table_extractor=mock_table_extractor)
         extractor.extract_all(input_dir, output_dir, prov_dir)
 
         mock_table_extractor.extract_from_pdf.assert_called_once_with(pdf_path)
