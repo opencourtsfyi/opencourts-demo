@@ -64,7 +64,7 @@ class TableExtractor:
                     )
                     continue
 
-                for row_index, raw_row in enumerate(table_data, start=ROW_INDEX_START):
+                for row_index, raw_row in enumerate(table_data, start=self.ROW_INDEX_START):
                     collected_records.append({
                         COLUMN_TABLE_INDEX: table_index,
                         COLUMN_ROW_INDEX: row_index,
@@ -74,7 +74,7 @@ class TableExtractor:
         return collected_records
 
 
-class PDFSilverExtractor:
+class BronzeToSilverExtractor:
     """Coordinates extraction of Bronze files into Silver files with provenance tracking."""
 
     # Canonical PyArrow schema for Silver tier extracted tables
@@ -157,7 +157,7 @@ def extract_pdfs_to_silver(
     provenance_dir: Path,
 ) -> list[Path]:
     """Extracts raw tables from all PDFs in input_dir and saves them as Parquet in output_dir."""
-    extractor = PDFSilverExtractor()
+    extractor = BronzeToSilverExtractor()
     return extractor.extract_all(input_dir, output_dir, provenance_dir)
 
 

@@ -6,7 +6,7 @@ import pytest
 
 import pdf_extraction
 from pdf_extraction import (
-    PDFSilverExtractor,
+    BronzeToSilverExtractor,
     TableExtractor,
     extract_pdfs_to_silver,
 )
@@ -439,14 +439,14 @@ class TestPdfSilverExtractor:
         (tmp_path / "UPPER.PDF").write_bytes(PDF_BYTES)
         (tmp_path / "other.txt").write_text("text")
 
-        extractor = PDFSilverExtractor()
+        extractor = BronzeToSilverExtractor()
         found = extractor.find_pdf_files(tmp_path)
 
         assert len(found) == EXPECTED_TWO_FILES
         assert [f.name for f in found] == ["UPPER.PDF", "lower.pdf"]
 
     def test_find_pdf_files_missing_directory_returns_empty(self, tmp_path):
-        extractor = PDFSilverExtractor()
+        extractor = BronzeToSilverExtractor()
         found = extractor.find_pdf_files(tmp_path / "missing")
         assert len(found) == EXPECTED_NO_FILES
 
@@ -460,7 +460,7 @@ class TestPdfSilverExtractor:
             {"table_index": FIRST_PAGE_NUMBER, "row_index": FIRST_ROW_INDEX, "raw_row": ["val"]}
         ]
 
-        extractor = PDFSilverExtractor(table_extractor=mock_table_extractor)
+        extractor = BronzeToSilverExtractor(table_extractor=mock_table_extractor)
         extractor.extract_all(input_dir, output_dir, prov_dir)
 
         mock_table_extractor.extract_from_pdf.assert_called_once_with(pdf_path)
