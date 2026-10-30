@@ -21,9 +21,6 @@ from i18n import t
 logger = logging.getLogger(__name__)
 
 # Constants to eliminate magic numbers and domain literals
-PAGE_INDEX_OFFSET: Final[int] = 1  # 1-based page/table numbering for human-readable indexing
-ROW_INDEX_START: Final[int] = 0  # 0-based row numbering within each extracted table
-
 COLUMN_TABLE_INDEX: Final[str] = "table_index"
 COLUMN_ROW_INDEX: Final[str] = "row_index"
 COLUMN_RAW_ROW: Final[str] = "raw_row"
@@ -36,6 +33,9 @@ DEFAULT_PROVENANCE_DIR: Final[str] = "data/provenance"
 
 class TableExtractor:
     """Extracts raw tables from PDF pages using pdfplumber."""
+
+    PAGE_INDEX_OFFSET: Final[int] = 1  # 1-based page/table numbering for human-readable indexing
+    ROW_INDEX_START: Final[int] = 0  # 0-based row numbering within each extracted table
 
     def __init__(self, page_index_offset: int = PAGE_INDEX_OFFSET) -> None:
         self.page_index_offset = page_index_offset
