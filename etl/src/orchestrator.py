@@ -42,7 +42,7 @@ FILE_NAME_ERRORS_CSV: str = "errors.csv"
 # file destination has to be available as an env var *before* those imports
 # run, or those loggers only ever get a console handler (see logging_config
 # get_logger docstring / issue #2).
-_base_dir = Path(__file__).parent
+_base_dir = Path(__file__).resolve().parent.parent
 os.environ.setdefault(ENV_PIPELINE_LOG_DIR, str(_base_dir / DIR_NAME_DATA / DIR_NAME_LOGS))
 
 from downloader import download_pdfs
@@ -280,7 +280,7 @@ def run_pipeline(
     category: str | None = None
 ) -> None:
     """Run all ETL pipeline stages in order from Bronze download to Gold validation."""
-    base_dir = Path(__file__).parent
+    base_dir = Path(__file__).resolve().parent.parent
     pipeline_config = PipelineConfig.from_base_dir(
         base_dir=base_dir,
         overwrite_existing=overwrite_existing,
