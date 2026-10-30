@@ -41,11 +41,10 @@ def stages():
         manager.attach_mock(mock, name)
         mocks[name] = mock
     mocks["validate_gold_csv"].return_value = []
-    logger_patch = patch("orchestrator.get_logger")
-    get_logger = logger_patch.start()
+    logger_patch = patch.object(orchestrator, "logger")
+    mock_logger = logger_patch.start()
     patches.append(logger_patch)
-    mocks["get_logger"] = get_logger
-    mocks["logger"] = get_logger.return_value
+    mocks["logger"] = mock_logger
     mocks["manager"] = manager
     yield mocks
     for p in patches:
@@ -177,9 +176,10 @@ class TestRunPipeline:
 
 
 class TestRunPipelineLogging:
-    def test_logger_created_with_log_dir(self, stages):
-        run_pipeline()
-        stages["get_logger"].assert_called_once_with("orchestrator", log_dir=EXPECTED_LOG_DIR)
+    def test_logger_is_module_logger(self):
+        import logging
+        assert isinstance(orchestrator.logger, logging.Logger)
+        assert orchestrator.logger.name == "orchestrator" 
 
     def test_step_headers_logged(self, stages):
         run_pipeline()
@@ -246,8 +246,8 @@ class TestRunPipelineFailures:
         stages["logger"].error.assert_not_called()
 
     def test_logger_failure_propagates_before_any_stage(self, stages):
-        stages["get_logger"].side_effect = OSError("no log dir")
-        with pytest.raises(OSError):
+        stages["logger"].info.side_effect = OSError("log error")
+        with pytest.raises(OSError, match="log error"):
             run_pipeline()
         assert called_stage_names(stages) == []
 
