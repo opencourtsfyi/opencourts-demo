@@ -137,13 +137,31 @@ class TestRunPipeline:
     def test_download_receives_paths_and_default_overwrite(self, stages):
         run_pipeline()
         stages["download_pdfs"].assert_called_once_with(
-            EXPECTED_BRONZE, EXPECTED_PROVENANCE, overwrite_existing=False
+            EXPECTED_BRONZE,
+            EXPECTED_PROVENANCE,
+            start_year=None,
+            end_year=None,
+            overwrite_existing=False,
         )
 
     def test_overwrite_flag_forwarded(self, stages):
         run_pipeline(overwrite_existing=True)
         stages["download_pdfs"].assert_called_once_with(
-            EXPECTED_BRONZE, EXPECTED_PROVENANCE, overwrite_existing=True
+            EXPECTED_BRONZE,
+            EXPECTED_PROVENANCE,
+            start_year=None,
+            end_year=None,
+            overwrite_existing=True,
+        )
+
+    def test_year_range_forwarded_to_download(self, stages):
+        run_pipeline(start_year=2020, end_year=2022)
+        stages["download_pdfs"].assert_called_once_with(
+            EXPECTED_BRONZE,
+            EXPECTED_PROVENANCE,
+            start_year=2020,
+            end_year=2022,
+            overwrite_existing=False,
         )
 
     def test_extract_receives_paths(self, stages):
@@ -296,7 +314,11 @@ class TestMain:
     def test_main_end_to_end_with_mocked_stages(self, stages):
         main(["--overwrite"])
         assert called_stage_names(stages) == EXPECTED_STAGE_ORDER
-        assert stages["download_pdfs"].call_args.kwargs == {"overwrite_existing": True}
+        assert stages["download_pdfs"].call_args.kwargs == {
+            "start_year": None,
+            "end_year": None,
+            "overwrite_existing": True,
+        }
 
     def test_dunder_main_invokes_main(self):
         with patch("sys.argv", ["orchestrator.py", "--help"]), pytest.raises(SystemExit) as exc:
