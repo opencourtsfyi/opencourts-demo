@@ -17,7 +17,7 @@ STAGE_NAMES = (
     "write_error_report",
 )
 EXPECTED_STAGE_ORDER = list(STAGE_NAMES)
-EXPECTED_BASE_DIR = Path(orchestrator.__file__).parent
+EXPECTED_BASE_DIR = Path(orchestrator.__file__).resolve().parent.parent
 EXPECTED_BRONZE = EXPECTED_BASE_DIR / "data/pdfs_bronze"
 EXPECTED_SILVER = EXPECTED_BASE_DIR / "data/cases_silver"
 EXPECTED_GOLD = EXPECTED_BASE_DIR / "data/cases_gold"
@@ -130,6 +130,15 @@ class TestParseArgs:
 
 
 class TestRunPipeline:
+    def test_pipeline_uses_etl_root_for_all_data_paths(self, stages):
+        config = orchestrator.PipelineConfig.from_base_dir(EXPECTED_BASE_DIR)
+        assert config.bronze_dir == EXPECTED_BASE_DIR / "data/pdfs_bronze"
+        assert config.silver_dir == EXPECTED_BASE_DIR / "data/cases_silver"
+        assert config.gold_dir == EXPECTED_BASE_DIR / "data/cases_gold"
+        assert config.log_dir == EXPECTED_BASE_DIR / "data/logs"
+        assert config.validation_dir == EXPECTED_BASE_DIR / "data/validation"
+        assert Path(os.environ["PIPELINE_LOG_DIR"]).resolve() == EXPECTED_BASE_DIR / "data/logs"
+
     def test_stages_run_in_order(self, stages):
         run_pipeline()
         assert called_stage_names(stages) == EXPECTED_STAGE_ORDER
