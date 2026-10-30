@@ -62,18 +62,10 @@ def called_stage_names(stages):
 
 
 class TestModuleSetup:
-    def test_pipeline_log_dir_env_is_set(self):
-        assert "PIPELINE_LOG_DIR" in os.environ
-
-    def test_setdefault_preserves_existing_env_value(self, monkeypatch):
-        monkeypatch.setenv("PIPELINE_LOG_DIR", "custom-dir")
-        runpy.run_path(orchestrator.__file__, run_name="not_main")
-        assert os.environ["PIPELINE_LOG_DIR"] == "custom-dir"
-
-    def test_setdefault_sets_env_when_missing(self, monkeypatch):
+    def test_import_does_not_mutate_pipeline_log_dir(self, monkeypatch):
         monkeypatch.delenv("PIPELINE_LOG_DIR", raising=False)
         runpy.run_path(orchestrator.__file__, run_name="not_main")
-        assert os.environ["PIPELINE_LOG_DIR"] == str(EXPECTED_LOG_DIR)
+        assert "PIPELINE_LOG_DIR" not in os.environ
 
 
 # ==============================================================================
@@ -137,7 +129,6 @@ class TestRunPipeline:
         assert config.gold_dir == EXPECTED_BASE_DIR / "data/cases_gold"
         assert config.log_dir == EXPECTED_BASE_DIR / "data/logs"
         assert config.validation_dir == EXPECTED_BASE_DIR / "data/validation"
-        assert Path(os.environ["PIPELINE_LOG_DIR"]).resolve() == EXPECTED_BASE_DIR / "data/logs"
 
     def test_stages_run_in_order(self, stages):
         run_pipeline()
