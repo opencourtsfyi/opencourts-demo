@@ -432,8 +432,32 @@ class TestTableExtractor:
         assert records == []
         mock_logger.warning.assert_called_once()
 
+    def test_image_pdf_with_no_text_returns_empty_and_warns(self, tmp_path, mock_open, mock_logger):
+        """
+        Simulates an image-only / scanned PDF 
+        """
+        pdf_path = tmp_path / "scanned_image.pdf"
+        pdf_path.write_bytes(PDF_BYTES)
 
-class TestPdfSilverExtractor:
+        # Scanned/image-only PDF: contains no extractable text or tables
+        page = MagicMock()
+        page.extract_text.return_value = ""
+        page.extract_table.return_value = None
+        pdf = MagicMock()
+        pdf.pages = [page]
+        pdf.__enter__.return_value = pdf
+        pdf.__exit__.return_value = False
+        mock_open.return_value = pdf
+
+        extractor = TableExtractor()
+        records = extractor.extract_from_pdf(pdf_path)
+
+        assert records == []
+        mock_logger.warning.assert_called_once()
+        assert "scanned_image.pdf" in mock_logger.warning.call_args[0][0]
+
+
+class TestBronzeToSilverExtractor:
     def test_find_pdf_files_matches_case_insensitively(self, tmp_path):
         (tmp_path / "lower.pdf").write_bytes(PDF_BYTES)
         (tmp_path / "UPPER.PDF").write_bytes(PDF_BYTES)
