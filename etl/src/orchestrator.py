@@ -10,32 +10,11 @@ from __future__ import annotations
 
 import argparse
 import logging
-import os
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Final
-
-# Domain and operational constants (No Magic Values)
-DEFAULT_OVERWRITE_EXISTING: bool = False
-STEP_COUNT: int = 4
-EXIT_CODE_SUCCESS: int = 0
-EXIT_CODE_FAILURE: int = 1
-
-LOGGER_NAME: str = "orchestrator"
-
-DIR_NAME_DATA: str = "data"
-DIR_NAME_BRONZE: str = "pdfs_bronze"
-DIR_NAME_SILVER: str = "cases_silver"
-DIR_NAME_GOLD: str = "cases_gold"
-DIR_NAME_PROVENANCE: str = "provenance"
-DIR_NAME_LOGS: str = "logs"
-DIR_NAME_VALIDATION: str = "validation"
-
-FILE_NAME_GOLD_CSV: str = "caseloads_normalized.csv"
-FILE_NAME_ERRORS_CSV: str = "errors.csv"
-
 from downloader import download_pdfs
 from pdf_extraction import extract_pdfs_to_silver
 from normalize_parquets import normalize_silver_to_gold
@@ -45,11 +24,13 @@ from logging_config import setup_logging
 logger = logging.getLogger(__name__)
 from i18n import t
 
+# Domain and operational constants (No Magic Values)
+DEFAULT_OVERWRITE_EXISTING: Final[bool] = False
+
 #TODO internationalize user facing strings in this file
 @dataclass(frozen=True)
 class PipelineConfig:
     """Holds configuration paths and execution parameters for the ETL pipeline."""
-
     base_dir: Path
     bronze_dir: Path
     silver_dir: Path
@@ -63,6 +44,16 @@ class PipelineConfig:
     start_year: int | None = None
     end_year: int | None = None
 
+    DIR_NAME_DATA: Final[str] = "data"
+    DIR_NAME_BRONZE: Final[str] = "pdfs_bronze"
+    DIR_NAME_SILVER: Final[str] = "cases_silver"
+    DIR_NAME_GOLD: Final[str] = "cases_gold"
+    DIR_NAME_PROVENANCE: Final[str] = "provenance"
+    DIR_NAME_LOGS: Final[str] = "logs"
+    DIR_NAME_VALIDATION: Final[str] = "validation"
+    FILE_NAME_GOLD_CSV: Final[str] = "caseloads_normalized.csv"
+    FILE_NAME_ERRORS_CSV: Final[str] = "errors.csv"
+
     @classmethod
     def from_base_dir(
         cls,
@@ -72,19 +63,19 @@ class PipelineConfig:
         end_year: int | None = None,
     ) -> PipelineConfig:
         """Construct pipeline configuration relative to a base directory."""
-        data_dir = base_dir / DIR_NAME_DATA
-        gold_dir = data_dir / DIR_NAME_GOLD
-        validation_dir = data_dir / DIR_NAME_VALIDATION
+        data_dir = base_dir / PipelineConfig.DIR_NAME_DATA
+        gold_dir = data_dir / PipelineConfig.DIR_NAME_GOLD
+        validation_dir = data_dir / PipelineConfig.DIR_NAME_VALIDATION
         return cls(
             base_dir=base_dir,
-            bronze_dir=data_dir / DIR_NAME_BRONZE,
-            silver_dir=data_dir / DIR_NAME_SILVER,
+            bronze_dir=data_dir / PipelineConfig.DIR_NAME_BRONZE,
+            silver_dir=data_dir / PipelineConfig.DIR_NAME_SILVER,
             gold_dir=gold_dir,
-            provenance_dir=data_dir / DIR_NAME_PROVENANCE,
-            log_dir=data_dir / DIR_NAME_LOGS,
+            provenance_dir=data_dir / PipelineConfig.DIR_NAME_PROVENANCE,
+            log_dir=data_dir / PipelineConfig.DIR_NAME_LOGS,
             validation_dir=validation_dir,
-            gold_csv_path=gold_dir / FILE_NAME_GOLD_CSV,
-            error_report_path=validation_dir / FILE_NAME_ERRORS_CSV,
+            gold_csv_path=gold_dir / PipelineConfig.FILE_NAME_GOLD_CSV,
+            error_report_path=validation_dir / PipelineConfig.FILE_NAME_ERRORS_CSV,
             overwrite_existing=overwrite_existing,
             start_year=start_year,
             end_year=end_year,
