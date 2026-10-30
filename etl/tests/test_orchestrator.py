@@ -1,3 +1,4 @@
+import logging
 import os
 import runpy
 from pathlib import Path
@@ -175,6 +176,20 @@ class TestRunPipeline:
         assert run_pipeline() is None
 
 
+class TestPipelineContext:
+    def test_context_does_not_require_logger(self, caplog, tmp_path):
+        context = orchestrator.PipelineContext(
+            config=orchestrator.PipelineConfig.from_base_dir(tmp_path)
+        )
+        pipeline_orchestrator = orchestrator.PipelineOrchestrator(stages=[])
+
+        with caplog.at_level(logging.INFO, logger="orchestrator"):
+            result = pipeline_orchestrator.run(context)
+
+        assert result is context
+        assert "Pipeline completed successfully" in caplog.text
+
+
 class TestRunPipelineLogging:
     def test_logger_is_module_logger(self):
         import logging
@@ -282,4 +297,3 @@ class TestMain:
         with patch("sys.argv", ["orchestrator.py", "--help"]), pytest.raises(SystemExit) as exc:
             runpy.run_path(orchestrator.__file__, run_name="__main__")
         assert exc.value.code == 0
-
