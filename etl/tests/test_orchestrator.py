@@ -191,6 +191,11 @@ class TestPipelineContext:
 
 
 class TestRunPipelineLogging:
+    def test_run_pipeline_sets_up_logging(self, stages):
+        with patch("orchestrator.setup_logging", create=True) as mock_setup_logging:
+            run_pipeline()
+            mock_setup_logging.assert_called_once_with(log_dir=EXPECTED_LOG_DIR)
+
     def test_logger_is_module_logger(self):
         import logging
         assert isinstance(orchestrator.logger, logging.Logger)

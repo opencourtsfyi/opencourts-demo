@@ -61,6 +61,7 @@ from downloader import download_pdfs
 from pdf_extraction import extract_pdfs_to_silver
 from normalize import normalize_silver_to_gold
 from validate_pipeline import validate_gold_csv, write_error_report
+from logging_config import setup_logging
 
 logger = logging.getLogger(__name__)
 from i18n import t
@@ -287,6 +288,7 @@ def run_pipeline(
         end_year=end_year,
         category=category,
     )
+    setup_logging(log_dir=pipeline_config.log_dir)
     context = PipelineContext(config=pipeline_config)
     pipeline_orchestrator = PipelineOrchestrator(logger=logger)
     pipeline_orchestrator.run(context)
