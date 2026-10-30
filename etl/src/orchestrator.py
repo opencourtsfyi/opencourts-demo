@@ -24,7 +24,6 @@ EXIT_CODE_SUCCESS: int = 0
 EXIT_CODE_FAILURE: int = 1
 
 LOGGER_NAME: str = "orchestrator"
-ENV_PIPELINE_LOG_DIR: str = "PIPELINE_LOG_DIR"
 
 DIR_NAME_DATA: str = "data"
 DIR_NAME_BRONZE: str = "pdfs_bronze"
@@ -36,14 +35,6 @@ DIR_NAME_VALIDATION: str = "validation"
 
 FILE_NAME_GOLD_CSV: str = "caseloads_normalized.csv"
 FILE_NAME_ERRORS_CSV: str = "errors.csv"
-
-# Set before importing stage modules: each stage module builds its logger
-# at import time via get_logger(__name__) with no log_dir argument, so the
-# file destination has to be available as an env var *before* those imports
-# run, or those loggers only ever get a console handler (see logging_config
-# get_logger docstring / issue #2).
-_base_dir = Path(__file__).resolve().parent.parent
-os.environ.setdefault(ENV_PIPELINE_LOG_DIR, str(_base_dir / DIR_NAME_DATA / DIR_NAME_LOGS))
 
 from downloader import download_pdfs
 from pdf_extraction import extract_pdfs_to_silver
