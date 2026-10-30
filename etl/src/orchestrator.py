@@ -24,13 +24,15 @@ EXIT_CODE_SUCCESS: int = 0
 EXIT_CODE_FAILURE: int = 1
 
 STEP_NUMBER_BRONZE: int = 1
-STEP_NUMBER_SILVER: int = 2
-STEP_NUMBER_GOLD: int = 3
-STEP_NUMBER_VALIDATION: int = 4
-
 STEP_DESC_BRONZE: str = "Bronze — Downloading PDFs"
+
+STEP_NUMBER_SILVER: int = 2
 STEP_DESC_SILVER: str = "Silver — Extracting tables from PDFs"
+
+STEP_NUMBER_GOLD: int = 3
 STEP_DESC_GOLD: str = "Gold — Normalizing to CSV and Parquet"
+
+STEP_NUMBER_VALIDATION: int = 4
 STEP_DESC_VALIDATION: str = "Validating Gold output"
 
 LOGGER_NAME: str = "orchestrator"
@@ -166,7 +168,7 @@ class BronzeDownloadStage(PipelineStage):
 
 
 class SilverExtractionStage(PipelineStage):
-    """Extracts tables from raw Bronze PDFs into intermediate Silver parquets."""
+    """Extracts tables from the original PDFs in Bronze location and stores them in the Silver location."""
 
     def __init__(self, extract_fn: Callable[..., Any] | None = None) -> None:
         self._extract_fn = extract_fn
@@ -275,14 +277,11 @@ def run_pipeline(
     overwrite_existing: bool = DEFAULT_OVERWRITE_EXISTING,
     start_year: int | None = None,
     end_year: int | None = None,
-    category: str | None = None,
-    *,
-    config: PipelineConfig | None = None,
-    orchestrator: PipelineOrchestrator | None = None,
+    category: str | None = None
 ) -> None:
     """Run all ETL pipeline stages in order from Bronze download to Gold validation."""
     base_dir = Path(__file__).parent
-    pipeline_config = config or PipelineConfig.from_base_dir(
+    pipeline_config = PipelineConfig.from_base_dir(
         base_dir=base_dir,
         overwrite_existing=overwrite_existing,
         start_year=start_year,
@@ -290,7 +289,7 @@ def run_pipeline(
         category=category,
     )
     context = PipelineContext(config=pipeline_config, logger=logger)
-    pipeline_orchestrator = orchestrator or PipelineOrchestrator(logger=logger)
+    pipeline_orchestrator = PipelineOrchestrator()
     pipeline_orchestrator.run(context)
 
 
