@@ -15,25 +15,13 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 # Domain and operational constants (No Magic Values)
 DEFAULT_OVERWRITE_EXISTING: bool = False
 STEP_COUNT: int = 4
 EXIT_CODE_SUCCESS: int = 0
 EXIT_CODE_FAILURE: int = 1
-
-STEP_NUMBER_BRONZE: int = 1
-STEP_DESC_BRONZE: str = "Bronze — Downloading PDFs"
-
-STEP_NUMBER_SILVER: int = 2
-STEP_DESC_SILVER: str = "Silver — Extracting tables from PDFs"
-
-STEP_NUMBER_GOLD: int = 3
-STEP_DESC_GOLD: str = "Gold — Normalizing to CSV and Parquet"
-
-STEP_NUMBER_VALIDATION: int = 4
-STEP_DESC_VALIDATION: str = "Validating Gold output"
 
 LOGGER_NAME: str = "orchestrator"
 ENV_PIPELINE_LOG_DIR: str = "PIPELINE_LOG_DIR"
@@ -147,16 +135,19 @@ class PipelineStage(ABC):
 class BronzeDownloadStage(PipelineStage):
     """Downloads raw PDF reports from the court website into the Bronze tier."""
 
+    STEP_NUMBER: Final[int] = 1
+    DESCRIPTION: Final[str] = "Bronze — Downloading PDFs"
+
     def __init__(self, download_fn: Callable[..., Any] | None = None) -> None:
         self._download_fn = download_fn
 
     @property
     def step_number(self) -> int:
-        return STEP_NUMBER_BRONZE
+        return self.STEP_NUMBER
 
     @property
     def description(self) -> str:
-        return STEP_DESC_BRONZE
+        return self.DESCRIPTION
 
     def execute(self, context: PipelineContext) -> None:
         fn = self._download_fn if self._download_fn is not None else download_pdfs
@@ -170,16 +161,19 @@ class BronzeDownloadStage(PipelineStage):
 class SilverExtractionStage(PipelineStage):
     """Extracts tables from the original PDFs in Bronze location and stores them in the Silver location."""
 
+    STEP_NUMBER: Final[int] = 2
+    DESCRIPTION: Final[str] = "Silver — Extracting tables from PDFs"
+
     def __init__(self, extract_fn: Callable[..., Any] | None = None) -> None:
         self._extract_fn = extract_fn
 
     @property
     def step_number(self) -> int:
-        return STEP_NUMBER_SILVER
+        return self.STEP_NUMBER
 
     @property
     def description(self) -> str:
-        return STEP_DESC_SILVER
+        return self.DESCRIPTION
 
     def execute(self, context: PipelineContext) -> None:
         fn = self._extract_fn if self._extract_fn is not None else extract_pdfs_to_silver
@@ -189,16 +183,19 @@ class SilverExtractionStage(PipelineStage):
 class GoldNormalizationStage(PipelineStage):
     """Normalizes Silver parquets into final Gold CSV and parquet datasets."""
 
+    STEP_NUMBER: Final[int] = 3
+    DESCRIPTION: Final[str] = "Gold — Normalizing to CSV and Parquet"
+
     def __init__(self, normalize_fn: Callable[..., Any] | None = None) -> None:
         self._normalize_fn = normalize_fn
 
     @property
     def step_number(self) -> int:
-        return STEP_NUMBER_GOLD
+        return self.STEP_NUMBER
 
     @property
     def description(self) -> str:
-        return STEP_DESC_GOLD
+        return self.DESCRIPTION
 
     def execute(self, context: PipelineContext) -> None:
         fn = self._normalize_fn if self._normalize_fn is not None else normalize_silver_to_gold
@@ -207,6 +204,9 @@ class GoldNormalizationStage(PipelineStage):
 
 class GoldValidationStage(PipelineStage):
     """Validates Gold CSV outputs and writes any validation issues to an error report."""
+
+    STEP_NUMBER: Final[int] = 4
+    DESCRIPTION: Final[str] = "Validating Gold output"
 
     def __init__(
         self,
@@ -218,11 +218,11 @@ class GoldValidationStage(PipelineStage):
 
     @property
     def step_number(self) -> int:
-        return STEP_NUMBER_VALIDATION
+        return self.STEP_NUMBER
 
     @property
     def description(self) -> str:
-        return STEP_DESC_VALIDATION
+        return self.DESCRIPTION
 
     def execute(self, context: PipelineContext) -> None:
         validate_fn = self._validate_fn if self._validate_fn is not None else validate_gold_csv
