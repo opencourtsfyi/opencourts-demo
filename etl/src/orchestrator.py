@@ -62,7 +62,6 @@ class PipelineConfig:
     overwrite_existing: bool = DEFAULT_OVERWRITE_EXISTING
     start_year: int | None = None
     end_year: int | None = None
-    category: str | None = None
 
     @classmethod
     def from_base_dir(
@@ -71,7 +70,6 @@ class PipelineConfig:
         overwrite_existing: bool = DEFAULT_OVERWRITE_EXISTING,
         start_year: int | None = None,
         end_year: int | None = None,
-        category: str | None = None,
     ) -> PipelineConfig:
         """Construct pipeline configuration relative to a base directory."""
         data_dir = base_dir / DIR_NAME_DATA
@@ -90,7 +88,6 @@ class PipelineConfig:
             overwrite_existing=overwrite_existing,
             start_year=start_year,
             end_year=end_year,
-            category=category,
         )
 
 
@@ -145,6 +142,8 @@ class BronzeDownloadStage(PipelineStage):
         fn(
             context.config.bronze_dir,
             context.config.provenance_dir,
+            start_year=context.config.start_year,
+            end_year=context.config.end_year,
             overwrite_existing=context.config.overwrite_existing,
         )
 
@@ -268,7 +267,6 @@ def run_pipeline(
     overwrite_existing: bool = DEFAULT_OVERWRITE_EXISTING,
     start_year: int | None = None,
     end_year: int | None = None,
-    category: str | None = None
 ) -> None:
     """Run all ETL pipeline stages in order from Bronze download to Gold validation."""
     base_dir = Path(__file__).resolve().parent.parent
@@ -277,7 +275,6 @@ def run_pipeline(
         overwrite_existing=overwrite_existing,
         start_year=start_year,
         end_year=end_year,
-        category=category,
     )
     setup_logging(log_dir=pipeline_config.log_dir)
     context = PipelineContext(config=pipeline_config)
