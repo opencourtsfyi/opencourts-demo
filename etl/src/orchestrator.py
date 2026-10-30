@@ -119,7 +119,6 @@ class PipelineContext:
     """Runtime context passed across stages during pipeline execution."""
 
     config: PipelineConfig
-    logger: logging.Logger
     validation_errors: list[Any] = field(default_factory=list)
 
 
@@ -258,7 +257,7 @@ class PipelineOrchestrator:
 
     def run(self, context: PipelineContext) -> PipelineContext:
         """Executes all stages in sequence and logs overall pipeline status."""
-        logger = self.logger or context.logger
+        logger = self.logger or logging.getLogger(__name__)
         for stage in self.stages:
             logger.info(f"=== Step {stage.step_number}: {stage.description} ===")
             stage.execute(context)
@@ -288,8 +287,8 @@ def run_pipeline(
         end_year=end_year,
         category=category,
     )
-    context = PipelineContext(config=pipeline_config, logger=logger)
-    pipeline_orchestrator = PipelineOrchestrator()
+    context = PipelineContext(config=pipeline_config)
+    pipeline_orchestrator = PipelineOrchestrator(logger=logger)
     pipeline_orchestrator.run(context)
 
 
