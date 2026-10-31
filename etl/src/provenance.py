@@ -15,24 +15,20 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Final, Sequence
 
-PIPELINE_NAME: str = "sc_probate_caseload_etl"
-PIPELINE_VERSION: str = "1.0.0"  # Bump this when pipeline logic changes meaningfully
+PIPELINE_NAME: Final[str] = "sc_probate_caseload_etl"
+PIPELINE_VERSION: Final[str] = "1.0.0"  # Bump this when pipeline logic changes meaningfully
 
-DEFAULT_HASH_ALGORITHM: str = "sha256"
-DEFAULT_HASH_CHUNK_SIZE_BYTES: int = 8192
-DEFAULT_PROVENANCE_LOG_FILENAME: str = "provenance_log.jsonl"
-LOG_ENCODING: str = "utf-8"
+DEFAULT_HASH_ALGORITHM: Final[str] = "sha256"
+DEFAULT_HASH_CHUNK_SIZE_BYTES: Final[int] = 8192
 
-FILE_MODE_READ_BINARY: str = "rb"
-FILE_MODE_APPEND: str = "a"
-RECORD_DELIMITER: str = "\n"
-EMPTY_BYTES_SENTINEL: bytes = b""
+FILE_MODE_READ_BINARY: Final[str] = "rb"
+EMPTY_BYTES_SENTINEL: Final[bytes] = b""
 
-STAGE_BRONZE: str = "bronze"
-STAGE_SILVER: str = "silver"
-STAGE_GOLD: str = "gold"
+STAGE_BRONZE: Final[str] = "bronze"
+STAGE_SILVER: Final[str] = "silver"
+STAGE_GOLD: Final[str] = "gold"
 
 
 @dataclass(frozen=True)
@@ -94,6 +90,11 @@ class ProvenanceTracker:
     Encapsulates artifact hashing, metadata record generation, and appending
     to the JSON Lines log file.
     """
+
+    DEFAULT_PROVENANCE_LOG_FILENAME: Final[str] = "provenance_log.jsonl"
+    LOG_ENCODING: Final[str] = "utf-8"
+    FILE_MODE_APPEND: Final[str] = "a"
+    RECORD_DELIMITER: Final[str] = "\n"
 
     def __init__(
         self,
@@ -159,8 +160,8 @@ class ProvenanceTracker:
 
         # Append mode ensures each call adds one line without disturbing prior records.
         # Opening before serializing guarantees deterministic file creation semantics.
-        with open(self.log_path, FILE_MODE_APPEND, encoding=self.encoding) as f:
-            f.write(json.dumps(record_dict) + RECORD_DELIMITER)
+        with open(self.log_path, self.FILE_MODE_APPEND, encoding=self.encoding) as f:
+            f.write(json.dumps(record_dict) + self.RECORD_DELIMITER)
 
         return record_dict
 
