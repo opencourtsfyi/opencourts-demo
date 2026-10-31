@@ -13,7 +13,7 @@ import logging
 from collections.abc import Sequence
 from pathlib import Path
 import re
-from typing import Any
+from typing import Any, Final
 
 import pandas as pd
 import pyarrow as pa
@@ -23,31 +23,8 @@ from provenance import log_provenance
 
 logger = logging.getLogger(__name__)
 
-# --- Column and layout constants (eliminating magic values) ---
-TITLE_COLUMN_INDEX = 0
-COUNTY_COLUMN_INDEX = 0
-HEADER_MONTH_SEARCH_START_INDEX = 2
-CATEGORY_TITLE_LINE_INDEX = 1
-
-FIRST_YEAR_INDEX = 0
-SECOND_YEAR_INDEX = 1
-FIRST_INDEX = 0
-PREVIOUS_INDEX_OFFSET = 1
-
+# --- Shared defaults and output schema ---
 DEFAULT_OUTPUT_FILENAME = "caseloads_normalized"
-RAW_ROW_COLUMN = "raw_row"
-CSV_EXTENSION = ".csv"
-PARQUET_EXTENSION = ".parquet"
-PARQUET_FILE_PATTERN = "*.parquet"
-STAGE_NAME_GOLD = "gold"
-COURT_ADMIN_TITLE_MARKER = "court administration"
-EMPTY_CELL = ""
-EMPTY_STRING = ""
-COMMA_DELIMITER = ","
-NEWLINE_DELIMITER = "\n"
-UTF8_ENCODING = "utf-8"
-YEAR_REGEX_PATTERN = r"\d{4}"
-YEAR_PATTERN = re.compile(YEAR_REGEX_PATTERN)
 
 # --- Reference data used to recognize and label rows during normalization ---
 
@@ -100,18 +77,6 @@ SCHEMA = [
     METRIC_COLUMN,
     VALUE_COLUMN,
 ]
-
-# Explicit schema at write time, same reasoning as Silver: enforced at
-# write time rather than silently inferred/miscast at read time
-GOLD_ARROW_SCHEMA = pa.schema([
-    (FILE_COLUMN, pa.string()),
-    (CATEGORY_COLUMN, pa.string()),
-    (MONTH_COLUMN, pa.int64()),
-    (YEAR_COLUMN, pa.int64()),
-    (COUNTY_COLUMN, pa.string()),
-    (METRIC_COLUMN, pa.string()),
-    (VALUE_COLUMN, pa.string()),
-])
 
 # Pre-computed lowercase lookup dicts: {lowercase_version: canonical_version}
 # Lets us match case-insensitively while outputting clean, consistently-cased
@@ -171,10 +136,16 @@ def match_metric(item: Any, metrics_lower_dict: dict[str, str]) -> str | None:
 class SilverDataLoader:
     """Discovers and loads Silver stage Parquet files and metadata."""
 
+    PARQUET_FILE_PATTERN: Final[str] = "*.parquet"
+    YEAR_REGEX_PATTERN: Final[str] = r"\d{4}"
+    YEAR_PATTERN: Final[re.Pattern[str]] = re.compile(YEAR_REGEX_PATTERN)
+    FIRST_YEAR_INDEX: Final[int] = 0
+    SECOND_YEAR_INDEX: Final[int] = 1
+
     @staticmethod
     def find_parquet_files(input_dir: Path) -> list[Path]:
         """Returns all Parquet files in input_dir, sorted deterministically."""
-        return sorted(input_dir.glob(PARQUET_FILE_PATTERN))
+        return sorted(input_dir.glob(SilverDataLoader.PARQUET_FILE_PATTERN))
 
     @staticmethod
     def extract_fiscal_years(file_path: Path) -> tuple[str, str]:
@@ -182,8 +153,11 @@ class SilverDataLoader:
 
         Raises IndexError if fewer than two 4-digit years are found.
         """
-        years_found = YEAR_PATTERN.findall(file_path.stem)
-        return years_found[FIRST_YEAR_INDEX], years_found[SECOND_YEAR_INDEX]
+        years_found = SilverDataLoader.YEAR_PATTERN.findall(file_path.stem)
+        return (
+            years_found[SilverDataLoader.FIRST_YEAR_INDEX],
+            years_found[SilverDataLoader.SECOND_YEAR_INDEX],
+        )
 
     @staticmethod
     def load_rows_dataframe(file_path: Path) -> pd.DataFrame:
@@ -197,6 +171,19 @@ class TableNormalizer:
     Tracks parsing state (category, county, month column positions, fiscal year mapping)
     across sequential rows of an extracted PDF table.
     """
+
+    TITLE_COLUMN_INDEX: Final[int] = 0
+    COUNTY_COLUMN_INDEX: Final[int] = 0
+    HEADER_MONTH_SEARCH_START_INDEX: Final[int] = 2
+    CATEGORY_TITLE_LINE_INDEX: Final[int] = 1
+    FIRST_INDEX: Final[int] = 0
+    PREVIOUS_INDEX_OFFSET: Final[int] = 1
+    RAW_ROW_COLUMN: Final[str] = "raw_row"
+    COURT_ADMIN_TITLE_MARKER: Final[str] = "court administration"
+    EMPTY_CELL: Final[str] = ""
+    EMPTY_STRING: Final[str] = ""
+    COMMA_DELIMITER: Final[str] = ","
+    NEWLINE_DELIMITER: Final[str] = "\n"
 
     def __init__(self, file_path: Path, year1: str, year2: str) -> None:
         self.file_path = file_path
@@ -212,7 +199,7 @@ class TableNormalizer:
         collected_rows: list[dict[str, Any]] = []
 
         for _, row in df.iterrows():
-            raw_row = row[RAW_ROW_COLUMN]
+            raw_row = row[self.RAW_ROW_COLUMN]
             self._process_row(raw_row, collected_rows)
 
         return collected_rows
@@ -226,16 +213,16 @@ class TableNormalizer:
             self.current_county = None
 
         if self._is_county_row(raw_row):
-            self.current_county = COUNTIES_LOWER[str(raw_row[COUNTY_COLUMN_INDEX]).lower()]
+            self.current_county = COUNTIES_LOWER[str(raw_row[self.COUNTY_COLUMN_INDEX]).lower()]
         elif self.current_county is not None:
             self._collect_metric_rows(raw_row, collected_rows)
 
     def _check_title_row(self, raw_row: Sequence[Any]) -> None:
         """Detects a title row and extracts the canonical category if recognized."""
-        first_cell = raw_row[TITLE_COLUMN_INDEX]
-        if first_cell is not None and COURT_ADMIN_TITLE_MARKER in str(first_cell).lower():
+        first_cell = raw_row[self.TITLE_COLUMN_INDEX]
+        if first_cell is not None and self.COURT_ADMIN_TITLE_MARKER in str(first_cell).lower():
             # Title looks like: "South Carolina Court Administration\n{Category} Monthly Caseload Report\nPeriod ..."
-            raw_category = str(first_cell).split(NEWLINE_DELIMITER)[CATEGORY_TITLE_LINE_INDEX].lower()
+            raw_category = str(first_cell).split(self.NEWLINE_DELIMITER)[self.CATEGORY_TITLE_LINE_INDEX].lower()
             for cat_lower, cat_canonical in CATEGORY_LOWER.items():
                 if cat_lower in raw_category:
                     self.current_category = cat_canonical
@@ -245,7 +232,11 @@ class TableNormalizer:
         """Detects a header row and updates month column positions and fiscal year map."""
         # Some PDFs insert extra columns (e.g. quarterly totals) between months,
         # so we record exact column positions rather than assuming a fixed layout.
-        if any(str(cell).lower() in MONTHS_LOWER for cell in raw_row[HEADER_MONTH_SEARCH_START_INDEX:] if cell):
+        if any(
+            str(cell).lower() in MONTHS_LOWER
+            for cell in raw_row[self.HEADER_MONTH_SEARCH_START_INDEX:]
+            if cell
+        ):
             self.current_month_positions = {
                 i: MONTHS_LOWER[str(cell).lower()]
                 for i, cell in enumerate(raw_row)
@@ -260,19 +251,22 @@ class TableNormalizer:
             months_list = list(self.current_month_positions.values())
 
             for i, month in enumerate(months_list):
-                if i > FIRST_INDEX and int(month) < int(months_list[i - PREVIOUS_INDEX_OFFSET]):
+                if (
+                    i > self.FIRST_INDEX
+                    and int(month) < int(months_list[i - self.PREVIOUS_INDEX_OFFSET])
+                ):
                     current_year = self.year2  # Crossed from December into January
                 self.current_year_map[current_year].append(month)
 
     @staticmethod
     def _is_blank_row(raw_row: Sequence[Any]) -> bool:
         """Returns True if every cell in raw_row is empty or None."""
-        return all(cell == EMPTY_CELL or cell is None for cell in raw_row)
+        return all(cell == TableNormalizer.EMPTY_CELL or cell is None for cell in raw_row)
 
     @staticmethod
     def _is_county_row(raw_row: Sequence[Any]) -> bool:
         """Returns True if the first cell matches a known South Carolina county."""
-        first_cell = raw_row[COUNTY_COLUMN_INDEX]
+        first_cell = raw_row[TableNormalizer.COUNTY_COLUMN_INDEX]
         return first_cell is not None and str(first_cell).lower() in COUNTIES_LOWER
 
     def _find_matching_metric(self, raw_row: Sequence[Any]) -> str | None:
@@ -292,7 +286,7 @@ class TableNormalizer:
         for col_index, month in self.current_month_positions.items():
             # Strip thousands-separator commas (e.g. "1,086" -> "1086").
             # DNR/TI are preserved as-is since they're not numeric commas.
-            value = str(raw_row[col_index]).replace(COMMA_DELIMITER, EMPTY_STRING)
+            value = str(raw_row[col_index]).replace(self.COMMA_DELIMITER, self.EMPTY_STRING)
             assigned_year = self.year1 if month in self.current_year_map[self.year1] else self.year2
             collected_rows.append({
                 FILE_COLUMN: self.file_path.name,
@@ -308,6 +302,20 @@ class TableNormalizer:
 class GoldPublisher:
     """Exports normalized rows to CSV and Parquet files and records provenance lineage."""
 
+    CSV_EXTENSION: Final[str] = ".csv"
+    PARQUET_EXTENSION: Final[str] = ".parquet"
+    STAGE_NAME_GOLD: Final[str] = "gold"
+    UTF8_ENCODING: Final[str] = "utf-8"
+    GOLD_ARROW_SCHEMA: Final[pa.Schema] = pa.schema([
+        (FILE_COLUMN, pa.string()),
+        (CATEGORY_COLUMN, pa.string()),
+        (MONTH_COLUMN, pa.int64()),
+        (YEAR_COLUMN, pa.int64()),
+        (COUNTY_COLUMN, pa.string()),
+        (METRIC_COLUMN, pa.string()),
+        (VALUE_COLUMN, pa.string()),
+    ])
+
     @staticmethod
     def publish(
         collected_rows: list[dict[str, Any]],
@@ -318,21 +326,35 @@ class GoldPublisher:
     ) -> pd.DataFrame:
         """Writes collected rows to CSV and Parquet, logs provenance, and returns the DataFrame."""
         output_dir.mkdir(parents=True, exist_ok=True)
-        output_csv = output_dir / f"{output_filename}{CSV_EXTENSION}"
-        output_parquet = output_dir / f"{output_filename}{PARQUET_EXTENSION}"
+        output_csv = output_dir / f"{output_filename}{GoldPublisher.CSV_EXTENSION}"
+        output_parquet = output_dir / f"{output_filename}{GoldPublisher.PARQUET_EXTENSION}"
 
         # Single source of truth — written to both CSV and Parquet so outputs never drift
         gold_df = pd.DataFrame(collected_rows, columns=SCHEMA)
-        gold_df.to_csv(output_csv, index=False, encoding=UTF8_ENCODING)
+        gold_df.to_csv(output_csv, index=False, encoding=GoldPublisher.UTF8_ENCODING)
 
-        arrow_table = pa.Table.from_pandas(gold_df, schema=GOLD_ARROW_SCHEMA, preserve_index=False)
+        arrow_table = pa.Table.from_pandas(
+            gold_df,
+            schema=GoldPublisher.GOLD_ARROW_SCHEMA,
+            preserve_index=False,
+        )
         pq.write_table(arrow_table, output_parquet)
 
         logger.info(f"Wrote {len(gold_df)} rows to {output_csv.name} and {output_parquet.name}")
 
         # Lineage: this Gold output was derived from every Silver file processed
-        log_provenance(provenance_dir, stage=STAGE_NAME_GOLD, file_path=output_csv, derived_from=silver_files_used)
-        log_provenance(provenance_dir, stage=STAGE_NAME_GOLD, file_path=output_parquet, derived_from=silver_files_used)
+        log_provenance(
+            provenance_dir,
+            stage=GoldPublisher.STAGE_NAME_GOLD,
+            file_path=output_csv,
+            derived_from=silver_files_used,
+        )
+        log_provenance(
+            provenance_dir,
+            stage=GoldPublisher.STAGE_NAME_GOLD,
+            file_path=output_parquet,
+            derived_from=silver_files_used,
+        )
 
         return gold_df
 
