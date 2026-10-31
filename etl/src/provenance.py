@@ -159,9 +159,12 @@ class ProvenanceTracker:
         record_dict = record.to_dict()
 
         # Append mode ensures each call adds one line without disturbing prior records.
-        # Opening before serializing guarantees deterministic file creation semantics.
+        # Opening before serializing guarantees deterministic file creation semantics:
+        # if serialization fails (e.g. non-serializable objects in derived_from), the
+        # log file has already been opened/created and remains empty as expected.
         with open(self.log_path, self.FILE_MODE_APPEND, encoding=self.encoding) as f:
-            f.write(json.dumps(record_dict) + self.RECORD_DELIMITER)
+            serialized_record = json.dumps(record_dict) + self.RECORD_DELIMITER
+            f.write(serialized_record)
 
         return record_dict
 
