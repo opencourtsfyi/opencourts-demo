@@ -1,6 +1,6 @@
-# normalize_parquets.py
+# normalize.py
 """
-Gold stage: reads Silver Parquet files (raw extracted PDF tables) and
+Gold stage: reads Silver CSV files (raw extracted PDF tables) and
 normalizes them into a long-format dataset, one row per (county, metric,
 month, year) data point, matching the project's target schema.
 
@@ -9,6 +9,7 @@ formats can never drift apart from each other. Also logs a provenance/
 lineage record linking the Gold output back to every Silver file that fed it.
 """
 
+import json
 import logging
 import pandas as pd
 import pyarrow as pa
@@ -79,10 +80,15 @@ def match_metric(item, metrics_lower_dict):
     return None
 
 
-def normalize_silver_to_gold(input_dir, output_dir, provenance_dir, output_filename="caseloads_normalized"):
-    """Reads Silver Parquet files and writes a normalized Gold CSV and Parquet.
+def normalize_silver_to_gold(
+    input_dir: Path | str,
+    output_dir: Path | str,
+    provenance_dir: Path | str,
+    output_filename: str = "caseloads_normalized",
+) -> pd.DataFrame:
+    """Reads Silver CSV files and writes a normalized Gold CSV and Parquet.
 
-    Walks each Silver Parquet file row by row. Since the raw PDF table
+    Walks each Silver CSV file row by row. Since the raw PDF table
     doesn't repeat context (category/county) on every row, this function
     tracks "current state" as it moves through the rows, updating that
     state whenever it recognizes a title, header, or county row, and
@@ -99,7 +105,7 @@ def normalize_silver_to_gold(input_dir, output_dir, provenance_dir, output_filen
     silver_files_used = []   # Lineage: every Silver file that contributed to this Gold output
 
     # sorted() for deterministic, reproducible output across runs
-    for file_path in sorted(input_dir.glob("*.parquet")):
+    for file_path in sorted(input_dir.glob("*.csv")):
         logger.info(f"Starting extraction on: {file_path.name}")
         silver_files_used.append(file_path.name)
 
@@ -115,10 +121,26 @@ def normalize_silver_to_gold(input_dir, output_dir, provenance_dir, output_filen
         current_month_positions = {}  # {column_index: month_number}, set when a header row is seen
         current_year_map = {year1: [], year2: []}  # which months belong to which fiscal year
 
-        df = pq.read_table(file_path).to_pandas()
+        # dtype + keep_default_na=False: pandas otherwise turns the cell
+        # values "NA", "null", and "" into NaN, and json.loads raises TypeError.
+        df = pd.read_csv(
+            file_path,
+            encoding="utf-8",
+            dtype={"raw_row": str},
+            keep_default_na=False,
+        )
 
-        for _, row in df.iterrows():
-            raw_row = row["raw_row"]  # One row from the original PDF table, as a list of cell strings
+        for raw_row_json in df["raw_row"]:
+            # Silver stores each PDF row as a JSON array. Restore the list so
+            # cell indexing, empty cells, and embedded newlines match extraction.
+            try:
+                raw_row = json.loads(raw_row_json)
+            except json.JSONDecodeError:
+                logger.warning(f"Skipping unreadable raw_row in {file_path.name}")
+                continue
+            if not isinstance(raw_row, list):
+                logger.warning(f"Skipping non-list raw_row in {file_path.name}")
+                continue
 
             # --- Detect a title row and extract the category ---
             # Title looks like: "South Carolina Court Administration\n{Category} Monthly Caseload Report\nPeriod ..."
@@ -195,8 +217,8 @@ def normalize_silver_to_gold(input_dir, output_dir, provenance_dir, output_filen
     gold_df = pd.DataFrame(collected_rows, columns=SCHEMA)
     gold_df.to_csv(output_csv, index=False)
 
-    # Explicit schema at write time, same reasoning as Silver: enforced at
-    # write time rather than silently inferred/miscast at read time
+    # Explicit schema so Gold Parquet types are enforced at write time
+    # rather than silently inferred at read time
     gold_schema = pa.schema([
         ("file", pa.string()), ("category", pa.string()),
         ("month", pa.int64()), ("year", pa.int64()),
