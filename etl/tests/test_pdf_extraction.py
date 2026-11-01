@@ -5,6 +5,8 @@ from unittest.mock import MagicMock, patch
 import pyarrow.parquet as pq
 import pytest
 
+import pandas as pd
+
 import pdf_extraction
 from pdf_extraction import (
     BronzeToSilverExtractor,
@@ -58,7 +60,14 @@ def mock_logger():
 
 
 def read_rows(path):
-    return pq.read_table(path).to_pylist()
+    if path.suffix == ".parquet":
+        return pq.read_table(path).to_pylist()
+    elif path.suffix == ".csv":
+        df = pd.read_csv(path, encoding="utf-8")
+        df["raw_row"] = df["raw_row"].apply(json.loads)
+        return df.to_dict(orient='records') # return same format as pyarrow's table.to_pylist()
+
+    return []
 
 
 def read_provenance(provenance_dir):
@@ -68,13 +77,16 @@ def read_provenance(provenance_dir):
 
 class TestExtractPdfsToSilver:
     def test_extracts_rows_with_page_and_row_indexes(self, dirs, mock_open):
+        # Arrange
         input_dir, output_dir, prov_dir = dirs
         (input_dir / "a.pdf").write_bytes(PDF_BYTES)
         mock_open.return_value = make_pdf([[["h1", "h2"], ["a", "b"]], [["c", "d"]]])
 
+        # Act
         extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        assert read_rows(output_dir / "a.parquet") == [
+        # Assert
+        assert read_rows(output_dir / "a.csv") == [
             {"table_index": FIRST_PAGE_NUMBER, "row_index": 0, "raw_row": ["h1", "h2"]},
             {"table_index": FIRST_PAGE_NUMBER, "row_index": 1, "raw_row": ["a", "b"]},
             {"table_index": SECOND_PAGE_NUMBER, "row_index": 0, "raw_row": ["c", "d"]},
@@ -107,7 +119,7 @@ class TestExtractPdfsToSilver:
 
         extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        assert read_rows(output_dir / "a.parquet")[0]["raw_row"] == ["a", None, ""]
+        assert read_rows(output_dir / "a.csv")[0]["raw_row"] == ["a", None, ""]
 
     def test_preserves_ragged_rows(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
@@ -116,7 +128,7 @@ class TestExtractPdfsToSilver:
 
         extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        assert [r["raw_row"] for r in read_rows(output_dir / "a.parquet")] == [["a"], ["b", "c", "d"], []]
+        assert [r["raw_row"] for r in read_rows(output_dir / "a.csv")] == [["a"], ["b", "c", "d"], []]
 
     def test_page_without_table_is_skipped_but_numbering_is_preserved(self, dirs, mock_open, mock_logger):
         input_dir, output_dir, prov_dir = dirs
@@ -125,7 +137,7 @@ class TestExtractPdfsToSilver:
 
         extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        rows = read_rows(output_dir / "a.parquet")
+        rows = read_rows(output_dir / "a.csv")
         assert [r["table_index"] for r in rows] == [FIRST_PAGE_NUMBER, THIRD_PAGE_NUMBER]
         mock_logger.warning.assert_called_once()
         assert str(SECOND_PAGE_NUMBER) in mock_logger.warning.call_args[0][0]
@@ -138,81 +150,56 @@ class TestExtractPdfsToSilver:
 
         extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        assert len(read_rows(output_dir / "a.parquet")) == EXPECTED_SINGLE_RECORD
+        assert len(read_rows(output_dir / "a.csv")) == EXPECTED_SINGLE_RECORD
         mock_logger.warning.assert_not_called()
 
-    def test_pdf_with_no_tables_writes_empty_parquet(self, dirs, mock_open):
+    def test_pdf_with_no_tables_writes_empty_csv(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
         (input_dir / "a.pdf").write_bytes(PDF_BYTES)
         mock_open.return_value = make_pdf([None, None])
 
         extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        parquet_path = output_dir / "a.parquet"
-        assert parquet_path.exists()
-        assert read_rows(parquet_path) == []
-        schema = pq.read_table(parquet_path).schema
-        assert str(schema.field("table_index").type) == "int64"
-        assert str(schema.field("row_index").type) == "int64"
-        assert str(schema.field("raw_row").type) == "list<element: string>"
+        csv_path = output_dir / "a.csv"
+        assert csv_path.exists()
+        assert read_rows(csv_path) == []
         assert len(read_provenance(prov_dir)) == 1
 
-    def test_pdf_with_zero_pages_writes_empty_parquet(self, dirs, mock_open):
+    def test_pdf_with_zero_pages_writes_empty_csv(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
         (input_dir / "a.pdf").write_bytes(PDF_BYTES)
         mock_open.return_value = make_pdf([])
 
         extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        parquet_path = output_dir / "a.parquet"
-        assert parquet_path.exists()
-        assert read_rows(parquet_path) == []
-        schema = pq.read_table(parquet_path).schema
-        assert str(schema.field("table_index").type) == "int64"
-        assert str(schema.field("row_index").type) == "int64"
-        assert str(schema.field("raw_row").type) == "list<element: string>"
+        csv_path = output_dir / "a.csv"
+        assert csv_path.exists()
+        assert read_rows(csv_path) == []
         assert len(read_provenance(prov_dir)) == EXPECTED_SINGLE_RECORD
 
-    def test_pdf_with_only_empty_tables_writes_empty_parquet(self, dirs, mock_open):
+    def test_pdf_with_only_empty_tables_writes_empty_csv(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
         (input_dir / "a.pdf").write_bytes(PDF_BYTES)
         mock_open.return_value = make_pdf([[]])
 
         extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        parquet_path = output_dir / "a.parquet"
-        assert parquet_path.exists()
-        assert read_rows(parquet_path) == []
-        schema = pq.read_table(parquet_path).schema
-        assert str(schema.field("table_index").type) == "int64"
-        assert str(schema.field("row_index").type) == "int64"
-        assert str(schema.field("raw_row").type) == "list<element: string>"
+        csv_path = output_dir / "a.csv"
+        assert csv_path.exists()
+        assert read_rows(csv_path) == []
         assert len(read_provenance(prov_dir)) == EXPECTED_SINGLE_RECORD
 
-    def test_parquet_schema_types(self, dirs, mock_open):
+    def test_one_output_per_pdf_in_sorted_order(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
-        (input_dir / "a.pdf").write_bytes(PDF_BYTES)
-        mock_open.return_value = make_pdf([[["a"]]])
+        for name in ("b.pdf", "a.pdf"):
+            (input_dir / name).write_bytes(PDF_BYTES)
+        mock_open.side_effect = lambda path: make_pdf([[[path.stem]]])
 
         extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        schema = pq.read_table(output_dir / "a.parquet").schema
-        assert str(schema.field("table_index").type) == "int64"
-        assert str(schema.field("row_index").type) == "int64"
-        assert str(schema.field("raw_row").type) == "list<element: string>"
-
-    # TODO uncomment and update to be CSV once changes complete.
-    # def test_one_output_per_pdf_in_sorted_order(self, dirs, mock_open):
-    #     input_dir, output_dir, prov_dir = dirs
-    #     for name in ("b.pdf", "a.pdf"):
-    #         (input_dir / name).write_bytes(PDF_BYTES)
-    #     mock_open.side_effect = lambda path: make_pdf([[[path.stem]]])
-
-    #     extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
-
-    #     assert [c.args[0].name for c in mock_open.call_args_list] == ["a.pdf", "b.pdf"]
-    #     assert sorted(p.name for p in output_dir.iterdir()) == ["a.parquet", "b.parquet"]
-    #     assert read_rows(output_dir / "b.parquet")[0]["raw_row"] == ["b"]
+        assert [c.args[0].name for c in mock_open.call_args_list] == ["a.pdf", "b.pdf"]
+        assert sorted(p.name for p in output_dir.iterdir()) == ["a.csv", "b.csv"]
+        assert read_rows(output_dir / "b.csv")[0]["raw_row"] == ["b"]
 
     def test_ignores_non_pdf_files_and_subdirectories(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
@@ -269,18 +256,18 @@ class TestExtractPdfsToSilver:
 
         extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        assert (output_dir / "report.2024.01.parquet").exists()
+        assert (output_dir / "report.2024.01.csv").exists()
 
     def test_overwrites_existing_output(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
         (input_dir / "a.pdf").write_bytes(PDF_BYTES)
         output_dir.mkdir()
-        (output_dir / "a.parquet").write_bytes(b"stale")
+        (output_dir / "a.csv").write_bytes(b"stale")
         mock_open.return_value = make_pdf([[["fresh"]]])
 
         extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        assert read_rows(output_dir / "a.parquet")[0]["raw_row"] == ["fresh"]
+        assert read_rows(output_dir / "a.csv")[0]["raw_row"] == ["fresh"]
 
     def test_logs_provenance_with_lineage(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
@@ -360,8 +347,8 @@ class TestExtractPdfsToSilver:
         with pytest.raises(RuntimeError):
             extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        assert (output_dir / "a.parquet").exists()
-        assert not (output_dir / "b.parquet").exists()
+        assert (output_dir / "a.csv").exists()
+        assert not (output_dir / "b.csv").exists()
         assert len(read_provenance(prov_dir)) == EXPECTED_SINGLE_RECORD
 
     def test_extract_table_error_propagates_and_closes_pdf(self, dirs, mock_open):
@@ -376,16 +363,20 @@ class TestExtractPdfsToSilver:
 
         pdf.__exit__.assert_called_once()
 
-    def test_non_string_cell_raises(self, dirs, mock_open):
-        """Schema is strictly list<string>; pdfplumber normally yields only str/None."""
-        import pyarrow as pa
-
+    def test_non_string_cells_are_preserved(self, dirs, mock_open):
+        """CSV output preserves cell values rather than enforcing an Arrow string schema."""
+        # Arrange
         input_dir, output_dir, prov_dir = dirs
         (input_dir / "a.pdf").write_bytes(PDF_BYTES)
         mock_open.return_value = make_pdf([[[1, 2]]])
 
-        with pytest.raises(pa.ArrowTypeError):
-            extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
+        # Act
+        extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
+
+        # Assert
+        rows = read_rows(output_dir / "a.csv")
+        assert rows[0]["raw_row"] == [1, 2]
+        assert all(isinstance(value, int) for value in rows[0]["raw_row"])
 
     def test_unwritable_output_dir_raises(self, dirs, mock_open, tmp_path):
         input_dir, _, prov_dir = dirs
@@ -490,7 +481,7 @@ class TestBronzeToSilverExtractor:
         extractor.extract_all(input_dir, output_dir, prov_dir)
 
         mock_table_extractor.extract_from_pdf.assert_called_once_with(pdf_path)
-        assert (output_dir / "custom.parquet").exists()
+        assert (output_dir / "custom.csv").exists()
 
     def test_extract_all_returns_converted_file_paths(self, dirs, mock_open):
         # Arrange
