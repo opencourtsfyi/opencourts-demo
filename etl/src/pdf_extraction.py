@@ -148,27 +148,14 @@ class BronzeToSilverExtractor:
 
         return output_files
 
-# TODO replace calls with BronzeToSilverExtractor.extract_all(). this function is extremely shallow. It doesn't hide any complexity.
-def extract_pdfs_to_silver(
-    input_dir: Path,
-    output_dir: Path,
-    provenance_dir: Path,
-) -> list[Path]:
-    extractor = BronzeToSilverExtractor(
-        input_dir=input_dir,
-        output_dir=output_dir,
-        provenance_dir=provenance_dir,
-    )
-    return extractor.extract_all()
-
 
 if __name__ == "__main__":
     from logging_config import setup_logging
     setup_logging()
 
     base_dir = Path(__file__).resolve().parent.parent
-    extract_pdfs_to_silver(
-        base_dir / DEFAULT_BRONZE_DIR,
-        base_dir / DEFAULT_SILVER_DIR,
-        base_dir / DEFAULT_PROVENANCE_DIR,
-    )
+    BronzeToSilverExtractor(
+        input_dir=base_dir / DEFAULT_BRONZE_DIR,
+        output_dir=base_dir / DEFAULT_SILVER_DIR,
+        provenance_dir=base_dir / DEFAULT_PROVENANCE_DIR,
+    ).extract_all()
