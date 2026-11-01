@@ -14,8 +14,6 @@ from typing import Any, Final
 
 import pdfplumber
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 
 from provenance import log_provenance
 from i18n import t
@@ -79,24 +77,15 @@ class TableExtractor:
 class BronzeToSilverExtractor:
     """Coordinates extraction of Bronze files into Silver files with provenance tracking."""
 
-    # Canonical PyArrow schema for Silver tier extracted tables
-    SILVER_SCHEMA: Final[pa.Schema] = pa.schema([
-        (COLUMN_TABLE_INDEX, pa.int64()),
-        (COLUMN_ROW_INDEX, pa.int64()),
-        (COLUMN_RAW_ROW, pa.list_(pa.string())),
-    ])
-
     PDF_FILE_PATTERNS: Final[tuple[str, str]] = ("*.pdf", "*.PDF")
-
+    CSV_FILE_EXTENSION: Final[str] = ".csv"
     STAGE_SILVER: Final[str] = "silver"
 
     def __init__(
         self,
         table_extractor: TableExtractor | None = None,
-        schema: pa.Schema = SILVER_SCHEMA,
     ) -> None:
         self.table_extractor = table_extractor or TableExtractor()
-        self.schema = schema
 
     def find_pdf_files(self, input_dir: Path) -> list[Path]:
         """Finds all PDF files in input_dir using case-insensitive globbing, sorted deterministically."""
@@ -117,9 +106,7 @@ class BronzeToSilverExtractor:
         output_dir: Path,
         provenance_dir: Path,
     ) -> Path:
-        """Extracts a single PDF into a Silver Parquet file and logs provenance."""
-
-        CSV_FILE_EXTENSION: Final[str] = ".csv"
+        """Extracts a single PDF into a Silver CSV file and logs provenance."""
 
         collected_records = self.table_extractor.extract_from_pdf(file_path)
 
@@ -133,19 +120,19 @@ class BronzeToSilverExtractor:
             # input produces a Silver artifact. 
             df = pd.DataFrame(columns=SILVER_COLUMNS)
 
-        output_file_path_csv = output_dir / f"{file_path.stem}{CSV_FILE_EXTENSION}"
-        df.to_csv(output_file_path_csv, index=False, encoding="utf-8")
+        output_file_path = output_dir / f"{file_path.stem}{self.CSV_FILE_EXTENSION}"
+        df.to_csv(output_file_path, index=False, encoding="utf-8")
 
-        logger.info(t("pdf_extraction.log_saved", filename=output_file_path_csv.name))
+        logger.info(t("pdf_extraction.log_saved", filename=output_file_path.name))
 
         log_provenance(
             provenance_dir,
             stage=self.STAGE_SILVER,
-            file_path=output_file_path_csv,
+            file_path=output_file_path,
             derived_from=[file_path.name],
         )
 
-        return output_file_path_csv
+        return output_file_path
 
     def extract_all(
         self,
@@ -153,7 +140,7 @@ class BronzeToSilverExtractor:
         output_dir: Path,
         provenance_dir: Path,
     ) -> list[Path]:
-        """Extracts all PDFs in input_dir to Parquet in output_dir, logging provenance."""
+        """Extracts all PDFs in input_dir to CSV in output_dir, logging provenance."""
 
         output_dir.mkdir(parents=True, exist_ok=True)
 
