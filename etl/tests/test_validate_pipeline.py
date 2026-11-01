@@ -1,6 +1,5 @@
 import pytest
 import pandas as pd
-from pathlib import Path
 
 from validate_pipeline import validate_gold_csv, write_error_report
 from normalize import SCHEMA

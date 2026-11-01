@@ -62,6 +62,9 @@ The project is split into frontend, backend, and ETL concerns:
 - Frontend changes require relevant Vitest coverage or a focused validation run.
 - Backend changes require matching unit/integration tests.
 - Run the smallest relevant validation before finishing a task.
+- PRs run lint/typecheck before the longer test matrix (`needs: lint` in `.github/workflows/tests.yml`).
+  - ETL: `ruff check src tests`, `ty check` (see `etl/AGENTS.md`)
+  - Frontend: `npm run typecheck` (see `frontend/AGENTS.md`)
 
 ## Boundaries
 **Always do:**

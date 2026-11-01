@@ -3,8 +3,6 @@ Tests for i18n.py internationalization module.
 Verifies locale detection, context managers, catalog loading, path lookup, and translations.
 """
 
-import json
-from pathlib import Path
 import pytest
 
 import i18n

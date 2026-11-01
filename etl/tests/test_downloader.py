@@ -288,6 +288,7 @@ class TestFileDownloader:
             result = downloader.download()
 
         assert result == tmp_path / "report.pdf"
+        assert result is not None
         assert result.read_bytes() == content
 
     def test_download_accepts_url_and_destination_overrides(self, tmp_path):

@@ -15,7 +15,7 @@ Frontend application for the project. This is a TypeScript-based single-page app
 - **Build for production:** `npm run build`
 - **Preview production build:** `npm run preview`
 - **Run tests:** `npm test`
-- **Type-check:** `npm run typecheck`
+- **Lint / Type-check:** `npm run typecheck` (`tsc --noEmit`; non-zero exit on type errors)
 
 <!-- ## Project Structure
 ```text

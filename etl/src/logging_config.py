@@ -14,10 +14,12 @@ def setup_logging(log_dir=None):
     resolved_log_dir = log_dir or os.environ.get(LOG_DIR_ENV_VAR)
     # Windows consoles default to cp1252, which cannot encode the emoji in log messages.
     if sys.platform == "win32":
-        if hasattr(sys.stdout, "reconfigure"):
-            sys.stdout.reconfigure(encoding="utf-8")
-        if hasattr(sys.stderr, "reconfigure"):
-            sys.stderr.reconfigure(encoding="utf-8")
+        stdout_reconfigure = getattr(sys.stdout, "reconfigure", None)
+        if callable(stdout_reconfigure):
+            stdout_reconfigure(encoding="utf-8")
+        stderr_reconfigure = getattr(sys.stderr, "reconfigure", None)
+        if callable(stderr_reconfigure):
+            stderr_reconfigure(encoding="utf-8")
     handlers: list[logging.Handler] = [logging.StreamHandler()]
 
     if resolved_log_dir is not None and str(resolved_log_dir).strip():

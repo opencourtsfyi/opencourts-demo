@@ -7,8 +7,52 @@ on:
     branches: [ main ]
 
 jobs:
+  lint:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: 'pip'
+          cache-dependency-path: 'etl/requirements-dev.txt'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r etl/requirements-dev.txt
+
+      - name: Ruff (ETL)
+        working-directory: etl
+        run: ruff check src tests
+
+      - name: ty (ETL)
+        working-directory: etl
+        run: ty check
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Typecheck (frontend)
+        working-directory: frontend
+        run: npm run typecheck
+
   test:
     name: Run Tests and Coverage
+    needs: lint
     strategy:
       fail-fast: false
       matrix:
@@ -52,3 +96,18 @@ jobs:
         run: |
           coverage run -m pytest -v
           coverage report -m --fail-under=70
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm test

@@ -1,5 +1,3 @@
-from __future__ import annotations
-# downloader.py
 """
 Downloads raw SC Probate Estate Monthly Caseload PDF reports
 from the SC Courts website and saves them locally, untouched, as the
@@ -7,18 +5,20 @@ preserved source artifact (Bronze tier of the Medallion architecture).
 Also logs a provenance record for every successfully downloaded file.
 """
 
+from __future__ import annotations
+
 import argparse
 import logging
 import mimetypes
-from collections.abc import Generator, Mapping
-from functools import total_ordering
-from pathlib import Path
 import random
 import re
 import time
 import urllib.parse
 import uuid
+from collections.abc import Generator, Mapping
 from datetime import date
+from functools import total_ordering
+from pathlib import Path
 from typing import Final
 
 import magic
@@ -31,11 +31,10 @@ from tenacity import (
     wait_random,
 )
 
-from provenance import log_provenance
 from i18n import t
+from provenance import log_provenance
 
 logger = logging.getLogger(__name__)
-from typing import Final
 
 ANNUAL_REPORT_URL_TEMPLATE: Final[str] = "https://www.sccourts.org/media/annualReports/{start_year}-{end_year}/CATotalsES2.pdf"
 DEFAULT_USER_AGENT: Final[str] = "Mozilla/5.0"  # Mimic a browser to avoid being blocked
@@ -375,8 +374,8 @@ class FileDownloader:
 
 
 def build_urls(
-    start_year: SouthCarolinaFiscalYear | None = None,
-    end_year: SouthCarolinaFiscalYear | None = None,
+    start_year: int | SouthCarolinaFiscalYear | None = None,
+    end_year: int | SouthCarolinaFiscalYear | None = None,
 ) -> list[str]:
     """Helper method to find the report URLs. The South Carolina Courts website uses a calendar-year based URL 
     pattern to represent a fiscal year (July through June). For example, the fiscal year 2023 (July 1, 2022 - June 30, 2023)
@@ -414,8 +413,8 @@ def build_urls(
 def download_pdfs(
     output_dir: Path | str | None = None,
     provenance_dir: Path | str | None = None,
-    start_year: SouthCarolinaFiscalYear | None = None,
-    end_year: SouthCarolinaFiscalYear | None = None,
+    start_year: int | SouthCarolinaFiscalYear | None = None,
+    end_year: int | SouthCarolinaFiscalYear | None = None,
     overwrite_existing: bool = False,
 ) -> None:
     """Downloads SC Probate estate monthly caseload PDFs into output_dir.

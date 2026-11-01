@@ -6,19 +6,18 @@ Gold normalization, and final validation. All paths are defined once,
 here, and passed down to each stage function.
 """
 
-import logging
-from logging_config import setup_logging
-
 import argparse
+import logging
 from pathlib import Path
 
 from downloader import download_pdfs
-from pdf_extraction import extract_pdfs_to_silver
+from i18n import t
+from logging_config import setup_logging
 from normalize import normalize_silver_to_gold
+from pdf_extraction import extract_pdfs_to_silver
 from validate_pipeline import validate_gold_csv, write_error_report
 
 logger = logging.getLogger(__name__)
-from i18n import t
 
 #TODO internationalize user facing strings in this file
 def run_pipeline(overwrite_existing: bool = False) -> None:
