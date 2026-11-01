@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Final
 
 import pdfplumber
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
@@ -25,8 +26,7 @@ logger = logging.getLogger(__name__)
 COLUMN_TABLE_INDEX: Final[str] = "table_index"
 COLUMN_ROW_INDEX: Final[str] = "row_index"
 COLUMN_RAW_ROW: Final[str] = "raw_row"
-
-PARQUET_FILE_EXTENSION: Final[str] = ".parquet"
+SILVER_COLUMNS = (COLUMN_TABLE_INDEX, COLUMN_ROW_INDEX, COLUMN_RAW_ROW)
 
 DEFAULT_BRONZE_DIR: Final[str] = "data/pdfs_bronze"
 DEFAULT_SILVER_DIR: Final[str] = "data/cases_silver"
@@ -54,6 +54,7 @@ class TableExtractor:
                 table_index = i + self.page_index_offset
                 table_data = page.extract_table()
 
+                #Warn about pages with no detectable table (e.g. blank pages)
                 if table_data is None:
                     logger.warning(
                         t(
@@ -110,6 +111,7 @@ class BronzeToSilverExtractor:
 
         return sorted(matched_files, key=lambda p: p.name)
 
+    # TODO write unit tests for this method
     def extract_file(
         self,
         file_path: Path,
@@ -117,12 +119,38 @@ class BronzeToSilverExtractor:
         provenance_dir: Path,
     ) -> Path:
         """Extracts a single PDF into a Silver Parquet file and logs provenance."""
+
+        # TODO remove after CSV output working
+        PARQUET_FILE_EXTENSION: Final[str] = ".parquet"
+        # END TODO
+
+        CSV_FILE_EXTENSION: Final[str] = ".csv"
+        
+
         collected_records = self.table_extractor.extract_from_pdf(file_path)
 
-        arrow_table = pa.Table.from_pylist(collected_records, schema=self.schema)
+        # TODO write CSV
+        # A PDF with no tables still gets a header-only file so every Bronze
+        # input produces a Silver artifact. 
+        if collected_records:
+            df = pd.DataFrame(collected_records, columns=SILVER_COLUMNS)
+        else:
+            df = pd.DataFrame(columns=SILVER_COLUMNS)
 
+        # TODO implement this, convert raw_row from json to array: raw_row is a JSON array because a
+        # CSV column cannot store the original list, including empty cells,
+        # commas, and newlines.
+
+        output_file_path = output_dir / f"{file_path.stem}{CSV_FILE_EXTENSION}"
+        df.to_csv(output_file_path, index=False, encoding="utf-8")
+        # end TODO
+
+        # TODO remove this section after CSV writing operational
+        arrow_table = pa.Table.from_pylist(collected_records, schema=self.schema)
         output_file_path = output_dir / f"{file_path.stem}{PARQUET_FILE_EXTENSION}"
         pq.write_table(arrow_table, output_file_path)
+        # END TODO
+
         logger.info(t("pdf_extraction.log_saved", filename=output_file_path.name))
 
         log_provenance(
@@ -151,23 +179,12 @@ class BronzeToSilverExtractor:
 
         return output_files
 
-
+# TODO replace calls with BronzeToSilverExtractor.extract_all(). this function is extremely shallow. It doesn't hide any complexity.
 def extract_pdfs_to_silver(
     input_dir: Path,
     output_dir: Path,
     provenance_dir: Path,
 ) -> list[Path]:
-    """
-    Extracts raw tables from all PDFs in input_dir and saves them as Parquet in output_dir.
-    Also logs provenance records in provenance_dir linking each Silver file back to its source Bronze PDF.
-    This function is the main entry point for the Silver stage of the ETL pipeline.
-
-    input_dir: Path to the directory containing Bronze PDF files.
-    output_dir: Path to the directory where Silver Parquet files will be saved.
-    provenance_dir: Path to the directory where provenance logs will be written.
-
-    returns: List of Paths to the generated Silver Parquet files.
-    """
     extractor = BronzeToSilverExtractor()
     return extractor.extract_all(input_dir, output_dir, provenance_dir)
 
