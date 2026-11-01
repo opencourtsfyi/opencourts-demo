@@ -140,15 +140,15 @@ class BronzeToSilverExtractor:
             # input produces a Silver artifact. 
             df = pd.DataFrame(columns=SILVER_COLUMNS)
 
-        output_file_path = output_dir / f"{file_path.stem}{CSV_FILE_EXTENSION}"
-        df.to_csv(output_file_path, index=False, encoding="utf-8")
+        output_file_path_csv = output_dir / f"{file_path.stem}{CSV_FILE_EXTENSION}"
+        df.to_csv(output_file_path_csv, index=False, encoding="utf-8")
 
-        logger.info(t("pdf_extraction.log_saved", filename=output_file_path.name))
+        logger.info(t("pdf_extraction.log_saved", filename=output_file_path_csv.name))
 
         log_provenance(
             provenance_dir,
             stage=self.STAGE_SILVER,
-            file_path=output_file_path,
+            file_path=output_file_path_csv,
             derived_from=[file_path.name],
         )
         # end TODO
@@ -159,7 +159,7 @@ class BronzeToSilverExtractor:
         pq.write_table(arrow_table, output_file_path)
         # END TODO
 
-        return output_file_path
+        return output_file_path_csv
 
     def extract_all(
         self,

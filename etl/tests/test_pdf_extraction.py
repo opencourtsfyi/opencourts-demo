@@ -491,3 +491,30 @@ class TestBronzeToSilverExtractor:
 
         mock_table_extractor.extract_from_pdf.assert_called_once_with(pdf_path)
         assert (output_dir / "custom.parquet").exists()
+
+    def test_extract_all_returns_converted_file_paths(self, dirs, mock_open):
+        # Arrange
+        input_dir, output_dir, prov_dir = dirs
+        for name in ("b.pdf", "a.pdf"):
+            (input_dir / name).write_bytes(b"%PDF-1.4 fake")
+        mock_open.side_effect = lambda path: make_pdf([[[path.stem]]])
+
+        extractor = BronzeToSilverExtractor()
+
+        # Act
+        result = extractor.extract_all(input_dir, output_dir, prov_dir)
+
+        # Assert
+        assert result == [output_dir / "a.csv", output_dir / "b.csv"]
+
+    def test_extract_all_returns_empty_list_when_no_pdfs(self, dirs, mock_open):
+        # Arrange
+        input_dir, output_dir, prov_dir = dirs
+
+        extractor = BronzeToSilverExtractor()
+
+        # Act
+        result = extractor.extract_all(input_dir, output_dir, prov_dir)
+
+        # Assert
+        assert result == []

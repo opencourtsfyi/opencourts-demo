@@ -72,9 +72,6 @@ def read_provenance(provenance_dir):
     return [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
-#TODO test extract_pdfs_to_silver returns a list of Paths to the generated Silver files
-
-
 def test_silver_csv_preserves_cell_text(tmp_path, monkeypatch, pdf_extraction):
     """
     Test that extract_pdfs_to_silver writes a CSV with the expected header and cell text, and that provenance is recorded correctly.
@@ -128,23 +125,23 @@ def test_silver_csv_preserves_cell_text(tmp_path, monkeypatch, pdf_extraction):
     assert records[0]["derived_from"] == [REPORT_PDF]
 
 
-# def test_pdf_without_tables_writes_header_and_provenance(tmp_path, monkeypatch, pdf_extraction):
-#     # Arrange
-#     EMPTY_PDF = "estate_monthly_caseload_2022_to_2023_bronze.pdf"
-#     EMPTY_CSV = "estate_monthly_caseload_2022_to_2023_bronze.csv"
+def test_pdf_without_tables_writes_header_and_provenance(tmp_path, monkeypatch, pdf_extraction):
+    # Arrange
+    EMPTY_PDF = "estate_monthly_caseload_2022_to_2023_bronze.pdf"
+    EMPTY_CSV = "estate_monthly_caseload_2022_to_2023_bronze.csv"
 
-#     bronze = tmp_path / "bronze"
-#     silver = tmp_path / "silver"
-#     provenance = tmp_path / "provenance"
-#     create_empty_pdfs(bronze, [EMPTY_PDF])
-#     install_tables(monkeypatch, pdf_extraction, {EMPTY_PDF: [None]})
+    bronze = tmp_path / "bronze"
+    silver = tmp_path / "silver"
+    provenance = tmp_path / "provenance"
+    create_empty_pdfs(bronze, [EMPTY_PDF])
+    install_tables(monkeypatch, pdf_extraction, {EMPTY_PDF: [None]})
 
-#     # Act
-#     pdf_extraction.extract_pdfs_to_silver(bronze, silver, provenance)
+    # Act
+    pdf_extraction.extract_pdfs_to_silver(bronze, silver, provenance)
 
-#     # Assert
-#     header = (silver / EMPTY_CSV).read_text(encoding="utf-8").strip()
-#     assert header == ",".join(pdf_extraction.SILVER_COLUMNS)
-#     records = read_provenance(provenance)
-#     assert records[0]["filename"] == EMPTY_CSV
-#     assert records[0]["derived_from"] == [EMPTY_PDF]
+    # Assert
+    header = (silver / EMPTY_CSV).read_text(encoding="utf-8").strip()
+    assert header == ",".join(pdf_extraction.SILVER_COLUMNS)
+    records = read_provenance(provenance)
+    assert records[0]["filename"] == EMPTY_CSV
+    assert records[0]["derived_from"] == [EMPTY_PDF]
