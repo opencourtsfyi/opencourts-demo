@@ -132,14 +132,15 @@ class BronzeToSilverExtractor:
         # TODO write CSV
         # A PDF with no tables still gets a header-only file so every Bronze
         # input produces a Silver artifact. 
+
         if collected_records:
             df = pd.DataFrame(collected_records, columns=SILVER_COLUMNS)
+            # Turn each list in raw_row into a JSON string, this is because 
+            # a CSV column cannot store the original list, including empty cells,
+            df["raw_row"] = df["raw_row"].apply(lambda value: json.dumps(value, ensure_ascii=False))
         else:
             df = pd.DataFrame(columns=SILVER_COLUMNS)
 
-        # TODO implement this, convert raw_row from json to array: raw_row is a JSON array because a
-        # CSV column cannot store the original list, including empty cells,
-        # commas, and newlines.
 
         output_file_path = output_dir / f"{file_path.stem}{CSV_FILE_EXTENSION}"
         df.to_csv(output_file_path, index=False, encoding="utf-8")
