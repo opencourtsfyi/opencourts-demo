@@ -83,29 +83,30 @@ class BronzeToSilverExtractor:
 
     def __init__(
         self,
+        input_dir: Path | str = DEFAULT_BRONZE_DIR,
+        output_dir: Path | str = DEFAULT_SILVER_DIR,
+        provenance_dir: Path | str = DEFAULT_PROVENANCE_DIR,
         table_extractor: TableExtractor | None = None,
     ) -> None:
+        self.input_dir = Path(input_dir)
+        self.output_dir = Path(output_dir)
+        self.provenance_dir = Path(provenance_dir)
         self.table_extractor = table_extractor or TableExtractor()
 
-    def find_pdf_files(self, input_dir: Path) -> list[Path]:
+    def find_pdf_files(self) -> list[Path]:
         """Finds all PDF files in input_dir using case-insensitive globbing, sorted deterministically."""
-        if not input_dir.is_dir():
+        if not self.input_dir.is_dir():
             return []
 
         matched_files: set[Path] = set()
         for pattern in self.PDF_FILE_PATTERNS:
-            for file_path in input_dir.glob(pattern):
+            for file_path in self.input_dir.glob(pattern):
                 if file_path.is_file():
                     matched_files.add(file_path)
 
         return sorted(matched_files, key=lambda p: p.name)
 
-    def extract_file(
-        self,
-        file_path: Path,
-        output_dir: Path,
-        provenance_dir: Path,
-    ) -> Path:
+    def extract_file(self, file_path: Path) -> Path:
         """Extracts a single PDF into a Silver CSV file and logs provenance."""
 
         collected_records = self.table_extractor.extract_from_pdf(file_path)
@@ -120,13 +121,13 @@ class BronzeToSilverExtractor:
             # input produces a Silver artifact. 
             df = pd.DataFrame(columns=SILVER_COLUMNS)
 
-        output_file_path = output_dir / f"{file_path.stem}{self.CSV_FILE_EXTENSION}"
+        output_file_path = self.output_dir / f"{file_path.stem}{self.CSV_FILE_EXTENSION}"
         df.to_csv(output_file_path, index=False, encoding="utf-8")
 
         logger.info(t("pdf_extraction.log_saved", filename=output_file_path.name))
 
         log_provenance(
-            provenance_dir,
+            self.provenance_dir,
             stage=self.STAGE_SILVER,
             file_path=output_file_path,
             derived_from=[file_path.name],
@@ -134,20 +135,15 @@ class BronzeToSilverExtractor:
 
         return output_file_path
 
-    def extract_all(
-        self,
-        input_dir: Path,
-        output_dir: Path,
-        provenance_dir: Path,
-    ) -> list[Path]:
+    def extract_all(self) -> list[Path]:
         """Extracts all PDFs in input_dir to CSV in output_dir, logging provenance."""
 
-        output_dir.mkdir(parents=True, exist_ok=True)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
 
         output_files: list[Path] = []
-        for file_path in self.find_pdf_files(input_dir):
+        for file_path in self.find_pdf_files():
             logger.info(t("pdf_extraction.log_starting_extraction", filename=file_path.name))
-            output_file = self.extract_file(file_path, output_dir, provenance_dir)
+            output_file = self.extract_file(file_path)
             output_files.append(output_file)
 
         return output_files
@@ -158,8 +154,12 @@ def extract_pdfs_to_silver(
     output_dir: Path,
     provenance_dir: Path,
 ) -> list[Path]:
-    extractor = BronzeToSilverExtractor()
-    return extractor.extract_all(input_dir, output_dir, provenance_dir)
+    extractor = BronzeToSilverExtractor(
+        input_dir=input_dir,
+        output_dir=output_dir,
+        provenance_dir=provenance_dir,
+    )
+    return extractor.extract_all()
 
 
 if __name__ == "__main__":
