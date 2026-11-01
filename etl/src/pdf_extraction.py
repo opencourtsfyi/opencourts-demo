@@ -120,16 +120,10 @@ class BronzeToSilverExtractor:
     ) -> Path:
         """Extracts a single PDF into a Silver Parquet file and logs provenance."""
 
-        # TODO remove after CSV output working
-        PARQUET_FILE_EXTENSION: Final[str] = ".parquet"
-        # END TODO
-
         CSV_FILE_EXTENSION: Final[str] = ".csv"
-        
 
         collected_records = self.table_extractor.extract_from_pdf(file_path)
 
-        # TODO write records to CSV
         if collected_records:
             df = pd.DataFrame(collected_records, columns=SILVER_COLUMNS)
             # Turn each list in raw_row into a JSON string, this is because 
@@ -151,13 +145,6 @@ class BronzeToSilverExtractor:
             file_path=output_file_path_csv,
             derived_from=[file_path.name],
         )
-        # end TODO
-
-        # TODO remove this section after CSV writing operational
-        arrow_table = pa.Table.from_pylist(collected_records, schema=self.schema)
-        output_file_path = output_dir / f"{file_path.stem}{PARQUET_FILE_EXTENSION}"
-        pq.write_table(arrow_table, output_file_path)
-        # END TODO
 
         return output_file_path_csv
 
