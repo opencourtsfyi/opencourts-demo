@@ -189,6 +189,65 @@ class TestExtractPdfsToSilver:
         assert read_rows(csv_path) == []
         assert len(read_provenance(prov_dir)) == EXPECTED_SINGLE_RECORD
 
+    def test_silver_csv_preserves_cell_text_and_provenance(self, dirs, mock_open):
+        input_dir, output_dir, prov_dir = dirs
+        pdf_name = "estate_monthly_caseload_2023_to_2024_bronze.pdf"
+        csv_name = "estate_monthly_caseload_2023_to_2024_bronze.csv"
+        pdf_path = input_dir / pdf_name
+        pdf_path.write_bytes(PDF_BYTES)
+
+        report_table = [
+            [
+                "South Carolina Court Administration\nEstate Monthly Caseload Report\nPeriod",
+                None,
+                "",
+                'say "hi"',
+            ],
+            [None, None, "July", "January"],
+            ["Abbeville", None, None, None],
+            ["Pending first of month", "line\nbreak", "1,086", "5"],
+        ]
+        mock_open.return_value = make_pdf([report_table])
+
+        extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
+
+        csv_path = output_dir / csv_name
+        assert csv_path.is_file()
+        text = csv_path.read_text(encoding="utf-8")
+        assert text.startswith(",".join(SILVER_COLUMNS))
+
+        rows = read_rows(csv_path)
+        assert rows == [
+            {"table_index": 1, "row_index": 0, "raw_row": ["South Carolina Court Administration\nEstate Monthly Caseload Report\nPeriod", None, "", 'say "hi"']},
+            {"table_index": 1, "row_index": 1, "raw_row": [None, None, "July", "January"]},
+            {"table_index": 1, "row_index": 2, "raw_row": ["Abbeville", None, None, None]},
+            {"table_index": 1, "row_index": 3, "raw_row": ["Pending first of month", "line\nbreak", "1,086", "5"]},
+        ]
+
+        provenance = read_provenance(prov_dir)
+        assert provenance[0]["stage"] == "silver"
+        assert provenance[0]["filename"] == csv_name
+        assert provenance[0]["derived_from"] == [pdf_name]
+
+    def test_pdf_without_tables_writes_header_and_provenance(self, dirs, mock_open):
+        input_dir, output_dir, prov_dir = dirs
+        pdf_name = "estate_monthly_caseload_2022_to_2023_bronze.pdf"
+        csv_name = "estate_monthly_caseload_2022_to_2023_bronze.csv"
+        pdf_path = input_dir / pdf_name
+        pdf_path.write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([None])
+
+        extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
+
+        csv_path = output_dir / csv_name
+        assert csv_path.exists()
+        header = csv_path.read_text(encoding="utf-8").strip()
+        assert header == ",".join(SILVER_COLUMNS)
+
+        records = read_provenance(prov_dir)
+        assert records[0]["filename"] == csv_name
+        assert records[0]["derived_from"] == [pdf_name]
+
     def test_one_output_per_pdf_in_sorted_order(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
         for name in ("b.pdf", "a.pdf"):
