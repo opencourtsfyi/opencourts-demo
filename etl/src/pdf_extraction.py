@@ -129,28 +129,19 @@ class BronzeToSilverExtractor:
 
         collected_records = self.table_extractor.extract_from_pdf(file_path)
 
-        # TODO write CSV
-        # A PDF with no tables still gets a header-only file so every Bronze
-        # input produces a Silver artifact. 
-
+        # TODO write records to CSV
         if collected_records:
             df = pd.DataFrame(collected_records, columns=SILVER_COLUMNS)
             # Turn each list in raw_row into a JSON string, this is because 
             # a CSV column cannot store the original list, including empty cells,
             df["raw_row"] = df["raw_row"].apply(lambda value: json.dumps(value, ensure_ascii=False))
         else:
+            # A PDF with no tables still gets a header-only file so every Bronze
+            # input produces a Silver artifact. 
             df = pd.DataFrame(columns=SILVER_COLUMNS)
-
 
         output_file_path = output_dir / f"{file_path.stem}{CSV_FILE_EXTENSION}"
         df.to_csv(output_file_path, index=False, encoding="utf-8")
-        # end TODO
-
-        # TODO remove this section after CSV writing operational
-        arrow_table = pa.Table.from_pylist(collected_records, schema=self.schema)
-        output_file_path = output_dir / f"{file_path.stem}{PARQUET_FILE_EXTENSION}"
-        pq.write_table(arrow_table, output_file_path)
-        # END TODO
 
         logger.info(t("pdf_extraction.log_saved", filename=output_file_path.name))
 
@@ -160,6 +151,14 @@ class BronzeToSilverExtractor:
             file_path=output_file_path,
             derived_from=[file_path.name],
         )
+        # end TODO
+
+        # TODO remove this section after CSV writing operational
+        arrow_table = pa.Table.from_pylist(collected_records, schema=self.schema)
+        output_file_path = output_dir / f"{file_path.stem}{PARQUET_FILE_EXTENSION}"
+        pq.write_table(arrow_table, output_file_path)
+        # END TODO
+
         return output_file_path
 
     def extract_all(

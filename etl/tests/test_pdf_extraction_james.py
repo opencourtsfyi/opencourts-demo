@@ -122,10 +122,10 @@ def test_silver_csv_preserves_cell_text(tmp_path, monkeypatch, pdf_extraction):
     assert restored == REPORT_TABLE
 
     # # Assert that provenance log contains a record for the silver CSV derived from the PDF
-    # records = read_provenance(provenance)
-    # assert records[0]["stage"] == "silver"
-    # assert records[0]["filename"] == REPORT_CSV
-    # assert records[0]["derived_from"] == [REPORT_PDF]
+    records = read_provenance(provenance)
+    assert records[0]["stage"] == "silver"
+    assert records[0]["filename"] == REPORT_CSV
+    assert records[0]["derived_from"] == [REPORT_PDF]
 
 
 # def test_pdf_without_tables_writes_header_and_provenance(tmp_path, monkeypatch, pdf_extraction):
