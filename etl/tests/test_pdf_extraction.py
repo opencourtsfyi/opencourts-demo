@@ -155,7 +155,7 @@ class TestExtractPdfsToSilver:
         assert str(schema.field("table_index").type) == "int64"
         assert str(schema.field("row_index").type) == "int64"
         assert str(schema.field("raw_row").type) == "list<element: string>"
-        assert len(read_provenance(prov_dir)) == EXPECTED_SINGLE_RECORD
+        assert len(read_provenance(prov_dir)) == 1
 
     def test_pdf_with_zero_pages_writes_empty_parquet(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
@@ -292,7 +292,7 @@ class TestExtractPdfsToSilver:
         records = read_provenance(prov_dir)
         assert len(records) == EXPECTED_SINGLE_RECORD
         assert records[0]["stage"] == "silver"
-        assert records[0]["filename"] == "a.parquet"
+        assert records[0]["filename"] == "a.csv"
         assert records[0]["derived_from"] == ["a.pdf"]
         assert records[0]["source_url"] is None
 
@@ -305,7 +305,7 @@ class TestExtractPdfsToSilver:
             extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
         log_mock.assert_called_once_with(
-            prov_dir, stage="silver", file_path=output_dir / "a.parquet", derived_from=["a.pdf"]
+            prov_dir, stage="silver", file_path=output_dir / "a.csv", derived_from=["a.pdf"]
         )
 
     def test_provenance_hash_matches_written_file(self, dirs, mock_open):
@@ -317,7 +317,7 @@ class TestExtractPdfsToSilver:
 
         extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-        assert read_provenance(prov_dir)[0]["file_hash"] == compute_file_hash(output_dir / "a.parquet")
+        assert read_provenance(prov_dir)[0]["file_hash"] == compute_file_hash(output_dir / "a.csv")
 
     def test_one_provenance_record_per_pdf(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
@@ -338,7 +338,7 @@ class TestExtractPdfsToSilver:
 
         messages = [c[0][0] for c in mock_logger.info.call_args_list]
         assert any("a.pdf" in m for m in messages)
-        assert any("a.parquet" in m for m in messages)
+        assert any("a.csv" in m for m in messages)
 
     def test_open_error_propagates_and_aborts_run(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
