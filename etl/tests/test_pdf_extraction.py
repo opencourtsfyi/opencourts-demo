@@ -514,15 +514,15 @@ class TestBronzeToSilverExtractor:
         (tmp_path / "UPPER.PDF").write_bytes(PDF_BYTES)
         (tmp_path / "other.txt").write_text("text")
 
-        extractor = BronzeToSilverExtractor()
-        found = extractor.find_pdf_files(tmp_path)
+        extractor = BronzeToSilverExtractor(input_dir=tmp_path)
+        found = extractor.find_pdf_files()
 
         assert len(found) == EXPECTED_TWO_FILES
         assert [f.name for f in found] == ["UPPER.PDF", "lower.pdf"]
 
     def test_find_pdf_files_missing_directory_returns_empty(self, tmp_path):
-        extractor = BronzeToSilverExtractor()
-        found = extractor.find_pdf_files(tmp_path / "missing")
+        extractor = BronzeToSilverExtractor(input_dir=tmp_path / "missing")
+        found = extractor.find_pdf_files()
         assert len(found) == EXPECTED_NO_FILES
 
     def test_custom_injected_table_extractor(self, dirs):
@@ -535,8 +535,13 @@ class TestBronzeToSilverExtractor:
             {"table_index": FIRST_PAGE_NUMBER, "row_index": FIRST_ROW_INDEX, "raw_row": ["val"]}
         ]
 
-        extractor = BronzeToSilverExtractor(table_extractor=mock_table_extractor)
-        extractor.extract_all(input_dir, output_dir, prov_dir)
+        extractor = BronzeToSilverExtractor(
+            input_dir=input_dir,
+            output_dir=output_dir,
+            provenance_dir=prov_dir,
+            table_extractor=mock_table_extractor,
+        )
+        extractor.extract_all()
 
         mock_table_extractor.extract_from_pdf.assert_called_once_with(pdf_path)
         assert (output_dir / "custom.csv").exists()
@@ -548,10 +553,14 @@ class TestBronzeToSilverExtractor:
             (input_dir / name).write_bytes(b"%PDF-1.4 fake")
         mock_open.side_effect = lambda path: make_pdf([[[path.stem]]])
 
-        extractor = BronzeToSilverExtractor()
+        extractor = BronzeToSilverExtractor(
+            input_dir=input_dir,
+            output_dir=output_dir,
+            provenance_dir=prov_dir,
+        )
 
         # Act
-        result = extractor.extract_all(input_dir, output_dir, prov_dir)
+        result = extractor.extract_all()
 
         # Assert
         assert result == [output_dir / "a.csv", output_dir / "b.csv"]
@@ -560,10 +569,14 @@ class TestBronzeToSilverExtractor:
         # Arrange
         input_dir, output_dir, prov_dir = dirs
 
-        extractor = BronzeToSilverExtractor()
+        extractor = BronzeToSilverExtractor(
+            input_dir=input_dir,
+            output_dir=output_dir,
+            provenance_dir=prov_dir,
+        )
 
         # Act
-        result = extractor.extract_all(input_dir, output_dir, prov_dir)
+        result = extractor.extract_all()
 
         # Assert
         assert result == []
@@ -583,10 +596,15 @@ class TestBronzeToSilverExtractor:
                 "raw_row": ["Abbeville — § 1", None, "10"],
             }
         ]
-        extractor = BronzeToSilverExtractor(table_extractor=mock_table_extractor)
+        extractor = BronzeToSilverExtractor(
+            input_dir=input_dir,
+            output_dir=output_dir,
+            provenance_dir=prov_dir,
+            table_extractor=mock_table_extractor,
+        )
 
         # Act
-        result_path = extractor.extract_file(pdf_path, output_dir, prov_dir)
+        result_path = extractor.extract_file(pdf_path)
 
         # Assert
         expected_csv = output_dir / "report.csv"
@@ -617,10 +635,15 @@ class TestBronzeToSilverExtractor:
 
         mock_table_extractor = MagicMock(spec=TableExtractor)
         mock_table_extractor.extract_from_pdf.return_value = []
-        extractor = BronzeToSilverExtractor(table_extractor=mock_table_extractor)
+        extractor = BronzeToSilverExtractor(
+            input_dir=input_dir,
+            output_dir=output_dir,
+            provenance_dir=prov_dir,
+            table_extractor=mock_table_extractor,
+        )
 
         # Act
-        result_path = extractor.extract_file(pdf_path, output_dir, prov_dir)
+        result_path = extractor.extract_file(pdf_path)
 
         # Assert
         expected_csv = output_dir / "empty.csv"
