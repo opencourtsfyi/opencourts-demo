@@ -271,17 +271,16 @@ class TestExtractPdfsToSilver:
         mock_open.assert_not_called()
         assert list(output_dir.iterdir()) == []
 
-    # TODO uncomment once no longer writing both CSV and Parquet, do not submit PR with this commented out.
-    # def test_glob_is_case_sensitive_on_extension_per_platform(self, dirs, mock_open):
-    #     """Uppercase .PDF is only matched on case-insensitive filesystems (Windows)."""
-    #     input_dir, output_dir, prov_dir = dirs
-    #     (input_dir / "UPPER.PDF").write_bytes(PDF_BYTES)
-    #     mock_open.return_value = make_pdf([[["x"]]])
+    def test_glob_is_case_sensitive_on_extension_per_platform(self, dirs, mock_open):
+        """Uppercase .PDF is only matched on case-insensitive filesystems (Windows)."""
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "UPPER.PDF").write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([[["x"]]])
 
-    #     extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
+        extract_pdfs_to_silver(input_dir, output_dir, prov_dir)
 
-    #     # Behavior depends on OS; either outcome must be self-consistent
-    #     assert mock_open.call_count == len(list(output_dir.iterdir()))
+        # Behavior depends on OS; either outcome must be self-consistent
+        assert mock_open.call_count == len(list(output_dir.iterdir()))
 
     def test_empty_input_dir_creates_output_dir_only(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
@@ -568,3 +567,68 @@ class TestBronzeToSilverExtractor:
 
         # Assert
         assert result == []
+
+    def test_extract_file_writes_csv_logs_provenance_and_returns_path(self, dirs, mock_logger):
+        # Arrange
+        input_dir, output_dir, prov_dir = dirs
+        output_dir.mkdir(parents=True, exist_ok=True)
+        pdf_path = input_dir / "report.pdf"
+        pdf_path.write_bytes(b"%PDF-1.4 fake")
+
+        mock_table_extractor = MagicMock(spec=TableExtractor)
+        mock_table_extractor.extract_from_pdf.return_value = [
+            {
+                "table_index": 1,
+                "row_index": 0,
+                "raw_row": ["Abbeville — § 1", None, "10"],
+            }
+        ]
+        extractor = BronzeToSilverExtractor(table_extractor=mock_table_extractor)
+
+        # Act
+        result_path = extractor.extract_file(pdf_path, output_dir, prov_dir)
+
+        # Assert
+        expected_csv = output_dir / "report.csv"
+        assert result_path == expected_csv
+        assert expected_csv.is_file()
+        assert "Abbeville — § 1" in expected_csv.read_text(encoding="utf-8")
+        assert read_rows(expected_csv) == [
+            {
+                "table_index": 1,
+                "row_index": 0,
+                "raw_row": ["Abbeville — § 1", None, "10"],
+            }
+        ]
+        mock_logger.info.assert_called_once()
+        assert "report.csv" in mock_logger.info.call_args[0][0]
+        records = read_provenance(prov_dir)
+        assert len(records) == 1
+        assert records[0]["stage"] == "silver"
+        assert records[0]["filename"] == "report.csv"
+        assert records[0]["derived_from"] == ["report.pdf"]
+
+    def test_extract_file_with_no_records_writes_header_only_csv(self, dirs, mock_logger):
+        # Arrange
+        input_dir, output_dir, prov_dir = dirs
+        output_dir.mkdir(parents=True, exist_ok=True)
+        pdf_path = input_dir / "empty.pdf"
+        pdf_path.write_bytes(b"%PDF-1.4 fake")
+
+        mock_table_extractor = MagicMock(spec=TableExtractor)
+        mock_table_extractor.extract_from_pdf.return_value = []
+        extractor = BronzeToSilverExtractor(table_extractor=mock_table_extractor)
+
+        # Act
+        result_path = extractor.extract_file(pdf_path, output_dir, prov_dir)
+
+        # Assert
+        expected_csv = output_dir / "empty.csv"
+        assert result_path == expected_csv
+        assert expected_csv.read_text(encoding="utf-8").strip() == "table_index,row_index,raw_row"
+        assert read_rows(expected_csv) == []
+        mock_logger.info.assert_called_once()
+        records = read_provenance(prov_dir)
+        assert len(records) == 1
+        assert records[0]["filename"] == "empty.csv"
+        assert records[0]["derived_from"] == ["empty.pdf"]

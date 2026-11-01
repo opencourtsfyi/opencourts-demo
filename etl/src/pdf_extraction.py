@@ -111,7 +111,6 @@ class BronzeToSilverExtractor:
 
         return sorted(matched_files, key=lambda p: p.name)
 
-    # TODO write unit tests for this method
     def extract_file(
         self,
         file_path: Path,
