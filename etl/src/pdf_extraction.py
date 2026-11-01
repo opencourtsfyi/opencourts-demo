@@ -157,7 +157,17 @@ def extract_pdfs_to_silver(
     output_dir: Path,
     provenance_dir: Path,
 ) -> list[Path]:
-    """Extracts raw tables from all PDFs in input_dir and saves them as Parquet in output_dir."""
+    """
+    Extracts raw tables from all PDFs in input_dir and saves them as Parquet in output_dir.
+    Also logs provenance records in provenance_dir linking each Silver file back to its source Bronze PDF.
+    This function is the main entry point for the Silver stage of the ETL pipeline.
+
+    input_dir: Path to the directory containing Bronze PDF files.
+    output_dir: Path to the directory where Silver Parquet files will be saved.
+    provenance_dir: Path to the directory where provenance logs will be written.
+
+    returns: List of Paths to the generated Silver Parquet files.
+    """
     extractor = BronzeToSilverExtractor()
     return extractor.extract_all(input_dir, output_dir, provenance_dir)
 

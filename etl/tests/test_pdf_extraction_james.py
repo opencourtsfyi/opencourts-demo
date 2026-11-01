@@ -1,4 +1,5 @@
-# TODO integrate James' findings
+# TODO integrate James' tests
+import json
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -7,23 +8,8 @@ import pandas as pd
 import pytest
 
 
-REPORT_PDF = "estate_monthly_caseload_2023_to_2024_bronze.pdf"
-REPORT_CSV = "estate_monthly_caseload_2023_to_2024_bronze.csv"
 EMPTY_PDF = "estate_monthly_caseload_2022_to_2023_bronze.pdf"
 EMPTY_CSV = "estate_monthly_caseload_2022_to_2023_bronze.csv"
-
-REPORT_TABLE = [
-    [
-        "South Carolina Court Administration\nEstate Monthly Caseload Report\nPeriod",
-        None,
-        "",
-        'say "hi"',
-    ],
-    [None, None, "July", "January"],
-    ["Abbeville", None, None, None],
-    ["Pending first of month", "line\nbreak", "1,086", "5"],
-]
-
 
 class FakePage:
     def __init__(self, table):
@@ -60,13 +46,24 @@ def pdf_extraction(monkeypatch):
 
 
 def install_tables(monkeypatch, module, tables_by_name):
+    """
+    monkeypatch pdfplumber.open to return a FakePDF with the given tables.
+    tables_by_name is a dict mapping PDF file names to lists of tables (or None for no tables).
+    """
     def open_pdf(path):
         return FakePDF(tables_by_name[Path(path).name])
 
     monkeypatch.setattr(module.pdfplumber, "open", open_pdf)
 
 
-def write_pdfs(directory, names):
+def create_empty_pdfs(directory: Path, names: list[str]) -> None:
+    """
+    Helper function writes empty PDF files to the given directory with the given names.
+
+    directory: Path to the directory where the PDFs will be created.
+    names: List of PDF file names to create.
+
+    """
     directory.mkdir(parents=True)
     for name in names:
         (directory / name).write_bytes(b"%PDF")
@@ -77,15 +74,40 @@ def read_provenance(provenance_dir):
     return [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
+#TODO test extract_pdfs_to_silver returns a list of Paths to the generated Silver files
+
+
 def test_silver_csv_preserves_cell_text(tmp_path, monkeypatch, pdf_extraction):
+    """
+    Test that extract_pdfs_to_silver writes a CSV with the expected header and cell text, and that provenance is recorded correctly.
+    """
+    # Arrange
+    REPORT_PDF = "estate_monthly_caseload_2023_to_2024_bronze.pdf"
+    REPORT_CSV = "estate_monthly_caseload_2023_to_2024_bronze.csv"
+    REPORT_TABLE = [
+        [
+            "South Carolina Court Administration\nEstate Monthly Caseload Report\nPeriod",
+            None,
+            "",
+            'say "hi"',
+        ],
+        [None, None, "July", "January"],
+        ["Abbeville", None, None, None],
+        ["Pending first of month", "line\nbreak", "1,086", "5"],
+    ]
+
     bronze = tmp_path / "bronze"
     silver = tmp_path / "silver"
     provenance = tmp_path / "provenance"
-    write_pdfs(bronze, [REPORT_PDF])
+    create_empty_pdfs(bronze, [REPORT_PDF])
     install_tables(monkeypatch, pdf_extraction, {REPORT_PDF: [REPORT_TABLE]})
 
-    pdf_extraction.extract_pdfs_to_silver(bronze, silver, provenance)
+    # Act
+    pdf_extraction.extract_pdfs_to_silver(input_dir=bronze, output_dir=silver, provenance_dir=provenance)
 
+    # Assert
+
+    # Assert that the silver CSV exists and has the expected header and cell text
     csv_path = silver / REPORT_CSV
     assert csv_path.is_file()
     text = csv_path.read_text(encoding="utf-8")
@@ -95,6 +117,7 @@ def test_silver_csv_preserves_cell_text(tmp_path, monkeypatch, pdf_extraction):
     restored = [json.loads(value) for value in stored["raw_row"]]
     assert restored == REPORT_TABLE
 
+    # Assert that provenance log contains a record for the silver CSV derived from the PDF
     records = read_provenance(provenance)
     assert records[0]["stage"] == "silver"
     assert records[0]["filename"] == REPORT_CSV
@@ -102,14 +125,17 @@ def test_silver_csv_preserves_cell_text(tmp_path, monkeypatch, pdf_extraction):
 
 
 def test_pdf_without_tables_writes_header_and_provenance(tmp_path, monkeypatch, pdf_extraction):
+    # Arrange
     bronze = tmp_path / "bronze"
     silver = tmp_path / "silver"
     provenance = tmp_path / "provenance"
-    write_pdfs(bronze, [EMPTY_PDF])
+    create_empty_pdfs(bronze, [EMPTY_PDF])
     install_tables(monkeypatch, pdf_extraction, {EMPTY_PDF: [None]})
 
+    # Act
     pdf_extraction.extract_pdfs_to_silver(bronze, silver, provenance)
 
+    # Assert
     header = (silver / EMPTY_CSV).read_text(encoding="utf-8").strip()
     assert header == ",".join(pdf_extraction.SILVER_COLUMNS)
     records = read_provenance(provenance)
