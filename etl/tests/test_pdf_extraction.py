@@ -1,3 +1,4 @@
+from pathlib import Path
 import json
 from unittest.mock import MagicMock, patch
 
@@ -334,15 +335,37 @@ class TestBronzeToSilverExtractor:
         assert list(output_dir.iterdir()) == []
 
     def test_glob_is_case_sensitive_on_extension_per_platform(self, dirs, mock_open):
-        """Uppercase .PDF is only matched on case-insensitive filesystems (Windows)."""
+        """Uppercase .PDF is matched, extracted to UPPER.csv, and deduplicated."""
         input_dir, output_dir, prov_dir = dirs
         (input_dir / "UPPER.PDF").write_bytes(PDF_BYTES)
         mock_open.return_value = make_pdf([[["x"]]])
 
-        BronzeToSilverExtractor(input_dir, output_dir, prov_dir).extract_all()
+        extractor = BronzeToSilverExtractor(input_dir, output_dir, prov_dir)
+        matched = extractor.find_pdf_files()
 
-        # Behavior depends on OS; either outcome must be self-consistent
-        assert mock_open.call_count == len(list(output_dir.iterdir()))
+        assert [f.name for f in matched] == ["UPPER.PDF"]
+        extractor.extract_all()
+
+        mock_open.assert_called_once_with(input_dir / "UPPER.PDF")
+        assert [p.name for p in output_dir.iterdir()] == ["UPPER.csv"]
+
+    def test_find_pdf_files_matches_mixed_extension_casings(self, tmp_path):
+        """Finds files with both .pdf and .PDF extensions in the same directory."""
+        (tmp_path / "foo.pdf").write_bytes(PDF_BYTES)
+        (tmp_path / "bar.PDF").write_bytes(PDF_BYTES)
+
+        extractor = BronzeToSilverExtractor(input_dir=tmp_path)
+        found = extractor.find_pdf_files()
+
+        assert [f.name for f in found] == ["bar.PDF", "foo.pdf"]
+
+    def test_find_pdf_files_deduplicates_same_file_matched_by_multiple_patterns(self, tmp_path):
+        """When glob matches the same physical file under multiple patterns, it is deduplicated."""
+        (tmp_path / "doc.pdf").write_bytes(PDF_BYTES)
+        extractor = BronzeToSilverExtractor(input_dir=tmp_path)
+        matched = extractor.find_pdf_files()
+        assert len(matched) == 1
+        assert matched[0].name.lower() == "doc.pdf"
 
     def test_empty_input_dir_creates_output_dir_only(self, dirs, mock_open):
         input_dir, output_dir, prov_dir = dirs
@@ -652,3 +675,108 @@ class TestBronzeToSilverExtractor:
         assert len(records) == 1
         assert records[0]["filename"] == "empty.csv"
         assert records[0]["derived_from"] == ["empty.pdf"]
+
+    def test_i18n_logging_in_spanish(self, dirs, mock_open, mock_logger):
+        from i18n import use_locale
+
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "informe.pdf").write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([None])
+
+        with use_locale("es"):
+            BronzeToSilverExtractor(input_dir, output_dir, prov_dir).extract_all()
+
+        info_messages = [c[0][0] for c in mock_logger.info.call_args_list]
+        warning_messages = [c[0][0] for c in mock_logger.warning.call_args_list]
+
+        assert "Iniciando extracción en: informe.pdf" in info_messages
+        assert "Guardado informe.csv" in info_messages
+        assert warning_messages == [
+            "No se encontró ninguna tabla en la página 1 de informe.pdf, omitiendo"
+        ]
+
+    def test_i18n_fallback_when_locale_is_missing(self, dirs, mock_open, mock_logger):
+        from i18n import use_locale
+
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "fallback.pdf").write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([[["data"]]])
+
+        with use_locale("nonexistent_locale"):
+            BronzeToSilverExtractor(input_dir, output_dir, prov_dir).extract_all()
+
+        info_messages = [c[0][0] for c in mock_logger.info.call_args_list]
+        assert "Starting extraction on: fallback.pdf" in info_messages
+        assert "Saved fallback.csv" in info_messages
+
+    def test_find_pdf_files_includes_hidden_pdf(self, tmp_path):
+        (tmp_path / ".hidden.pdf").write_bytes(PDF_BYTES)
+        (tmp_path / "visible.pdf").write_bytes(PDF_BYTES)
+
+        extractor = BronzeToSilverExtractor(input_dir=tmp_path)
+        found = extractor.find_pdf_files()
+
+        assert [f.name for f in found] == [".hidden.pdf", "visible.pdf"]
+
+    def test_duplicate_stems_across_casing_behavior(self, dirs, mock_open):
+        """When duplicate stems exist (e.g. x.PDF and x.pdf), they sort deterministically and extract to x.csv."""
+        input_dir, output_dir, prov_dir = dirs
+        mock_open.side_effect = lambda p: make_pdf([[[p.name]]])
+
+        extractor = BronzeToSilverExtractor(input_dir, output_dir, prov_dir)
+        with patch.object(
+            extractor,
+            "find_pdf_files",
+            return_value=[input_dir / "x.PDF", input_dir / "x.pdf"],
+        ):
+            output_files = extractor.extract_all()
+
+        assert output_files == [output_dir / "x.csv", output_dir / "x.csv"]
+        assert read_rows(output_dir / "x.csv")[0]["raw_row"] == ["x.pdf"]
+        provenance = read_provenance(prov_dir)
+        assert len(provenance) == 2
+        assert provenance[0]["derived_from"] == ["x.PDF"]
+        assert provenance[1]["derived_from"] == ["x.pdf"]
+
+    def test_extract_table_with_tuple_rows_and_ragged_lengths_coerces_cleanly(self, dirs, mock_open):
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "oddball.pdf").write_bytes(PDF_BYTES)
+        odd_table = [("cell1", "cell2"), ["single_cell"], ["col1", "col2", "col3"]]
+        mock_open.return_value = make_pdf([odd_table])
+
+        BronzeToSilverExtractor(input_dir, output_dir, prov_dir).extract_all()
+
+        rows = read_rows(output_dir / "oddball.csv")
+        assert len(rows) == 3
+        assert rows[0]["raw_row"] == ["cell1", "cell2"]
+        assert rows[1]["raw_row"] == ["single_cell"]
+        assert rows[2]["raw_row"] == ["col1", "col2", "col3"]
+
+    def test_extract_table_non_iterable_payload_fails_loudly(self, dirs, mock_open):
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "corrupt_table.pdf").write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([12345])
+
+        with pytest.raises(TypeError):
+            BronzeToSilverExtractor(input_dir, output_dir, prov_dir).extract_all()
+
+    def test_repeat_runs_append_provenance_without_overwriting(self, dirs, mock_open):
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "run1.pdf").write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([[["row1"]]])
+
+        extractor = BronzeToSilverExtractor(input_dir, output_dir, prov_dir)
+
+        extractor.extract_all()
+        log_after_run1 = read_provenance(prov_dir)
+        assert len(log_after_run1) == 1
+        assert log_after_run1[0]["filename"] == "run1.csv"
+        assert log_after_run1[0]["derived_from"] == ["run1.pdf"]
+
+        (input_dir / "run2.pdf").write_bytes(PDF_BYTES)
+        extractor.extract_all()
+        log_after_run2 = read_provenance(prov_dir)
+
+        assert len(log_after_run2) == 3
+        assert log_after_run2[0] == log_after_run1[0]
+        assert [r["filename"] for r in log_after_run2] == ["run1.csv", "run1.csv", "run2.csv"]
