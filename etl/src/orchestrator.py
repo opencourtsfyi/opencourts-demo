@@ -13,7 +13,7 @@ import argparse
 from pathlib import Path
 
 from downloader import download_pdfs
-from pdf_extraction import extract_pdfs_to_silver
+from pdf_extraction import BronzeToSilverExtractor
 from normalize import normalize_silver_to_gold
 from validate_pipeline import validate_gold_csv, write_error_report
 
@@ -35,7 +35,7 @@ def run_pipeline(overwrite_existing: bool = False) -> None:
     download_pdfs(bronze_dir, provenance_dir, overwrite_existing=overwrite_existing)
 
     logger.info("=== Step 2: Silver — Extracting tables from PDFs ===")
-    extract_pdfs_to_silver(bronze_dir, silver_dir, provenance_dir)
+    BronzeToSilverExtractor(bronze_dir, silver_dir, provenance_dir).extract_all()
 
     logger.info("=== Step 3: Gold — Normalizing to CSV and Parquet ===")
     normalize_silver_to_gold(silver_dir, gold_dir, provenance_dir)
