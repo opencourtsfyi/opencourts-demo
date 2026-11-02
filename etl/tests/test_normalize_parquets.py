@@ -5,7 +5,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-from normalize_parquets import (
+from normalize import (
     CATEGORY,
     COUNTIES_LOWER,
     EXPECTED_METRICS,
@@ -23,7 +23,7 @@ EXPECTED_COUNTY_COUNT = 46
 EXPECTED_MONTH_COUNT = 12
 FIRST_YEAR = 2019
 SECOND_YEAR = 2020
-SILVER_NAME = "estate_2019_2020_bronze.parquet"
+SILVER_NAME = "estate_2019_2020_bronze.csv"
 ESTATE_TITLE = "South Carolina Court Administration\nEstate Monthly Caseload Report\nPeriod 2019-2020"
 GUARDIAN_TITLE = "South Carolina Court Administration\nGuardian and Conservator Monthly Caseload Report\nPeriod"
 MENTAL_HEALTH_TITLE = "South Carolina Court Administration\nMental Health Monthly Caseload Report\nPeriod"
@@ -36,11 +36,10 @@ PROVENANCE_FILE = "provenance_log.jsonl"
 CSV_STEM = "caseloads_normalized"
 CUSTOM_STEM = "custom_name"
 
-
 def write_silver(directory, name, rows):
-    """Writes a Silver-style parquet with a single list<string> 'raw_row' column."""
-    table = pa.table({"raw_row": pa.array(rows, type=pa.list_(pa.string()))})
-    pq.write_table(table, directory / name)
+    """Writes a Silver CSV with each raw row encoded as a JSON list."""
+    df = pd.DataFrame({"raw_row": [json.dumps(row) for row in rows]})
+    df.to_csv(directory / name, index=False)
 
 
 def dirs(tmp_path):
@@ -320,7 +319,7 @@ class TestNormalizeStateHandling:
         assert set(df["file"]) == {SILVER_NAME}
 
     def test_files_processed_in_sorted_order_with_own_years(self, tmp_path):
-        later = "estate_2021_2022_bronze.parquet"
+        later = "estate_2021_2022_bronze.csv"
         df, _, _ = run(tmp_path, {later: estate_rows(), SILVER_NAME: estate_rows()})
         assert df["file"].unique().tolist() == [SILVER_NAME, later]
         assert sorted(df["year"].unique().tolist()) == [2019, 2020, 2021, 2022]
@@ -352,7 +351,7 @@ class TestNormalizeStateHandling:
         assert df["year"].tolist() == [FIRST_YEAR] * 3
 
     def test_same_year_filename_collapses_year_map(self, tmp_path):
-        df, _, _ = run(tmp_path, {"estate_2019_2019.parquet": estate_rows()})
+        df, _, _ = run(tmp_path, {"estate_2019_2019.csv": estate_rows()})
         assert df["year"].unique().tolist() == [FIRST_YEAR]
 
 
@@ -404,7 +403,7 @@ class TestNormalizeOutputs:
         assert [r["derived_from"] for r in records] == [[], []]
 
     def test_provenance_logged_for_csv_and_parquet(self, tmp_path):
-        other = "estate_2021_2022_bronze.parquet"
+        other = "estate_2021_2022_bronze.csv"
         _, _, prov = run(tmp_path, {SILVER_NAME: estate_rows(), other: estate_rows()})
 
         records = [json.loads(l) for l in (prov / PROVENANCE_FILE).read_text().splitlines()]
@@ -440,26 +439,20 @@ class TestNormalizeErrors:
 
     def test_filename_with_fewer_than_two_years_raises_index_error(self, tmp_path):
         with pytest.raises(IndexError):
-            run(tmp_path, {"estate_2019.parquet": estate_rows()})
+            run(tmp_path, {"estate_2019.csv": estate_rows()})
 
     def test_filename_without_years_raises_index_error(self, tmp_path):
         with pytest.raises(IndexError):
-            run(tmp_path, {"estate.parquet": estate_rows()})
+            run(tmp_path, {"estate.csv": estate_rows()})
 
     def test_filename_with_extra_years_uses_first_two(self, tmp_path):
-        df, _, _ = run(tmp_path, {"estate_2019_2020_2021.parquet": estate_rows()})
+        df, _, _ = run(tmp_path, {"estate_2019_2020_2021.csv": estate_rows()})
         assert sorted(df["year"].unique().tolist()) == [FIRST_YEAR, SECOND_YEAR]
 
     def test_missing_raw_row_column_raises_key_error(self, tmp_path):
         silver, gold, prov = dirs(tmp_path)
         pq.write_table(pa.table({"other": ["a"]}), silver / SILVER_NAME)
         with pytest.raises(KeyError):
-            normalize_silver_to_gold(silver, gold, prov)
-
-    def test_corrupt_parquet_raises(self, tmp_path):
-        silver, gold, prov = dirs(tmp_path)
-        (silver / SILVER_NAME).write_bytes(b"not a parquet file")
-        with pytest.raises(pa.ArrowInvalid):
             normalize_silver_to_gold(silver, gold, prov)
 
     def test_title_without_second_line_raises_index_error(self, tmp_path):
