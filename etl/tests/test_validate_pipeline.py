@@ -1,8 +1,9 @@
 import pytest
 import pandas as pd
+from pydantic import ValidationError
 from pathlib import Path
 
-from validate_pipeline import validate_gold_csv, write_error_report
+from validate_pipeline import GoldRow, validate_gold_csv, validate_gold_dataframe, write_error_report
 from normalize import SCHEMA
 
 def make_gold_row(**overrides):
@@ -102,3 +103,23 @@ def test_write_error_report_overwrites(tmp_path):
     write_error_report([], report_path)
     report = pd.read_csv(report_path)
     assert report.empty
+
+def row_messages(row):
+    with pytest.raises(ValidationError) as exc_info:
+        GoldRow.model_validate(row)
+    return [err["msg"].removeprefix("Value error, ") for err in exc_info.value.errors()]
+
+def test_gold_row_skips_metric_error_when_category_is_unrecognized():
+    messages = row_messages(make_gold_row(category="Unknown", metric="Bogus"))
+    assert messages == ["Unrecognized category value: 'Unknown'"]
+
+def test_gold_row_checks_metric_even_when_other_fields_fail():
+    messages = row_messages(make_gold_row(county="Atlantis", metric="Bogus"))
+    assert "Metric 'Bogus' does not match category 'Estate'" in messages
+    assert "Unrecognized county value: 'Atlantis'" in messages
+
+def test_validate_gold_dataframe_flags_duplicates_in_memory():
+    df = pd.DataFrame([make_gold_row(), make_gold_row()], columns=SCHEMA)
+    errors = validate_gold_dataframe(df, "gold.csv")
+    assert [e["row_number"] for e in errors] == [2, 3]
+    assert all(e["filename"] == "source.pdf" for e in errors)
