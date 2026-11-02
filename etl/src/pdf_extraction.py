@@ -58,7 +58,6 @@ class TableExtractor:
                         t(
                             "pdf_extraction.log_no_table_found",
                             table_index=table_index,
-                            page=table_index,
                             filename=file_path.name,
                         )
                     )
