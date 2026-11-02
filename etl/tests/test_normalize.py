@@ -4,10 +4,22 @@ from pathlib import Path
 import pandas as pd
 import pyarrow.parquet as pq
 
-from normalize import normalize_silver_to_gold2
+from normalize import normalize_silver_to_gold2, normalize_silver_to_gold
 
 
 SILVER_COLUMNS = ("table_index", "row_index", "raw_row")
+REPORT_CSV = "estate_monthly_caseload_2023_to_2024_bronze.csv"
+REPORT_TABLE = [
+    [
+        "South Carolina Court Administration\nEstate Monthly Caseload Report\nPeriod",
+        None,
+        "",
+        'say "hi"',
+    ],
+    [None, None, "July", "January"],
+    ["Abbeville", None, None, None],
+    ["Pending first of month", "line\nbreak", "1,086", "5"],
+]
 
 def write_silver_csv(directory, name, rows):
     directory.mkdir(parents=True, exist_ok=True)
@@ -24,53 +36,38 @@ def read_provenance(provenance_dir):
     log_path = provenance_dir / "provenance_log.jsonl"
     return [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
+def test_normalize_reads_silver_csv_not_parquet(tmp_path):
+    EMPTY_CSV = "estate_monthly_caseload_2022_to_2023_bronze.csv"
+    silver = tmp_path / "silver"
+    gold = tmp_path / "gold"
+    provenance = tmp_path / "provenance"
+    write_silver_csv(silver, EMPTY_CSV, [])
+    write_silver_csv(silver, REPORT_CSV, REPORT_TABLE)
+    (silver / "estate_monthly_caseload_2021_to_2022_bronze.parquet").write_text("old", encoding="utf-8")
 
-# TODO remove parquet reference, determine if this test is still needed
-# def test_normalize_reads_silver_csv_not_parquet(tmp_path):
-    # EMPTY_CSV = "estate_monthly_caseload_2022_to_2023_bronze.csv"
-#     silver = tmp_path / "silver"
-#     gold = tmp_path / "gold"
-#     provenance = tmp_path / "provenance"
-#     write_silver_csv(silver, EMPTY_CSV, [])
-#     write_silver_csv(silver, REPORT_CSV, REPORT_TABLE)
-#     (silver / "estate_monthly_caseload_2021_to_2022_bronze.parquet").write_text("old", encoding="utf-8")
+    result = normalize_silver_to_gold(silver, gold, provenance)
 
-#     result = normalize_silver_to_gold(silver, gold, provenance)
+    assert result["file"].tolist() == [REPORT_CSV, REPORT_CSV]
+    assert result["category"].tolist() == ["Estate", "Estate"]
+    assert result["county"].tolist() == ["Abbeville", "Abbeville"]
+    assert result["metric"].tolist() == ["Pending first of month", "Pending first of month"]
+    assert result["month"].tolist() == [7, 1]
+    assert result["year"].tolist() == [2023, 2024]
+    assert result["value"].tolist() == ["1086", "5"]
 
-#     assert result["file"].tolist() == [REPORT_CSV, REPORT_CSV]
-#     assert result["category"].tolist() == ["Estate", "Estate"]
-#     assert result["county"].tolist() == ["Abbeville", "Abbeville"]
-#     assert result["metric"].tolist() == ["Pending first of month", "Pending first of month"]
-#     assert result["month"].tolist() == [7, 1]
-#     assert result["year"].tolist() == [2023, 2024]
-#     assert result["value"].tolist() == ["1086", "5"]
+    written = pq.read_table(gold / "caseloads_normalized.parquet").to_pandas()
+    assert written["value"].tolist() == ["1086", "5"]
+    assert written["month"].tolist() == [7, 1]
 
-#     written = pq.read_table(gold / "caseloads_normalized.parquet").to_pandas()
-#     assert written["value"].tolist() == ["1086", "5"]
-#     assert written["month"].tolist() == [7, 1]
-
-#     gold_records = [record for record in read_provenance(provenance) if record["stage"] == "gold"]
-#     assert gold_records[0]["derived_from"] == [EMPTY_CSV, REPORT_CSV]
-#     assert "estate_monthly_caseload_2021_to_2022_bronze.parquet" not in gold_records[0]["derived_from"]
+    gold_records = [record for record in read_provenance(provenance) if record["stage"] == "gold"]
+    assert gold_records[0]["derived_from"] == [EMPTY_CSV, REPORT_CSV]
+    assert "estate_monthly_caseload_2021_to_2022_bronze.parquet" not in gold_records[0]["derived_from"]
 
 
+# TODO refactor to no longer use normalize_silver_to_gold2, which is a temporary workaround for the fact that normalize_silver_to_gold now reads CSV instead of Parquet. The test should be updated to use the new CSV-based normalization function directly.
 def test_normalize_silver_csv_pandas_na_safety(tmp_path):
     """Skip raw_row cells that pandas would treat as NA, instead of crashing in json.loads."""
     # Arrange
-    REPORT_CSV = "estate_monthly_caseload_2023_to_2024_bronze.csv"
-
-    REPORT_TABLE = [
-        [
-            "South Carolina Court Administration\nEstate Monthly Caseload Report\nPeriod",
-            None,
-            "",
-            'say "hi"',
-        ],
-        [None, None, "July", "January"],
-        ["Abbeville", None, None, None],
-        ["Pending first of month", "line\nbreak", "1,086", "5"],
-    ]
-
     silver = tmp_path / "silver"
     gold = tmp_path / "gold"
     provenance = tmp_path / "provenance"
@@ -90,7 +87,7 @@ def test_normalize_silver_csv_pandas_na_safety(tmp_path):
 
     # Act
 
-    result = normalize_silver_to_gold2(silver, gold, provenance)
+    result = normalize_silver_to_gold(silver, gold, provenance)
 
     # Assert
     assert result["value"].tolist() == ["1086", "5"]

@@ -139,6 +139,8 @@ class SilverDataLoader:
 
     # PARQUET_FILE_PATTERN: Final[str] = "*.parquet"
     CSV_FILE_PATTERN: Final[str] = "*.csv"
+    RAW_ROW_COLUMN: Final[str] = "raw_row"
+    UTF8_ENCODING: Final[str] = "utf-8"
     YEAR_REGEX_PATTERN: Final[str] = r"\d{4}"
     YEAR_PATTERN: Final[re.Pattern[str]] = re.compile(YEAR_REGEX_PATTERN)
     FIRST_YEAR_INDEX: Final[int] = 0
@@ -163,13 +165,39 @@ class SilverDataLoader:
         )
 
     @staticmethod
+    def _deserialize_raw_row(raw_cell: Any, file_name: str = "") -> list[Any] | None:
+        """Safely deserializes a JSON list string into a list, skipping NA or malformed cells."""
+        if not isinstance(raw_cell, str):
+            return None
+        try:
+            parsed = json.loads(raw_cell)
+        except (json.JSONDecodeError, TypeError):
+            if file_name:
+                logger.warning(f"Skipping unreadable raw_row in {file_name}")
+            return None
+        if not isinstance(parsed, list):
+            if file_name:
+                logger.warning(f"Skipping non-list raw_row in {file_name}")
+            return None
+        return parsed
+
+    @staticmethod
     def load_rows_dataframe(file_path: Path) -> pd.DataFrame:
         """Reads a Silver CSV table into a pandas DataFrame."""
-        df = pd.read_csv(file_path, encoding="utf-8", dtype={"raw_row": str}, keep_default_na=False)
+        df = pd.read_csv(
+            file_path,
+            encoding=SilverDataLoader.UTF8_ENCODING,
+            dtype={SilverDataLoader.RAW_ROW_COLUMN: str},
+            keep_default_na=False,
+        )
 
-        # Restore the raw_row column from JSON strings to lists, so cell indexing, empty cells, and embedded newlines match extraction.
-        df['raw_row'] = df['raw_row'].apply(lambda x: json.loads(x) if isinstance(x, str) else [])
-        return df
+        # Restore the raw_row column from JSON strings to lists, filtering out NA, null, or malformed rows.
+        parsed_rows = [
+            SilverDataLoader._deserialize_raw_row(row_str, file_path.name)
+            for row_str in df[SilverDataLoader.RAW_ROW_COLUMN]
+        ]
+        df[SilverDataLoader.RAW_ROW_COLUMN] = parsed_rows
+        return df[df[SilverDataLoader.RAW_ROW_COLUMN].notna()].copy()
 
 
 class TableNormalizer:
