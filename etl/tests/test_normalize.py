@@ -16,7 +16,7 @@ from normalize import (
     SC_COUNTIES,
     SCHEMA,
     match_metric,
-    normalize_silver_to_gold,
+    SilverToGoldNormalizer,
 )
 
 EXPECTED_COUNTY_COUNT = 46
@@ -52,7 +52,7 @@ def run(tmp_path, rows_by_file, **kwargs):
     silver, gold, prov = dirs(tmp_path)
     for name, rows in rows_by_file.items():
         write_silver(silver, name, rows)
-    return normalize_silver_to_gold(silver, gold, prov, **kwargs), gold, prov
+    return SilverToGoldNormalizer().normalize(silver, gold, prov, **kwargs), gold, prov
 
 
 def estate_rows(county="Abbeville", metric="Added", values=("1", "2", "3")):
@@ -328,7 +328,7 @@ class TestNormalizeStateHandling:
         silver, gold, prov = dirs(tmp_path)
         write_silver(silver, SILVER_NAME, estate_rows())
         (silver / "notes_2019_2020.txt").write_text("ignore me")
-        df = normalize_silver_to_gold(silver, gold, prov)
+        df = SilverToGoldNormalizer().normalize(silver, gold, prov)
         assert set(df["file"]) == {SILVER_NAME}
 
     def test_title_with_unknown_category_keeps_previous_category(self, tmp_path):
@@ -389,7 +389,7 @@ class TestNormalizeOutputs:
         silver, _, prov = dirs(tmp_path)
         write_silver(silver, SILVER_NAME, estate_rows())
         nested = tmp_path / "a" / "b" / "gold"
-        normalize_silver_to_gold(str(silver), str(nested), str(prov))
+        SilverToGoldNormalizer().normalize(str(silver), str(nested), str(prov))
         assert (nested / f"{CSV_STEM}.csv").exists()
 
     def test_empty_input_dir_writes_empty_outputs(self, tmp_path):
@@ -420,8 +420,8 @@ class TestNormalizeOutputs:
     def test_rerun_overwrites_outputs_and_appends_provenance(self, tmp_path):
         silver, gold, prov = dirs(tmp_path)
         write_silver(silver, SILVER_NAME, estate_rows())
-        normalize_silver_to_gold(silver, gold, prov)
-        normalize_silver_to_gold(silver, gold, prov)
+        SilverToGoldNormalizer().normalize(silver, gold, prov)
+        SilverToGoldNormalizer().normalize(silver, gold, prov)
 
         assert len(pd.read_csv(gold / f"{CSV_STEM}.csv")) == 3
         assert len((prov / PROVENANCE_FILE).read_text().splitlines()) == 4
@@ -434,7 +434,7 @@ class TestNormalizeOutputs:
 class TestNormalizeErrors:
     def test_missing_input_dir_yields_empty_output(self, tmp_path):
         # Path.glob on a missing directory yields nothing rather than raising
-        df = normalize_silver_to_gold(tmp_path / "nope", tmp_path / "gold", tmp_path / "prov")
+        df = SilverToGoldNormalizer().normalize(tmp_path / "nope", tmp_path / "gold", tmp_path / "prov")
         assert df.empty
 
     def test_filename_with_fewer_than_two_years_raises_index_error(self, tmp_path):
@@ -453,7 +453,7 @@ class TestNormalizeErrors:
         silver, gold, prov = dirs(tmp_path)
         pq.write_table(pa.table({"other": ["a"]}), silver / SILVER_NAME)
         with pytest.raises(KeyError):
-            normalize_silver_to_gold(silver, gold, prov)
+            SilverToGoldNormalizer().normalize(silver, gold, prov)
 
     def test_title_without_second_line_raises_index_error(self, tmp_path):
         rows = [["South Carolina Court Administration", None, None]]

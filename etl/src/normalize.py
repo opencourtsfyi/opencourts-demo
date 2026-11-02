@@ -440,35 +440,12 @@ class SilverToGoldNormalizer:
             silver_files_used=silver_files_used,
         )
 
-# TODO this is a shallow function that adds no value, refactor to just use SilverToGoldNormalizer directly
-def normalize_silver_to_gold(
-    input_dir: str | Path,
-    output_dir: str | Path,
-    provenance_dir: str | Path,
-    output_filename: str = DEFAULT_OUTPUT_FILENAME,
-) -> pd.DataFrame:
-    """Reads Silver CSV files and writes a normalized Gold CSV and Parquet.
-
-    Walks each Silver CSV file row by row. Since the raw PDF table
-    doesn't repeat context (category/county) on every row, this function
-    tracks "current state" as it moves through the rows, updating that
-    state whenever it recognizes a title, header, or county row, and
-    collecting an output row whenever it recognizes a metric row.
-    """
-    normalizer = SilverToGoldNormalizer()
-    return normalizer.normalize(
-        input_dir=input_dir,
-        output_dir=output_dir,
-        provenance_dir=provenance_dir,
-        output_filename=output_filename,
-    )
-
 if __name__ == "__main__":
     from logging_config import setup_logging
     setup_logging()
 
     base_dir = Path(__file__).resolve().parent.parent
-    normalize_silver_to_gold(
+    SilverToGoldNormalizer().normalize(
         base_dir / "data/cases_silver",
         base_dir / "data/cases_gold",
         base_dir / "data/provenance",
