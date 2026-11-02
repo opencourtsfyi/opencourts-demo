@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Final
 from downloader import download_pdfs
 from pdf_extraction import extract_pdfs_to_silver
-from normalize import normalize_silver_to_gold, SilverToGoldNormalizer
+from normalize import SilverToGoldNormalizer
 from validate_pipeline import validate_gold_csv, write_error_report
 from logging_config import setup_logging
 
