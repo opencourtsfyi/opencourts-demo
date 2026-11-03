@@ -312,7 +312,7 @@ class TestNormalizeStateHandling:
         assert len(df) == 6
 
     def test_state_resets_between_files(self, tmp_path):
-        second = "estate_2021_2022_bronze.parquet"
+        second = "estate_2021_2022_bronze.csv"
         # Second file has metric row but no title/header/county of its own
         rows2 = [[None, "Added", "1", "2", "3"]]
         df, _, _ = run(tmp_path, {SILVER_NAME: estate_rows(), second: rows2})
@@ -324,7 +324,7 @@ class TestNormalizeStateHandling:
         assert df["file"].unique().tolist() == [SILVER_NAME, later]
         assert sorted(df["year"].unique().tolist()) == [2019, 2020, 2021, 2022]
 
-    def test_non_parquet_files_ignored(self, tmp_path):
+    def test_non_csv_files_ignored(self, tmp_path):
         silver, gold, prov = dirs(tmp_path)
         write_silver(silver, SILVER_NAME, estate_rows())
         (silver / "notes_2019_2020.txt").write_text("ignore me")
@@ -451,7 +451,7 @@ class TestNormalizeErrors:
 
     def test_missing_raw_row_column_raises_key_error(self, tmp_path):
         silver, gold, prov = dirs(tmp_path)
-        pq.write_table(pa.table({"other": ["a"]}), silver / SILVER_NAME)
+        pd.DataFrame({"other": ["a"]}).to_csv(silver / SILVER_NAME, index=False)
         with pytest.raises(KeyError):
             SilverToGoldNormalizer().normalize(silver, gold, prov)
 
