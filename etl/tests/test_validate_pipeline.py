@@ -1,7 +1,6 @@
 import pytest
 import pandas as pd
 from pydantic import ValidationError
-from pathlib import Path
 
 from validate_pipeline import GoldRow, validate_gold_csv, validate_gold_dataframe, write_error_report
 from normalize import SCHEMA
