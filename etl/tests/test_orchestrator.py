@@ -12,7 +12,7 @@ from orchestrator import main, parse_args, run_pipeline
 STAGE_NAMES = (
     "download_pdfs",
     "extract_pdfs_to_silver",
-    "normalize_silver_to_gold",
+    "SilverToGoldNormalizer.normalize",
     "validate_gold_csv",
     "write_error_report",
 )
@@ -172,7 +172,7 @@ class TestRunPipeline:
 
     def test_normalize_receives_paths(self, stages):
         run_pipeline()
-        stages["normalize_silver_to_gold"].assert_called_once_with(
+        stages["SilverToGoldNormalizer.normalize"].assert_called_once_with(
             EXPECTED_SILVER, EXPECTED_GOLD, EXPECTED_PROVENANCE
         )
 
@@ -259,7 +259,7 @@ class TestRunPipelineFailures:
         [
             ("download_pdfs", STAGE_NAMES[1:]),
             ("extract_pdfs_to_silver", STAGE_NAMES[2:]),
-            ("normalize_silver_to_gold", STAGE_NAMES[3:]),
+            ("SilverToGoldNormalizer.normalize", STAGE_NAMES[3:]),
             ("validate_gold_csv", STAGE_NAMES[4:]),
         ],
     )

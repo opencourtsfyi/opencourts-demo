@@ -179,9 +179,11 @@ class GoldNormalizationStage(PipelineStage):
         return self.DESCRIPTION
 
     def execute(self, context: PipelineContext) -> None:
-        fn = self._normalize_fn if self._normalize_fn is not None else normalize_silver_to_gold
-        fn(context.config.silver_dir, context.config.gold_dir, context.config.provenance_dir)
-
+        if self._normalize_fn is not None:
+            self._normalize_fn(context.config.silver_dir, context.config.gold_dir, context.config.provenance_dir)
+        else:
+            normalizer = SilverToGoldNormalizer()
+            normalizer.normalize(context.config.silver_dir, context.config.gold_dir, context.config.provenance_dir)
 
 class GoldValidationStage(PipelineStage):
     """Validates Gold CSV outputs and writes any validation issues to an error report."""
