@@ -1,4 +1,15 @@
 {
-  "greeting": "Hello, World"
+  "greeting": "Hello, World",
+  "pageTitle": "SC County Clearance Rates",
+  "legendLabel": "Legend:",
+  "legendGreen": "Green=100%",
+  "legendYellow": "Yellow=80-99.9%",
+  "legendRed": "Red=<80%",
+  "dateRangeSeparator": "to",
+  "mapAriaLabel": "South Carolina County Clearance Rates Choropleth Map",
+  "tableHeaderCounty": "County Name",
+  "tableHeaderRate": "Clearance Rate",
+  "noDataLabel": "N/A",
+  "loadingData": "Loading clearance rate data...",
+  "errorLoadingData": "Unable to load clearance rate data."
 }
-
