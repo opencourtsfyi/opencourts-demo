@@ -60,15 +60,9 @@ def mock_logger():
 
 
 def read_rows(path):
-    if path.suffix == ".parquet":
-        return pq.read_table(path).to_pylist()
-    elif path.suffix == ".csv":
-        df = pd.read_csv(path, encoding="utf-8")
-        df["raw_row"] = df["raw_row"].apply(json.loads)
-        return df.to_dict(orient='records') # return same format as pyarrow's table.to_pylist()
-
-    return []
-
+    df = pd.read_csv(path, encoding="utf-8")
+    df["raw_row"] = df["raw_row"].apply(json.loads)
+    return df.to_dict(orient='records') # return same format as pyarrow's table.to_pylist()
 
 def read_provenance(provenance_dir):
     lines = (provenance_dir / PROVENANCE_LOG_NAME).read_text().splitlines()
