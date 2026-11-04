@@ -1,0 +1,5 @@
+{
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": false,
+    "typescript.tsdk": "node_modules/typescript/lib"
+}
