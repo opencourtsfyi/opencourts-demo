@@ -157,9 +157,12 @@ class SilverExtractionStage(PipelineStage):
         return self.DESCRIPTION
 
     def execute(self, context: PipelineContext) -> None:
-        fn = self._extract_fn if self._extract_fn is not None else extract_pdfs_to_silver
-        fn(context.config.bronze_dir, context.config.silver_dir, context.config.provenance_dir)
-
+        if self._extract_fn is not None:
+            self._extract_fn(context.config.bronze_dir, context.config.silver_dir, context.config.provenance_dir)
+        else:
+            BronzeToSilverExtractor(
+                context.config.bronze_dir, context.config.silver_dir, context.config.provenance_dir
+            ).extract_all()
 
 class GoldNormalizationStage(PipelineStage):
     """Normalizes Silver parquets into final Gold CSV and parquet datasets."""
