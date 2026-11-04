@@ -3,7 +3,7 @@ import { select } from 'd3-selection';
 import { feature } from 'topojson-client';
 import type { GeometryCollection, Topology } from 'topojson-specification';
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
-import scTopologyJson from '../data/sc-counties.topo.json';
+import scTopologyJson from '../data/sc-counties-topo.json';
 import {
   getClearanceStatus,
   MAP_DIMENSIONS,
