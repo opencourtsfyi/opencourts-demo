@@ -11,7 +11,7 @@ from orchestrator import main, parse_args, run_pipeline
 
 STAGE_NAMES = (
     "download_pdfs",
-    "extract_pdfs_to_silver",
+    "BronzeToSilverExtractor.extract_all",
     "SilverToGoldNormalizer.normalize",
     "validate_gold_csv",
     "write_error_report",
@@ -166,9 +166,7 @@ class TestRunPipeline:
 
     def test_extract_receives_paths(self, stages):
         run_pipeline()
-        stages["extract_pdfs_to_silver"].assert_called_once_with(
-            EXPECTED_BRONZE, EXPECTED_SILVER, EXPECTED_PROVENANCE
-        )
+        stages["BronzeToSilverExtractor.extract_all"].assert_called_once_with()
 
     def test_normalize_receives_paths(self, stages):
         run_pipeline()
@@ -258,7 +256,7 @@ class TestRunPipelineFailures:
         "failing, skipped",
         [
             ("download_pdfs", STAGE_NAMES[1:]),
-            ("extract_pdfs_to_silver", STAGE_NAMES[2:]),
+            ("BronzeToSilverExtractor.extract_all", STAGE_NAMES[2:]),
             ("SilverToGoldNormalizer.normalize", STAGE_NAMES[3:]),
             ("validate_gold_csv", STAGE_NAMES[4:]),
         ],
