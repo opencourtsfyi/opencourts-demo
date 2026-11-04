@@ -16,8 +16,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Final
 from downloader import download_pdfs
-from pdf_extraction import extract_pdfs_to_silver
 from normalize import SilverToGoldNormalizer
+from pdf_extraction import BronzeToSilverExtractor
 from validate_pipeline import validate_gold_csv, write_error_report
 from logging_config import setup_logging
 
@@ -157,9 +157,12 @@ class SilverExtractionStage(PipelineStage):
         return self.DESCRIPTION
 
     def execute(self, context: PipelineContext) -> None:
-        fn = self._extract_fn if self._extract_fn is not None else extract_pdfs_to_silver
-        fn(context.config.bronze_dir, context.config.silver_dir, context.config.provenance_dir)
-
+        if self._extract_fn is not None:
+            self._extract_fn(context.config.bronze_dir, context.config.silver_dir, context.config.provenance_dir)
+        else:
+            BronzeToSilverExtractor(
+                context.config.bronze_dir, context.config.silver_dir, context.config.provenance_dir
+            ).extract_all()
 
 class GoldNormalizationStage(PipelineStage):
     """Normalizes Silver parquets into final Gold CSV and parquet datasets."""
@@ -273,34 +276,6 @@ def run_pipeline(
     context = PipelineContext(config=pipeline_config)
     pipeline_orchestrator = PipelineOrchestrator(logger=logger)
     pipeline_orchestrator.run(context)
-
-    # TODO see if anything below is needed, then delete the remaining commented-out code below
-    # bronze_dir = base_dir / "data/pdfs_bronze"
-    # silver_dir = base_dir / "data/cases_silver"
-    # gold_dir = base_dir / "data/cases_gold"
-    # provenance_dir = base_dir / "data/provenance"
-    # log_dir = base_dir / "data/logs"
-
-    # setup_logging(log_dir=log_dir)
-
-    # logger.info("=== Step 1: Bronze — Downloading PDFs ===")
-    # download_pdfs(bronze_dir, provenance_dir, overwrite_existing=overwrite_existing)
-
-    # logger.info("=== Step 2: Silver — Extracting tables from PDFs ===")
-    # extract_pdfs_to_silver(bronze_dir, silver_dir, provenance_dir)
-
-    # logger.info("=== Step 3: Gold — Normalizing to CSV and Parquet ===")
-    # SilverToGoldNormalizer().normalize(silver_dir, gold_dir, provenance_dir)
-
-    # logger.info("=== Step 4: Validating Gold output ===")
-    # errors = validate_gold_csv(gold_dir / "caseloads_normalized.csv")
-    # write_error_report(errors, base_dir / "data/validation/errors.csv")
-
-    # if errors:
-    #     logger.error(f"Pipeline completed with {len(errors)} validation issue(s). Review before publishing.")
-    # else:
-    #     logger.info("Pipeline completed successfully. All validation checks passed.")
-
 
 def parse_args(args: list[str] | None = None) -> argparse.Namespace:
     """Parses command-line arguments for orchestrator.py."""
