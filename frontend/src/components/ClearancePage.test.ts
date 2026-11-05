@@ -40,6 +40,7 @@ describe('ClearancePage component', () => {
       t('legendGreen'),
       t('legendYellow'),
       t('legendRed'),
+      t('legendNoData'),
     ]);
 
     expect(root.querySelector('.legend-swatch.status-green')).not.toBeNull();
