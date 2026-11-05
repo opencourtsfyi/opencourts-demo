@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { renderChoroplethMap } from './ChoroplethMap';
 import { MAP_DIMENSIONS } from '../constants/clearanceThresholds';
-import { t } from '../i18n';
+import { t } from '../../src/i18n';
 import type { CountyClearanceSummary } from '../services/clearanceData';
 
 describe('ChoroplethMap component', () => {
