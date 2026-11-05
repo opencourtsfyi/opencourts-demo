@@ -8,7 +8,6 @@ import pytest
 from normalize import (
     CATEGORY,
     COUNTIES_LOWER,
-    EXPECTED_METRICS,
     EXPECTED_METRICS_MENTAL_HEALTH,
     METRICS_LOWER,
     METRICS_MH_LOWER,
@@ -399,14 +398,14 @@ class TestNormalizeOutputs:
         assert list(df.columns) == SCHEMA
         assert pq.read_table(gold / f"{CSV_STEM}.parquet").num_rows == 0
         assert (gold / f"{CSV_STEM}.csv").read_text().strip() == ",".join(SCHEMA)
-        records = [json.loads(l) for l in (prov / PROVENANCE_FILE).read_text().splitlines()]
+        records = [json.loads(line) for line in (prov / PROVENANCE_FILE).read_text().splitlines()]
         assert [r["derived_from"] for r in records] == [[], []]
 
     def test_provenance_logged_for_csv_and_parquet(self, tmp_path):
         other = "estate_2021_2022_bronze.csv"
         _, _, prov = run(tmp_path, {SILVER_NAME: estate_rows(), other: estate_rows()})
 
-        records = [json.loads(l) for l in (prov / PROVENANCE_FILE).read_text().splitlines()]
+        records = [json.loads(line) for line in (prov / PROVENANCE_FILE).read_text().splitlines()]
         assert [r["filename"] for r in records] == [f"{CSV_STEM}.csv", f"{CSV_STEM}.parquet"]
         for record in records:
             assert record["stage"] == "gold"

@@ -1,9 +1,6 @@
-from pathlib import Path
 import json
 from unittest.mock import MagicMock, patch
 
-#TODO: remove the parquet dependency once we switch to CSV output
-import pyarrow.parquet as pq
 import pytest
 
 import pandas as pd
