@@ -70,6 +70,10 @@ export function aggregateClearanceRates(
   const totalsByCounty = new Map<string, { added: number; disposed: number }>();
 
   for (const record of records) {
+    if (record.category.trim().toLowerCase() !== 'estate') {
+      continue;
+    }
+
     const recordIdx = toYearMonthIndex({ year: record.year, month: record.month });
     if (recordIdx < startIdx || recordIdx > endIdx) {
       continue;

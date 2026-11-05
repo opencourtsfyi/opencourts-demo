@@ -25,7 +25,7 @@ describe('clearanceData service', () => {
     it('aggregates Added and Disposed counts and calculates clearance rate', () => {
       const records: GoldCaseloadRecord[] = [
         {
-          file: 'test.parquet',
+          file: 'test.csv',
           category: 'Estate',
           year: 2025,
           month: 7,
@@ -34,7 +34,7 @@ describe('clearanceData service', () => {
           value: 100,
         },
         {
-          file: 'test.parquet',
+          file: 'test.csv',
           category: 'Estate',
           year: 2025,
           month: 8,
@@ -58,10 +58,65 @@ describe('clearanceData service', () => {
       });
     });
 
+    it('includes only Estate records regardless of category casing or whitespace', () => {
+      const records: GoldCaseloadRecord[] = [
+        {
+          file: 'test.csv',
+          category: ' Estate ',
+          year: 2025,
+          month: 7,
+          county: 'Aiken',
+          metric: 'Added',
+          value: 100,
+        },
+        {
+          file: 'test.csv',
+          category: 'eStAtE',
+          year: 2025,
+          month: 7,
+          county: 'Aiken',
+          metric: 'Disposed',
+          value: 80,
+        },
+        {
+          file: 'test.csv',
+          category: 'Trust',
+          year: 2025,
+          month: 7,
+          county: 'Aiken',
+          metric: 'Added',
+          value: 900,
+        },
+        {
+          file: 'test.csv',
+          category: 'Trust',
+          year: 2025,
+          month: 7,
+          county: 'York',
+          metric: 'Added',
+          value: 500,
+        },
+      ];
+
+      const summaries = aggregateClearanceRates(records, {
+        start: { year: 2025, month: 7 },
+        end: { year: 2026, month: 6 },
+      });
+
+      expect(summaries).toEqual([
+        {
+          county: 'Aiken',
+          added: 100,
+          disposed: 80,
+          clearanceRate: 0.8,
+        },
+      ]);
+    });
+
     it('ignores records outside the specified date range', () => {
       const records: GoldCaseloadRecord[] = [
         {
-          file: 'test.parquet',
+          file: 'test.csv',
           category: 'Estate',
           year: 2024,
           month: 12,
@@ -70,7 +125,7 @@ describe('clearanceData service', () => {
           value: 50,
         },
         {
-          file: 'test.parquet',
+          file: 'test.csv',
           category: 'Estate',
           year: 2025,
           month: 7,
@@ -98,7 +153,7 @@ describe('clearanceData service', () => {
     it('handles non-numeric or string numeric values correctly', () => {
       const records: GoldCaseloadRecord[] = [
         {
-          file: 'test.parquet',
+          file: 'test.csv',
           category: 'Estate',
           year: 2025,
           month: 7,
@@ -107,7 +162,7 @@ describe('clearanceData service', () => {
           value: '40',
         },
         {
-          file: 'test.parquet',
+          file: 'test.csv',
           category: 'Estate',
           year: 2025,
           month: 7,
@@ -116,7 +171,7 @@ describe('clearanceData service', () => {
           value: 'DNR',
         },
         {
-          file: 'test.parquet',
+          file: 'test.csv',
           category: 'Estate',
           year: 2025,
           month: 7,
@@ -138,7 +193,7 @@ describe('clearanceData service', () => {
     it('returns null clearanceRate when added cases is 0', () => {
       const records: GoldCaseloadRecord[] = [
         {
-          file: 'test.parquet',
+          file: 'test.csv',
           category: 'Estate',
           year: 2025,
           month: 7,
@@ -159,7 +214,7 @@ describe('clearanceData service', () => {
     it('sorts summaries alphabetically by county', () => {
       const records: GoldCaseloadRecord[] = [
         {
-          file: 'test.parquet',
+          file: 'test.csv',
           category: 'Estate',
           year: 2025,
           month: 7,
@@ -168,7 +223,7 @@ describe('clearanceData service', () => {
           value: 10,
         },
         {
-          file: 'test.parquet',
+          file: 'test.csv',
           category: 'Estate',
           year: 2025,
           month: 7,
@@ -191,7 +246,7 @@ describe('clearanceData service', () => {
     it('fetches and returns gold caseload records from URL', async () => {
       const mockRecords: GoldCaseloadRecord[] = [
         {
-          file: 'test.parquet',
+          file: 'test.csv',
           category: 'Estate',
           year: 2025,
           month: 7,
