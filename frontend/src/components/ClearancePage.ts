@@ -31,6 +31,7 @@ function createLegend(): HTMLElement {
     { status: ClearanceStatus.GREEN, text: t('legendGreen') },
     { status: ClearanceStatus.YELLOW, text: t('legendYellow') },
     { status: ClearanceStatus.RED, text: t('legendRed') },
+    { status: ClearanceStatus.NO_DATA, text: t('legendNoData') },
   ];
 
   for (const item of items) {

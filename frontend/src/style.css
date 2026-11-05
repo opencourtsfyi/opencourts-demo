@@ -91,7 +91,9 @@ body {
   fill: var(--color-red);
 }
 
+.legend-swatch.status-no-data,
 .county-path.status-no-data {
+  background-color: var(--color-no-data);
   fill: var(--color-no-data);
 }
 

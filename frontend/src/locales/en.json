@@ -5,6 +5,7 @@
   "legendGreen": "Green=100%",
   "legendYellow": "Yellow=80-99.9%",
   "legendRed": "Red=<80%",
+  "legendNoData": "Grey=No Data",
   "dateRangeSeparator": "to",
   "mapAriaLabel": "South Carolina County Clearance Rates Choropleth Map",
   "tableHeaderCounty": "County Name",
