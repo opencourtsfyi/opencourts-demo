@@ -29,7 +29,7 @@ export const CASELOAD_METRICS = {
   DISPOSED: 'Disposed',
 } as const;
 
-export const GOLD_DATA_PATH = '/data/caseloads_normalized.json';
+export const GOLD_DATA_PATH = '/data/caseloads_sample.json';
 
 export function getClearanceStatus(rate: number | null): ClearanceStatusType {
   if (rate === null || !Number.isFinite(rate)) {
