@@ -14,9 +14,17 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/d3-geo": "^3.1.1",
+    "@types/d3-selection": "^3.0.12",
+    "@types/topojson-client": "^3.1.5",
     "jsdom": "^26.0.0",
     "typescript": "^5.7.3",
     "vite": "^6.2.0",
     "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "d3-geo": "^3.1.1",
+    "d3-selection": "^3.0.0",
+    "topojson-client": "^3.1.0"
   }
 }

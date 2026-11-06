@@ -1,21 +1,24 @@
 {
-	"folders": [
-		{
-			"path": ".",
-			"name": "root"
-		},
-		{
-			"path": "./frontend/",
-			"name": "frontend"
-		},
-		{
-			"path": "./backend/",
-			"name": "backend"
-		},
-		{
-			"path": "./etl/",
-			"name": "etl"
-		}
-	],
-	"settings": {}
+  "folders": [
+    {
+      "path": ".",
+      "name": "root",
+    },
+    {
+      "path": "./frontend/",
+      "name": "frontend",
+    },
+    {
+      "path": "./backend/",
+      "name": "backend",
+    },
+    {
+      "path": "./etl/",
+      "name": "etl",
+    },
+  ],
+  "settings": {
+    "editor.formatOnSaveMode": "modifications",
+    "editor.formatOnSave": true,
+  },
 }

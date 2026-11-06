@@ -1,0 +1,12 @@
+{
+  "python.analysis.extraPaths": ["${workspaceFolder}/etl/src"],
+  "python.testing.cwd": "${workspaceFolder}/etl",
+  "python.testing.pytestArgs": ["tests"],
+  "python.testing.pytestEnabled": false,
+  "python.testing.unittestEnabled": false,
+  "files.exclude": {
+    "etl/": true,
+    "frontend/": true,
+    "backend/": true
+  }
+}
