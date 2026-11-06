@@ -33,7 +33,7 @@ describe('App Integration', () => {
   it('initializes app, loads data, and renders aggregated summaries', async () => {
     vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
       {
-        file: 'test.parquet',
+        file: 'test.csv',
         category: 'Estate',
         year: 2025,
         month: 7,
@@ -42,7 +42,7 @@ describe('App Integration', () => {
         value: 10,
       },
       {
-        file: 'test.parquet',
+        file: 'test.csv',
         category: 'Estate',
         year: 2025,
         month: 7,
