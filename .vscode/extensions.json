@@ -11,6 +11,8 @@
     // ESLint support
     "dbaeumer.vscode-eslint",
     // ESLint/Prettier formatter
-    "esbenp.prettier-vscode"
+    "esbenp.prettier-vscode",
+    // Python formatter
+    "charliermarsh.ruff"
   ]
 }

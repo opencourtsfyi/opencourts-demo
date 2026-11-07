@@ -20,5 +20,24 @@
   "settings": {
     "editor.formatOnSaveMode": "modifications",
     "editor.formatOnSave": true,
+
+    // 1. Route all Node/Web languages to Prettier
+    "[javascript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+    },
+    "[typescript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+    },
+    "[json]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+    },
+    "[jsonc]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+    },
+
+    // 2. Route Python languages to Ruff
+    "[python]": {
+      "editor.defaultFormatter": "charliermarsh.ruff",
+    },
   },
 }
