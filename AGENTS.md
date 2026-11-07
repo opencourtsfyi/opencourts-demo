@@ -65,6 +65,10 @@ The project is split into frontend, backend, and ETL concerns:
 - Frontend changes require relevant Vitest coverage or a focused validation run.
 - Backend changes require matching unit/integration tests.
 - Run the smallest relevant validation before finishing a task.
+- PRs run lint/typecheck on the Ubuntu CI leg before that runner's longer tests (see `.github/workflows/tests.yml`).
+  Windows and macOS test jobs start in parallel and are not gated on lint.
+  - ETL: `ruff check src tests`, `ty check` (see `etl/AGENTS.md`)
+  - Frontend: `npm run typecheck` (see `frontend/AGENTS.md`)
 
 ## Boundaries
 **Always do:**
