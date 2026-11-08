@@ -1,0 +1,15 @@
+# ty config for the ETL package.
+# Using ty.toml (not pyproject.toml) because etl/.gitignore currently
+# ignores pyproject.toml while UV/dependency management is undecided (#33).
+
+[environment]
+# First-party imports resolve from src/ the same way pytest.ini sets pythonpath.
+root = ["./src"]
+# Match CI (.github/workflows/tests.yml).
+python-version = "3.14"
+# Third-party imports resolve from `.venv` when present (auto-discovered), or from
+# the active interpreter's site-packages (CI after pip install).
+
+[src]
+# Include tests so call-site type errors surface in CI the same as locally.
+include = ["src", "tests"]

@@ -41,6 +41,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r etl/requirements-dev.txt
 
+      - name: Ruff (ETL)
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: etl
+        run: ruff check src tests
+
+      - name: ty (ETL)
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: etl
+        run: ty check
+
       - name: Run tests (Windows & macOS)
         if: matrix.os != 'ubuntu-latest'
         working-directory: etl
@@ -63,6 +73,11 @@ jobs:
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
+
+      - name: Typecheck (frontend)
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: frontend
+        run: npm run typecheck
 
       - name: Run frontend tests
         working-directory: frontend

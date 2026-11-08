@@ -15,14 +15,15 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Final
+
 from downloader import download_pdfs
+from i18n import t
+from logging_config import setup_logging
 from normalize import SilverToGoldNormalizer
 from pdf_extraction import BronzeToSilverExtractor
 from validate_pipeline import validate_gold_csv, write_error_report
-from logging_config import setup_logging
 
 logger = logging.getLogger(__name__)
-from i18n import t
 
 # Domain and operational constants (No Magic Values)
 DEFAULT_OVERWRITE_EXISTING: Final[bool] = False
