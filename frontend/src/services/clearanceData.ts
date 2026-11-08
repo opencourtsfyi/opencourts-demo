@@ -2,8 +2,8 @@ import {
   CASELOAD_METRICS,
   DEFAULT_REPORT_PERIOD,
   GOLD_DATA_PATH,
-} from '../constants/clearanceThresholds';
-import type { YearMonth } from '../utils/formatters';
+} from "../constants/clearanceThresholds";
+import type { YearMonth } from "../utils/formatters";
 
 export interface GoldCaseloadRecord {
   file: string;
@@ -35,10 +35,10 @@ function toYearMonthIndex(ym: YearMonth): number {
 }
 
 function parseNumericValue(raw: number | string | null): number | null {
-  if (typeof raw === 'number' && Number.isFinite(raw)) {
+  if (typeof raw === "number" && Number.isFinite(raw)) {
     return raw;
   }
-  if (typeof raw === 'string' && raw.trim() !== '') {
+  if (typeof raw === "string" && raw.trim() !== "") {
     const parsed = Number(raw);
     if (Number.isFinite(parsed)) {
       return parsed;
@@ -70,11 +70,14 @@ export function aggregateClearanceRates(
   const totalsByCounty = new Map<string, { added: number; disposed: number }>();
 
   for (const record of records) {
-    if (record.category.trim().toLowerCase() !== 'estate') {
+    if (record.category.trim().toLowerCase() !== "estate") {
       continue;
     }
 
-    const recordIdx = toYearMonthIndex({ year: record.year, month: record.month });
+    const recordIdx = toYearMonthIndex({
+      year: record.year,
+      month: record.month,
+    });
     if (recordIdx < startIdx || recordIdx > endIdx) {
       continue;
     }

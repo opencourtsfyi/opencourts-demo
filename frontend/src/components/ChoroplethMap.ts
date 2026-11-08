@@ -1,16 +1,16 @@
-import { geoMercator, geoPath } from 'd3-geo';
-import { select } from 'd3-selection';
-import { feature } from 'topojson-client';
-import type { GeometryCollection, Topology } from 'topojson-specification';
-import type { Feature, FeatureCollection, Geometry } from 'geojson';
-import scTopologyJson from '../data/sc-counties-topo.json';
+import { geoMercator, geoPath } from "d3-geo";
+import { select } from "d3-selection";
+import { feature } from "topojson-client";
+import type { GeometryCollection, Topology } from "topojson-specification";
+import type { Feature, FeatureCollection, Geometry } from "geojson";
+import scTopologyJson from "../data/sc-counties-topo.json";
 import {
   getClearanceStatus,
   MAP_DIMENSIONS,
-} from '../constants/clearanceThresholds';
-import type { CountyClearanceSummary } from '../services/clearanceData';
-import { formatClearanceRate } from '../utils/formatters';
-import { t } from '../i18n';
+} from "../constants/clearanceThresholds";
+import type { CountyClearanceSummary } from "../services/clearanceData";
+import { formatClearanceRate } from "../utils/formatters";
+import { t } from "../i18n";
 
 export interface CountyProperties {
   name: string;
@@ -20,7 +20,7 @@ export type ScTopology = Topology<{
   counties: GeometryCollection<CountyProperties>;
 }>;
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
+const SVG_NS = "http://www.w3.org/2000/svg";
 
 export function renderChoroplethMap(
   summaries: readonly CountyClearanceSummary[],
@@ -42,30 +42,32 @@ export function renderChoroplethMap(
   );
   const pathGenerator = geoPath(projection);
 
-  const svgElement = document.createElementNS(SVG_NS, 'svg');
+  const svgElement = document.createElementNS(SVG_NS, "svg");
   const svg = select(svgElement)
-    .attr('class', 'choropleth-svg')
-    .attr('viewBox', `0 0 ${MAP_DIMENSIONS.WIDTH} ${MAP_DIMENSIONS.HEIGHT}`)
-    .attr('role', 'img')
-    .attr('aria-label', t('mapAriaLabel'));
+    .attr("class", "choropleth-svg")
+    .attr("viewBox", `0 0 ${MAP_DIMENSIONS.WIDTH} ${MAP_DIMENSIONS.HEIGHT}`)
+    .attr("role", "img")
+    .attr("aria-label", t("mapAriaLabel"));
 
-  const countyGroup = svg.append('g').attr('class', 'counties-layer');
+  const countyGroup = svg.append("g").attr("class", "counties-layer");
 
   countyGroup
-    .selectAll<SVGPathElement, Feature<Geometry, CountyProperties>>('path.county-path')
+    .selectAll<SVGPathElement, Feature<Geometry, CountyProperties>>(
+      "path.county-path",
+    )
     .data(geojson.features)
-    .join('path')
-    .attr('class', (d) => {
-      const countyName = d.properties?.name ?? '';
+    .join("path")
+    .attr("class", (d) => {
+      const countyName = d.properties?.name ?? "";
       const rate = rateByCounty.get(countyName.toLowerCase()) ?? null;
       const statusClass = getClearanceStatus(rate);
       return `county-path ${statusClass}`;
     })
-    .attr('data-county', (d) => d.properties?.name ?? '')
-    .attr('d', (d) => pathGenerator(d) ?? '')
-    .append('title')
+    .attr("data-county", (d) => d.properties?.name ?? "")
+    .attr("d", (d) => pathGenerator(d) ?? "")
+    .append("title")
     .text((d) => {
-      const countyName = d.properties?.name ?? '';
+      const countyName = d.properties?.name ?? "";
       const rate = rateByCounty.get(countyName.toLowerCase()) ?? null;
       return `${countyName}: ${formatClearanceRate(rate)}`;
     });

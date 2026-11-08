@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, t } from '../i18n';
+import { DEFAULT_LOCALE, t } from "../i18n";
 
 const MONTH_INDEX_OFFSET = 1;
 const DEFAULT_DAY_OF_MONTH = 1;
@@ -9,14 +9,21 @@ export interface YearMonth {
   month: number;
 }
 
-export function formatMonthYear(yearMonth: YearMonth, locale: string = DEFAULT_LOCALE): string {
+export function formatMonthYear(
+  yearMonth: YearMonth,
+  locale: string = DEFAULT_LOCALE,
+): string {
   const date = new Date(
-    Date.UTC(yearMonth.year, yearMonth.month - MONTH_INDEX_OFFSET, DEFAULT_DAY_OF_MONTH),
+    Date.UTC(
+      yearMonth.year,
+      yearMonth.month - MONTH_INDEX_OFFSET,
+      DEFAULT_DAY_OF_MONTH,
+    ),
   );
   return new Intl.DateTimeFormat(locale, {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
   }).format(date);
 }
 
@@ -27,7 +34,7 @@ export function formatDateRange(
 ): string {
   const startLabel = formatMonthYear(start, locale);
   const endLabel = formatMonthYear(end, locale);
-  return `${startLabel} ${t('dateRangeSeparator', locale)} ${endLabel}`;
+  return `${startLabel} ${t("dateRangeSeparator", locale)} ${endLabel}`;
 }
 
 export function formatClearanceRate(
@@ -35,10 +42,10 @@ export function formatClearanceRate(
   locale: string = DEFAULT_LOCALE,
 ): string {
   if (rate === null || !Number.isFinite(rate)) {
-    return t('noDataLabel', locale);
+    return t("noDataLabel", locale);
   }
   return new Intl.NumberFormat(locale, {
-    style: 'percent',
+    style: "percent",
     maximumFractionDigits: PERCENT_MAX_FRACTION_DIGITS,
   }).format(rate);
 }

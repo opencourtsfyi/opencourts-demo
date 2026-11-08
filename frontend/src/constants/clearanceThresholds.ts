@@ -4,13 +4,14 @@ export const CLEARANCE_THRESHOLDS = {
 } as const;
 
 export const ClearanceStatus = {
-  GREEN: 'status-green',
-  YELLOW: 'status-yellow',
-  RED: 'status-red',
-  NO_DATA: 'status-no-data',
+  GREEN: "status-green",
+  YELLOW: "status-yellow",
+  RED: "status-red",
+  NO_DATA: "status-no-data",
 } as const;
 
-export type ClearanceStatusType = (typeof ClearanceStatus)[keyof typeof ClearanceStatus];
+export type ClearanceStatusType =
+  (typeof ClearanceStatus)[keyof typeof ClearanceStatus];
 
 export const MAP_DIMENSIONS = {
   WIDTH: 800,
@@ -25,11 +26,11 @@ export const DEFAULT_REPORT_PERIOD = {
 } as const;
 
 export const CASELOAD_METRICS = {
-  ADDED: 'Added',
-  DISPOSED: 'Disposed',
+  ADDED: "Added",
+  DISPOSED: "Disposed",
 } as const;
 
-export const GOLD_DATA_PATH = '/data/caseloads_sample.json';
+export const GOLD_DATA_PATH = "/data/caseloads_sample.json";
 
 export function getClearanceStatus(rate: number | null): ClearanceStatusType {
   if (rate === null || !Number.isFinite(rate)) {

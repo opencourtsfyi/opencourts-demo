@@ -1,15 +1,15 @@
 import {
-   renderClearancePage,
+  renderClearancePage,
   type ClearancePageOptions,
-} from './components/ClearancePage';
-import { t } from './i18n';
+} from "./components/ClearancePage";
+import { t } from "./i18n";
 import {
   aggregateClearanceRates,
   getDefaultDateRange,
   loadGoldCaseloadRecords,
-} from './services/clearanceData';
+} from "./services/clearanceData";
 // @ts-ignore CSS imports are handled by the bundler.
-import './style.css';
+import "./style.css";
 
 export function renderApp(
   rootElement: HTMLElement,
@@ -31,14 +31,14 @@ export async function initApp(rootElement: HTMLElement): Promise<void> {
     const summaries = aggregateClearanceRates(records, dateRange);
     renderApp(rootElement, { summaries, dateRange });
   } catch {
-    const errorBanner = document.createElement('p');
-    errorBanner.className = 'error-banner';
-    errorBanner.textContent = t('errorLoadingData');
+    const errorBanner = document.createElement("p");
+    errorBanner.className = "error-banner";
+    errorBanner.textContent = t("errorLoadingData");
     rootElement.appendChild(errorBanner);
   }
 }
 
-const appContainer = document.querySelector<HTMLElement>('#app');
+const appContainer = document.querySelector<HTMLElement>("#app");
 if (appContainer) {
   void initApp(appContainer);
 }
