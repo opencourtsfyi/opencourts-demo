@@ -1,7 +1,6 @@
-# Project-specific folders
-excel/
-pdfs/
-data/
+# Ignore raw data folders at root and ETL
+/data/
+etl/data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -165,12 +164,13 @@ cython_debug/
 .idea/
 
 # VS Code
-.vscode/
+.vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 !.vscode/*.code-snippets
+!.vscode/*.code-workspace
 
 # Local History for Visual Studio Code
 .history/

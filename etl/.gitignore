@@ -32,6 +32,5 @@ uv.lock
 # Editors
 .idea
 .project
-.settings
 .vscode
 .claude/settings.local.json

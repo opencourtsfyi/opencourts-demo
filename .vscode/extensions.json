@@ -1,0 +1,18 @@
+{
+  "recommendations": [
+    // Python support in VSCode
+    "ms-python.python",
+    // Python linting
+    "ms-python.vscode-pylance",
+    // Python debugging
+    "ms-python.debugpy",
+    // Vitest support in VSCode Test View
+    "vitest.explorer",
+    // ESLint support
+    "dbaeumer.vscode-eslint",
+    // ESLint/Prettier formatter
+    "esbenp.prettier-vscode",
+    // Python formatter
+    "charliermarsh.ruff"
+  ]
+}
