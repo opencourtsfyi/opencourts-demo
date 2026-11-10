@@ -54,6 +54,8 @@ frontend/
 - Add or update tests for any behavior change.
 - Use Vitest for unit and component-level validation.
 - Prefer targeted tests over broad suites when iterating.
+- Place unit tests in the same folder under `src/` as the unit under test.
+- Place integration and e2e tests in the `e2e/` folder.
 
 ## Boundaries
 **Always do:**

@@ -13,6 +13,8 @@
     // ESLint/Prettier formatter
     "esbenp.prettier-vscode",
     // Python formatter
-    "charliermarsh.ruff"
+    "charliermarsh.ruff",
+    // Run browser E2E tests in VSCode
+    "ms-playwright.playwright"
   ]
 }
