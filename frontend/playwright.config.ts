@@ -37,6 +37,9 @@ export default defineConfig({
   },
   timeout: 10000, // Forces the entire test to fail and stop after 10 seconds
 
+  // Fail the run after an hour, so that the reporters still produce a report in Github actions
+  globalTimeout: 60 * 60 * 1000,
+
   /* Configure projects for major browsers */
   projects: [
     {
