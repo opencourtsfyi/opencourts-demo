@@ -32,8 +32,10 @@ Run these scripts from within the `frontend/` directory:
 | Command | Description |
 |---|---|
 | `npm run dev` | Start the local Vite development server with HMR. |
-| `npm test` | Run unit and integration tests with Vitest. |
-| `npm run test:e2e` | Run browser end-to-end tests with Playwright. |
+| `npm test` | Run all unit and integration tests with Vitest. |
+| `npm run test:unit` | Run unit tests (`src/**/*.test.ts`) with Vitest. |
+| `npm run test:integration` | Run integration tests (`tests/integration/**/*.test.ts`) with Vitest. |
+| `npm run test:e2e` | Run browser end-to-end tests (`e2e/**/*.spec.ts`) with Playwright. |
 | `npm run typecheck` | Type-check the project without emitting output files (`tsc --noEmit`). |
 | `npm run build` | Compile TypeScript and bundle production assets into `dist/`. |
 | `npm run preview` | Locally preview the production build output from `dist/`. |
