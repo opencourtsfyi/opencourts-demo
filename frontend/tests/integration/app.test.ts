@@ -760,5 +760,38 @@ describe("App Integration", () => {
       expect(abbevillePath?.getAttribute("aria-label")).toBe("Abbeville: 100%");
       expect(aikenPath?.getAttribute("aria-label")).toBe("Aiken: 88%");
     });
+
+    it("[A11y] displays tooltip on keyboard focus and hides on blur", async () => {
+      vi.spyOn(
+        clearanceDataService,
+        "loadGoldCaseloadRecords",
+      ).mockResolvedValueOnce(mockRecords);
+
+      await initApp(root);
+
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      expect(aikenPath).not.toBeNull();
+
+      aikenPath?.dispatchEvent(new FocusEvent("focus", { bubbles: true }));
+
+      const tooltip = document.querySelector<HTMLElement>(
+        '.map-tooltip, [role="tooltip"]',
+      );
+      expect(tooltip).not.toBeNull();
+      expect(tooltip?.textContent).toContain("Aiken");
+      expect(tooltip?.textContent).toContain("88%");
+
+      aikenPath?.dispatchEvent(new FocusEvent("blur", { bubbles: true }));
+
+      const isHidden =
+        !document.body.contains(tooltip) ||
+        tooltip?.style.display === "none" ||
+        tooltip?.style.opacity === "0" ||
+        tooltip?.classList.contains("is-hidden") ||
+        tooltip?.getAttribute("aria-hidden") === "true";
+      expect(isHidden).toBe(true);
+    });
   });
 });

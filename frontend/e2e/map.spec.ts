@@ -592,5 +592,21 @@ test.describe("Map View", () => {
       // Tooltip must have pointer-events none so it doesn't obstruct mouse events on the map
       await expect(tooltip).toHaveCSS("pointer-events", "none");
     });
+
+    test("[A11y] displays tooltip when county path receives keyboard focus and hides on blur", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      const tooltip = page.locator(".map-tooltip, [role='tooltip']");
+
+      await aikenPath.focus();
+      await expect(tooltip).toBeVisible();
+      await expect(tooltip).toContainText("Aiken");
+      await expect(tooltip).toContainText("97%");
+
+      // Blur by focusing another element or calling blur
+      await aikenPath.blur();
+      await expect(tooltip).not.toBeVisible();
+    });
   });
 });
