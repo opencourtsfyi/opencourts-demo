@@ -91,25 +91,11 @@ export function renderDateRangeSelector(
   endSelect.disabled = disabled;
 
   // Generate end options: from earliest + 1 month up to latest
-  const endMonths = generateMonthYearList(
+  const minEndMonth = addMonths(
     availableRange.start,
-    availableRange.end,
+    DATE_SELECTION_CONSTRAINTS.MIN_MONTH_DIFF,
   );
-
-  function updateEndOptionsDisabled(
-    currentStartYM: typeof selectedRange.start,
-  ): void {
-    const minValidEnd = addMonths(
-      currentStartYM,
-      DATE_SELECTION_CONSTRAINTS.MIN_MONTH_DIFF,
-    );
-    for (const opt of Array.from(endSelect.options)) {
-      const optYM = parseYearMonthValue(opt.value);
-      if (optYM) {
-        opt.disabled = compareYearMonth(optYM, minValidEnd) < 0;
-      }
-    }
-  }
+  const endMonths = generateMonthYearList(minEndMonth, availableRange.end);
 
   for (const ym of endMonths) {
     const opt = document.createElement("option");
@@ -121,16 +107,12 @@ export function renderDateRangeSelector(
     endSelect.appendChild(opt);
   }
 
-  updateEndOptionsDisabled(selectedRange.start);
-
   endControl.append(endLabel, endSelect);
 
   // Events
   startSelect.addEventListener("change", () => {
     const newStart = parseYearMonthValue(startSelect.value);
     if (!newStart) return;
-
-    updateEndOptionsDisabled(newStart);
 
     let currentEnd = parseYearMonthValue(endSelect.value) ?? selectedRange.end;
     const minValidEnd = addMonths(
@@ -148,19 +130,18 @@ export function renderDateRangeSelector(
   });
 
   endSelect.addEventListener("change", () => {
-    const currentStart =
+    let currentStart =
       parseYearMonthValue(startSelect.value) ?? selectedRange.start;
     const newEnd = parseYearMonthValue(endSelect.value);
     if (!newEnd) return;
 
-    const minValidEnd = addMonths(
-      currentStart,
-      DATE_SELECTION_CONSTRAINTS.MIN_MONTH_DIFF,
+    const maxValidStart = addMonths(
+      newEnd,
+      -DATE_SELECTION_CONSTRAINTS.MIN_MONTH_DIFF,
     );
-    if (compareYearMonth(newEnd, minValidEnd) < 0) {
-      // Revert if invalid
-      endSelect.value = toYearMonthValue(selectedRange.end);
-      return;
+    if (compareYearMonth(currentStart, maxValidStart) > 0) {
+      currentStart = maxValidStart;
+      startSelect.value = toYearMonthValue(currentStart);
     }
 
     if (container._onDateRangeChange) {

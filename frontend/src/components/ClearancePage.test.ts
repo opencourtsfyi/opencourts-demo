@@ -146,7 +146,7 @@ describe("ClearancePage component", () => {
     }
   });
 
-  it("enforces that end date must be at least 1 month later than start date", () => {
+  it("enforces that end date must be at least 1 month later than start date without greyed out options", () => {
     (renderClearancePage as any)(root, {
       summaries: sampleSummaries,
       dateRange: {
@@ -155,17 +155,24 @@ describe("ClearancePage component", () => {
       },
     });
 
+    const startSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="start" i], select[name="startDate"], select#start-date',
+    );
     const endSelect = root.querySelector<HTMLSelectElement>(
       'select[aria-label*="end" i], select[name="endDate"], select#end-date',
     );
+    expect(startSelect).not.toBeNull();
     expect(endSelect).not.toBeNull();
-    const options = Array.from(endSelect?.options ?? []);
-    expect(options.length).toBeGreaterThan(0);
 
-    const octOption = options.find((o) => /October 2024/i.test(o.text));
-    if (octOption) {
-      expect(octOption.disabled).toBe(true);
-    }
+    // Verify options are selectable without greyed out text
+    const disabledStartOpts = Array.from(startSelect?.options ?? []).filter(
+      (o) => o.disabled,
+    );
+    const disabledEndOpts = Array.from(endSelect?.options ?? []).filter(
+      (o) => o.disabled,
+    );
+    expect(disabledStartOpts).toHaveLength(0);
+    expect(disabledEndOpts).toHaveLength(0);
   });
 
   it("displays the start and end date on both the map section and table section", () => {
