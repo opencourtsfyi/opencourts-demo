@@ -377,5 +377,31 @@ test.describe("Map View", () => {
       await expect(aikenPath).toHaveCSS("outline-style", "none");
       await expect(aikenPath).toHaveCSS("outline-width", "0px");
     });
+
+    test("selecting a date range clears active county selection on map and table", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      const aikenRow = page
+        .locator("tr.county-row")
+        .filter({ hasText: "Aiken" });
+
+      // Select Aiken on map
+      await aikenPath.click();
+      await expect(aikenPath).toHaveClass(/is-selected/);
+      await expect(aikenRow).toHaveClass(/is-selected/);
+
+      // Change start date
+      const startDateSelect = page.getByRole("combobox", {
+        name: /start date/i,
+      });
+      await startDateSelect.selectOption({ label: "July 2023" });
+
+      // Verify active county selection is cleared on both map and table
+      await expect(aikenPath).not.toHaveClass(/is-selected/);
+      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenRow).not.toHaveClass(/is-selected/);
+      await expect(aikenRow).toHaveAttribute("aria-selected", "false");
+    });
   });
 });

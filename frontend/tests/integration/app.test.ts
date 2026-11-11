@@ -386,5 +386,58 @@ describe('App Integration', () => {
       expect(abbevillePath?.classList.contains('is-selected')).toBe(false);
       expect(abbevilleRow?.classList.contains('is-selected')).toBe(false);
     });
+
+    it('clears active selection on both map and table when changing date range selectors', async () => {
+      vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+        {
+          file: 'test.csv',
+          category: 'Estate',
+          year: 2024,
+          month: 7,
+          county: 'Abbeville',
+          metric: 'Added',
+          value: 10,
+        },
+        {
+          file: 'test.csv',
+          category: 'Estate',
+          year: 2025,
+          month: 6,
+          county: 'Abbeville',
+          metric: 'Added',
+          value: 10,
+        },
+      ]);
+
+      await initApp(root);
+
+      const abbevillePath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
+      const abbevilleRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
+        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      );
+
+      // Select county via map
+      abbevillePath?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(abbevillePath?.classList.contains('is-selected')).toBe(true);
+      expect(abbevilleRow?.classList.contains('is-selected')).toBe(true);
+
+      // Change start date range selector
+      const startSelect = root.querySelector<HTMLSelectElement>('#start-date');
+      expect(startSelect).not.toBeNull();
+      if (startSelect) {
+        startSelect.value = '2024-07';
+        startSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      // Assert selection is cleared on both map and table
+      const updatedPath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
+      const updatedRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
+        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      );
+      expect(updatedPath?.classList.contains('is-selected')).toBe(false);
+      expect(updatedPath?.getAttribute('aria-selected')).toBe('false');
+      expect(updatedRow?.classList.contains('is-selected')).toBe(false);
+      expect(updatedRow?.getAttribute('aria-selected')).toBe('false');
+    });
   });
 });

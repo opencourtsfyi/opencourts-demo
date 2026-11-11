@@ -437,5 +437,40 @@ describe("ClearancePage component", () => {
       expect(aikenPath?.classList.contains("is-selected")).toBe(false);
       expect(aikenRow?.classList.contains("is-selected")).toBe(false);
     });
+
+    it("clears county selection on map and table when interacting with date range dropdowns", () => {
+      renderClearancePage(root, {
+        summaries: sampleSummaries,
+        dateRange: {
+          start: { year: 2024, month: 7 },
+          end: { year: 2025, month: 6 },
+        },
+      });
+
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      const aikenRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+
+      // Select Aiken
+      aikenPath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(aikenPath?.classList.contains("is-selected")).toBe(true);
+      expect(aikenRow?.classList.contains("is-selected")).toBe(true);
+
+      // Click start date dropdown selector
+      const startSelect = root.querySelector<HTMLSelectElement>("#start-date");
+      expect(startSelect).not.toBeNull();
+      startSelect?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(aikenPath?.classList.contains("is-selected")).toBe(false);
+      expect(aikenPath?.getAttribute("aria-selected")).toBe("false");
+      expect(aikenRow?.classList.contains("is-selected")).toBe(false);
+      expect(aikenRow?.getAttribute("aria-selected")).toBe("false");
+    });
   });
 });
