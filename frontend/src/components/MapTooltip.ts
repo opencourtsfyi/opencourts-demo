@@ -37,6 +37,15 @@ export class MapTooltip {
     this.move(pos);
   }
 
+  public showForElement(content: string, element: Element): void {
+    const rect = element.getBoundingClientRect();
+    const pos: TooltipPosition = {
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top,
+    };
+    this.show(content, pos);
+  }
+
   public move(pos: TooltipPosition): void {
     const rect = this.element.getBoundingClientRect();
     const tooltipWidth = rect.width || 120;

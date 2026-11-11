@@ -308,5 +308,34 @@ describe("ChoroplethMap component", () => {
         tooltip?.getAttribute("aria-hidden") === "true";
       expect(isHidden).toBe(true);
     });
+
+    it("displays tooltip on focus and hides on blur for keyboard navigation parity", () => {
+      const svg = renderChoroplethMap(sampleSummaries);
+      container.appendChild(svg);
+
+      const aikenPath = svg.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      expect(aikenPath).not.toBeNull();
+
+      aikenPath?.dispatchEvent(new FocusEvent("focus", { bubbles: true }));
+
+      const tooltip = document.querySelector<HTMLElement>(
+        ".map-tooltip, [role='tooltip']",
+      );
+      expect(tooltip).not.toBeNull();
+      expect(tooltip?.textContent).toContain("Aiken");
+      expect(tooltip?.textContent).toContain("88%");
+
+      aikenPath?.dispatchEvent(new FocusEvent("blur", { bubbles: true }));
+
+      const isHidden =
+        !document.body.contains(tooltip) ||
+        tooltip?.style.display === "none" ||
+        tooltip?.style.opacity === "0" ||
+        tooltip?.classList.contains("is-hidden") ||
+        tooltip?.getAttribute("aria-hidden") === "true";
+      expect(isHidden).toBe(true);
+    });
   });
 });

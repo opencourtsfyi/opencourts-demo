@@ -120,6 +120,18 @@ export function renderChoroplethMap(
     .on("mouseout", () => {
       tooltip.hide();
     })
+    .on("focus", (event: FocusEvent, d) => {
+      const countyName = d.properties?.name ?? "";
+      const rate = rateByCounty.get(countyName.toLowerCase()) ?? null;
+      const pathEl = event.currentTarget as SVGPathElement;
+      tooltip.showForElement(
+        `${countyName}: ${formatClearanceRate(rate)}`,
+        pathEl,
+      );
+    })
+    .on("blur", () => {
+      tooltip.hide();
+    })
     .on("click", (event, d) => {
       const countyName = d.properties?.name ?? "";
       const pathEl = event.currentTarget as SVGPathElement;
@@ -135,6 +147,7 @@ export function renderChoroplethMap(
     })
     .on("keydown", (event: KeyboardEvent, d) => {
       if (event.key === "Escape") {
+        tooltip.hide();
         onSelectCounty?.(null);
         const pathEl = event.currentTarget as SVGPathElement;
         pathEl.dispatchEvent(
