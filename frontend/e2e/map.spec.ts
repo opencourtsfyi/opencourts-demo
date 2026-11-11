@@ -404,4 +404,73 @@ test.describe("Map View", () => {
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
     });
   });
+
+  test.describe("Accessibility (A11y) Keyboard Navigation and Focus Management", () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto("/");
+    });
+
+    test("[A11y] pressing Tab from the map moves focus into the data table", async ({
+      page,
+    }) => {
+      const mapPaths = page.locator("svg path.county-path");
+      const pathCount = await mapPaths.count();
+      expect(pathCount).toBeGreaterThan(0);
+
+      const lastMapPath = mapPaths.nth(pathCount - 1);
+      const firstTableRow = page.locator("tr.county-row").first();
+
+      await lastMapPath.focus();
+      await expect(lastMapPath).toBeFocused();
+
+      // Press Tab to navigate forward
+      await page.keyboard.press("Tab");
+
+      // Focus should move directly to the first row of the data table
+      await expect(firstTableRow).toBeFocused();
+    });
+
+    test("[A11y] pressing Shift+Tab from the data table moves focus backward into the map", async ({
+      page,
+    }) => {
+      const firstTableRow = page.locator("tr.county-row").first();
+      const mapPaths = page.locator("svg path.county-path");
+      const pathCount = await mapPaths.count();
+      const lastMapPath = mapPaths.nth(pathCount - 1);
+
+      await firstTableRow.focus();
+      await expect(firstTableRow).toBeFocused();
+
+      // Press Shift+Tab to navigate backward
+      await page.keyboard.press("Shift+Tab");
+
+      // Focus should move backward to the last county path on the map
+      await expect(lastMapPath).toBeFocused();
+    });
+
+    test("[A11y] pressing Escape key clears an active county selection on both map and table", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      const aikenRow = page
+        .locator("tr.county-row")
+        .filter({ hasText: "Aiken" });
+
+      // Focus and select Aiken via Enter
+      await aikenPath.focus();
+      await page.keyboard.press("Enter");
+
+      await expect(aikenPath).toHaveClass(/is-selected/);
+      await expect(aikenRow).toHaveClass(/is-selected/);
+
+      // Press Escape key
+      await page.keyboard.press("Escape");
+
+      // Verify selection is cleared on both map and table
+      await expect(aikenPath).not.toHaveClass(/is-selected/);
+      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenRow).not.toHaveClass(/is-selected/);
+      await expect(aikenRow).toHaveAttribute("aria-selected", "false");
+    });
+  });
 });

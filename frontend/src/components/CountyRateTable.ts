@@ -86,6 +86,16 @@ export function renderCountyRateTable(
       });
 
       row.addEventListener("keydown", (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          onSelectCounty?.(null);
+          row.dispatchEvent(
+            new CustomEvent("countySelected", {
+              bubbles: true,
+              detail: { county: null },
+            }),
+          );
+          return;
+        }
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           triggerSelect();

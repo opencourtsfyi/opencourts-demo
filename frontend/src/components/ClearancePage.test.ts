@@ -472,5 +472,34 @@ describe("ClearancePage component", () => {
       expect(aikenRow?.classList.contains("is-selected")).toBe(false);
       expect(aikenRow?.getAttribute("aria-selected")).toBe("false");
     });
+
+    it("[A11y] clears active county selection on map and table when Escape key is pressed", () => {
+      renderClearancePage(root, { summaries: sampleSummaries });
+
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      const aikenRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+
+      // Select Aiken
+      aikenPath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(aikenPath?.classList.contains("is-selected")).toBe(true);
+      expect(aikenRow?.classList.contains("is-selected")).toBe(true);
+
+      // Press Escape
+      root.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+
+      expect(aikenPath?.classList.contains("is-selected")).toBe(false);
+      expect(aikenPath?.getAttribute("aria-selected")).toBe("false");
+      expect(aikenRow?.classList.contains("is-selected")).toBe(false);
+      expect(aikenRow?.getAttribute("aria-selected")).toBe("false");
+    });
   });
 });

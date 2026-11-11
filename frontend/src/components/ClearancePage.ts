@@ -244,10 +244,18 @@ export function renderClearancePage(
     }
   };
 
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Escape" && currentSelectedCounty !== null) {
+      syncSelection(null);
+    }
+  };
+
   const doc = container.ownerDocument;
   const containerWithListener = container as HTMLElement & {
     _outsideClickListener?: (e: MouseEvent) => void;
     _docClickListener?: (e: MouseEvent) => void;
+    _keyDownListener?: (e: KeyboardEvent) => void;
+    _docKeyDownListener?: (e: KeyboardEvent) => void;
   };
   if (containerWithListener._outsideClickListener) {
     container.removeEventListener(
@@ -258,10 +266,27 @@ export function renderClearancePage(
   if (containerWithListener._docClickListener && doc) {
     doc.removeEventListener("click", containerWithListener._docClickListener);
   }
+  if (containerWithListener._keyDownListener) {
+    container.removeEventListener(
+      "keydown",
+      containerWithListener._keyDownListener,
+    );
+  }
+  if (containerWithListener._docKeyDownListener && doc) {
+    doc.removeEventListener(
+      "keydown",
+      containerWithListener._docKeyDownListener,
+    );
+  }
+
   containerWithListener._outsideClickListener = handleOutsideClick;
   container.addEventListener("click", handleOutsideClick);
+  containerWithListener._keyDownListener = handleKeyDown;
+  container.addEventListener("keydown", handleKeyDown);
   if (doc) {
     containerWithListener._docClickListener = handleOutsideClick;
     doc.addEventListener("click", handleOutsideClick);
+    containerWithListener._docKeyDownListener = handleKeyDown;
+    doc.addEventListener("keydown", handleKeyDown);
   }
 }

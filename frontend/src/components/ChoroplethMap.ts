@@ -110,6 +110,17 @@ export function renderChoroplethMap(
       );
     })
     .on("keydown", (event: KeyboardEvent, d) => {
+      if (event.key === "Escape") {
+        onSelectCounty?.(null);
+        const pathEl = event.currentTarget as SVGPathElement;
+        pathEl.dispatchEvent(
+          new CustomEvent("countySelected", {
+            bubbles: true,
+            detail: { county: null },
+          }),
+        );
+        return;
+      }
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         const countyName = d.properties?.name ?? "";
