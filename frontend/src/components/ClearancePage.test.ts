@@ -80,13 +80,13 @@ describe("ClearancePage component", () => {
     // Verify screen reader indication (aria-label, associated label, or aria-describedby)
     const hasStartAccessibleLabel = Boolean(
       startSelect?.getAttribute("aria-label") ||
-        root.querySelector(`label[for="${startSelect?.id}"]`),
+      root.querySelector(`label[for="${startSelect?.id}"]`),
     );
     expect(hasStartAccessibleLabel).toBe(true);
 
     const hasEndAccessibleLabel = Boolean(
       endSelect?.getAttribute("aria-label") ||
-        root.querySelector(`label[for="${endSelect?.id}"]`),
+      root.querySelector(`label[for="${endSelect?.id}"]`),
     );
     expect(hasEndAccessibleLabel).toBe(true);
   });

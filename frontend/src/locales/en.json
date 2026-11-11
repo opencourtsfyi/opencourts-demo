@@ -12,5 +12,9 @@
   "tableHeaderRate": "Clearance Rate",
   "noDataLabel": "N/A",
   "loadingData": "Loading clearance rate data...",
-  "errorLoadingData": "Unable to load clearance rate data."
+  "errorLoadingData": "Unable to load clearance rate data.",
+  "startDateLabel": "Start Date",
+  "endDateLabel": "End Date",
+  "noRecordsFound": "No records found",
+  "dateRangeSubtitle": "Clearance rates for {range}"
 }

@@ -59,7 +59,11 @@ describe("ChoroplethMap component", () => {
       start: { year: 2024, month: 7 },
       end: { year: 2025, month: 6 },
     };
-    const svg = (renderChoroplethMap as any)(sampleSummaries, undefined, dateRange);
+    const svg = (renderChoroplethMap as any)(
+      sampleSummaries,
+      undefined,
+      dateRange,
+    );
     const textContent = svg.textContent || svg.getAttribute("aria-label") || "";
     expect(textContent).toMatch(/July 2024\s+to\s+June 2025/i);
   });

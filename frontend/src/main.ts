@@ -1,3 +1,4 @@
+import { DATE_SELECTION_CONSTRAINTS } from "./constants/clearanceThresholds";
 import {
   renderClearancePage,
   type ClearancePageOptions,
@@ -5,9 +6,13 @@ import {
 import { t } from "./i18n";
 import {
   aggregateClearanceRates,
+  getDataDateBounds,
   getDefaultDateRange,
   loadGoldCaseloadRecords,
+  type DateRangeFilter,
+  type GoldCaseloadRecord,
 } from "./services/clearanceData";
+import { compareYearMonth } from "./utils/formatters";
 // @ts-ignore CSS imports are handled by the bundler.
 import "./style.css";
 
@@ -18,18 +23,51 @@ export function renderApp(
   renderClearancePage(rootElement, {
     summaries: options?.summaries ?? [],
     dateRange: options?.dateRange ?? getDefaultDateRange(),
+    availableRange: options?.availableRange,
+    disabled: options?.disabled,
     topology: options?.topology,
+    onDateRangeChange: options?.onDateRangeChange,
   });
 }
 
 export async function initApp(rootElement: HTMLElement): Promise<void> {
-  const dateRange = getDefaultDateRange();
-  renderApp(rootElement, { summaries: [], dateRange });
+  let currentDateRange: DateRangeFilter = getDefaultDateRange();
+  let loadedRecords: GoldCaseloadRecord[] = [];
+  let availableRange: DateRangeFilter | undefined;
+
+  function updateView(): void {
+    const isDataEmpty =
+      loadedRecords.length === DATE_SELECTION_CONSTRAINTS.EMPTY_COUNT;
+    const summaries = aggregateClearanceRates(loadedRecords, currentDateRange);
+    renderClearancePage(rootElement, {
+      summaries,
+      dateRange: currentDateRange,
+      availableRange,
+      disabled: isDataEmpty,
+      onDateRangeChange: (newRange) => {
+        currentDateRange = newRange;
+        updateView();
+      },
+    });
+  }
+
+  renderApp(rootElement, { summaries: [], dateRange: currentDateRange });
 
   try {
-    const records = await loadGoldCaseloadRecords();
-    const summaries = aggregateClearanceRates(records, dateRange);
-    renderApp(rootElement, { summaries, dateRange });
+    loadedRecords = await loadGoldCaseloadRecords();
+    const bounds = getDataDateBounds(loadedRecords);
+    if (bounds) {
+      availableRange = bounds;
+      if (
+        compareYearMonth(currentDateRange.start, bounds.start) < 0 ||
+        compareYearMonth(currentDateRange.end, bounds.end) > 0 ||
+        compareYearMonth(currentDateRange.start, bounds.end) > 0 ||
+        compareYearMonth(currentDateRange.end, bounds.start) < 0
+      ) {
+        currentDateRange = { ...bounds };
+      }
+    }
+    updateView();
   } catch {
     const errorBanner = document.createElement("p");
     errorBanner.className = "error-banner";

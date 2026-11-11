@@ -1,13 +1,29 @@
-import { getClearanceStatus } from "../constants/clearanceThresholds";
+import {
+  DATE_SELECTION_CONSTRAINTS,
+  getClearanceStatus,
+} from "../constants/clearanceThresholds";
 import { t } from "../i18n";
-import type { CountyClearanceSummary } from "../services/clearanceData";
-import { formatClearanceRate } from "../utils/formatters";
+import type {
+  CountyClearanceSummary,
+  DateRangeFilter,
+} from "../services/clearanceData";
+import { formatClearanceRate, formatDateRange } from "../utils/formatters";
+
+const TABLE_COL_SPAN = 2;
 
 export function renderCountyRateTable(
   summaries: readonly CountyClearanceSummary[],
+  dateRange?: DateRangeFilter,
 ): HTMLTableElement {
   const table = document.createElement("table");
   table.className = "clearance-table";
+
+  if (dateRange) {
+    const caption = document.createElement("caption");
+    caption.className = "table-date-range-caption";
+    caption.textContent = formatDateRange(dateRange.start, dateRange.end);
+    table.appendChild(caption);
+  }
 
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
@@ -24,21 +40,32 @@ export function renderCountyRateTable(
   thead.appendChild(headerRow);
 
   const tbody = document.createElement("tbody");
-  for (const item of summaries) {
-    const row = document.createElement("tr");
-    const statusClass = getClearanceStatus(item.clearanceRate);
-    row.className = `county-row ${statusClass}`;
+  if (summaries.length === DATE_SELECTION_CONSTRAINTS.EMPTY_COUNT) {
+    const emptyRow = document.createElement("tr");
+    emptyRow.className = "empty-table-row";
+    const emptyCell = document.createElement("td");
+    emptyCell.colSpan = TABLE_COL_SPAN;
+    emptyCell.className = "empty-table-cell";
+    emptyCell.textContent = t("noRecordsFound");
+    emptyRow.appendChild(emptyCell);
+    tbody.appendChild(emptyRow);
+  } else {
+    for (const item of summaries) {
+      const row = document.createElement("tr");
+      const statusClass = getClearanceStatus(item.clearanceRate);
+      row.className = `county-row ${statusClass}`;
 
-    const countyCell = document.createElement("td");
-    countyCell.className = "county-name-cell";
-    countyCell.textContent = item.county;
+      const countyCell = document.createElement("td");
+      countyCell.className = "county-name-cell";
+      countyCell.textContent = item.county;
 
-    const rateCell = document.createElement("td");
-    rateCell.className = `county-rate-cell ${statusClass}`;
-    rateCell.textContent = formatClearanceRate(item.clearanceRate);
+      const rateCell = document.createElement("td");
+      rateCell.className = `county-rate-cell ${statusClass}`;
+      rateCell.textContent = formatClearanceRate(item.clearanceRate);
 
-    row.append(countyCell, rateCell);
-    tbody.appendChild(row);
+      row.append(countyCell, rateCell);
+      tbody.appendChild(row);
+    }
   }
 
   table.append(thead, tbody);

@@ -1,5 +1,6 @@
 import {
   CASELOAD_METRICS,
+  DATE_SELECTION_CONSTRAINTS,
   DEFAULT_REPORT_PERIOD,
   GOLD_DATA_PATH,
 } from "../constants/clearanceThresholds";
@@ -58,6 +59,38 @@ export function getDefaultDateRange(): DateRangeFilter {
       month: DEFAULT_REPORT_PERIOD.END_MONTH,
     },
   };
+}
+
+export function getDataDateBounds(
+  records: readonly GoldCaseloadRecord[],
+): DateRangeFilter | null {
+  if (records.length === DATE_SELECTION_CONSTRAINTS.EMPTY_COUNT) {
+    return null;
+  }
+  let earliestIdx = Number.POSITIVE_INFINITY;
+  let latestIdx = Number.NEGATIVE_INFINITY;
+  let earliestYM: YearMonth | null = null;
+  let latestYM: YearMonth | null = null;
+
+  for (const record of records) {
+    if (record.category.trim().toLowerCase() !== "estate") {
+      continue;
+    }
+    const idx = toYearMonthIndex({ year: record.year, month: record.month });
+    if (idx < earliestIdx) {
+      earliestIdx = idx;
+      earliestYM = { year: record.year, month: record.month };
+    }
+    if (idx > latestIdx) {
+      latestIdx = idx;
+      latestYM = { year: record.year, month: record.month };
+    }
+  }
+
+  if (!earliestYM || !latestYM) {
+    return null;
+  }
+  return { start: earliestYM, end: latestYM };
 }
 
 export function aggregateClearanceRates(
