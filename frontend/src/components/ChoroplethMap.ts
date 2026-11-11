@@ -29,6 +29,8 @@ export function renderChoroplethMap(
   summaries: readonly CountyClearanceSummary[],
   topology: ScTopology = scTopologyJson as unknown as ScTopology,
   dateRange?: DateRangeFilter,
+  selectedCounty?: string | null,
+  onSelectCounty?: (county: string | null) => void,
 ): SVGSVGElement {
   const rateByCounty = new Map<string, number | null>();
   for (const item of summaries) {
@@ -76,10 +78,53 @@ export function renderChoroplethMap(
       const countyName = d.properties?.name ?? "";
       const rate = rateByCounty.get(countyName.toLowerCase()) ?? null;
       const statusClass = getClearanceStatus(rate);
-      return `county-path ${statusClass}`;
+      const isSelected = Boolean(
+        selectedCounty &&
+        countyName.toLowerCase() === selectedCounty.toLowerCase(),
+      );
+      return `county-path ${statusClass}${isSelected ? " is-selected" : ""}`;
     })
     .attr("data-county", (d) => d.properties?.name ?? "")
+    .attr("tabindex", "0")
+    .attr("role", "button")
+    .attr("aria-selected", (d) => {
+      const countyName = d.properties?.name ?? "";
+      const isSelected = Boolean(
+        selectedCounty &&
+        countyName.toLowerCase() === selectedCounty.toLowerCase(),
+      );
+      return isSelected ? "true" : "false";
+    })
     .attr("d", (d) => pathGenerator(d) ?? "")
+    .on("click", (event, d) => {
+      const countyName = d.properties?.name ?? "";
+      const pathEl = event.currentTarget as SVGPathElement;
+      const isSelected = pathEl.classList.contains("is-selected");
+      const nextSelected = isSelected ? null : countyName;
+      onSelectCounty?.(nextSelected);
+      pathEl.dispatchEvent(
+        new CustomEvent("countySelected", {
+          bubbles: true,
+          detail: { county: nextSelected },
+        }),
+      );
+    })
+    .on("keydown", (event: KeyboardEvent, d) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        const countyName = d.properties?.name ?? "";
+        const pathEl = event.currentTarget as SVGPathElement;
+        const isSelected = pathEl.classList.contains("is-selected");
+        const nextSelected = isSelected ? null : countyName;
+        onSelectCounty?.(nextSelected);
+        pathEl.dispatchEvent(
+          new CustomEvent("countySelected", {
+            bubbles: true,
+            detail: { county: nextSelected },
+          }),
+        );
+      }
+    })
     .append("title")
     .text((d) => {
       const countyName = d.properties?.name ?? "";

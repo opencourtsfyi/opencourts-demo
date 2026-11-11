@@ -28,6 +28,8 @@ export function renderApp(
     loading: options?.loading,
     topology: options?.topology,
     onDateRangeChange: options?.onDateRangeChange,
+    selectedCounty: options?.selectedCounty,
+    onSelectCounty: options?.onSelectCounty,
   });
 }
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderClearancePage } from "./ClearancePage";
 import { t } from "../i18n";
 import type { CountyClearanceSummary } from "../services/clearanceData";
@@ -213,5 +213,229 @@ describe("ClearancePage component", () => {
     expect(mapDateRangeAfterLoad?.textContent).toMatch(
       /July 2024\s+to\s+June 2025/i,
     );
+  });
+
+  describe("bi-directional map and table selection synchronization", () => {
+    it("clicking a county path on the map visually highlights both the map path and corresponding table row with .is-selected and aria-selected='true'", () => {
+      renderClearancePage(root, { summaries: sampleSummaries });
+
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      expect(aikenPath).not.toBeNull();
+      aikenPath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(aikenPath?.classList.contains("is-selected")).toBe(true);
+      expect(aikenPath?.getAttribute("aria-selected")).toBe("true");
+
+      const aikenRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+      expect(aikenRow?.classList.contains("is-selected")).toBe(true);
+      expect(aikenRow?.getAttribute("aria-selected")).toBe("true");
+
+      // Verify unselected counties remain unselected
+      const abbevillePath = root.querySelector<SVGPathElement>(
+        'path[data-county="Abbeville"]',
+      );
+      const abbevilleRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Abbeville",
+      );
+      expect(abbevillePath?.classList.contains("is-selected")).toBe(false);
+      expect(abbevillePath?.getAttribute("aria-selected")).toBe("false");
+      expect(abbevilleRow?.classList.contains("is-selected")).toBe(false);
+      expect(abbevilleRow?.getAttribute("aria-selected")).toBe("false");
+    });
+
+    it("does not scroll corresponding table row into view when county is selected on the map", () => {
+      renderClearancePage(root, { summaries: sampleSummaries });
+
+      const aikenRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+      expect(aikenRow).not.toBeNull();
+      const scrollSpy = vi.fn();
+      aikenRow!.scrollIntoView = scrollSpy;
+
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      aikenPath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(scrollSpy).not.toHaveBeenCalled();
+    });
+
+    it("clicking a table row visually highlights both the table row and corresponding map path with .is-selected and aria-selected='true'", () => {
+      renderClearancePage(root, { summaries: sampleSummaries });
+
+      const aikenRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+      expect(aikenRow).not.toBeNull();
+      aikenRow?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(aikenRow?.classList.contains("is-selected")).toBe(true);
+      expect(aikenRow?.getAttribute("aria-selected")).toBe("true");
+
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      expect(aikenPath?.classList.contains("is-selected")).toBe(true);
+      expect(aikenPath?.getAttribute("aria-selected")).toBe("true");
+    });
+
+    it("clicking an already-selected county on the map clears selection on both map and table", () => {
+      renderClearancePage(root, { summaries: sampleSummaries });
+
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      const aikenRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+
+      // Select
+      aikenPath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(aikenPath?.classList.contains("is-selected")).toBe(true);
+      expect(aikenRow?.classList.contains("is-selected")).toBe(true);
+
+      // Re-click to clear
+      aikenPath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(aikenPath?.classList.contains("is-selected")).toBe(false);
+      expect(aikenPath?.getAttribute("aria-selected")).toBe("false");
+      expect(aikenRow?.classList.contains("is-selected")).toBe(false);
+      expect(aikenRow?.getAttribute("aria-selected")).toBe("false");
+    });
+
+    it("clicking an already-selected county row in the table clears selection on both map and table", () => {
+      renderClearancePage(root, { summaries: sampleSummaries });
+
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      const aikenRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+
+      // Select via table row
+      aikenRow?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(aikenRow?.classList.contains("is-selected")).toBe(true);
+      expect(aikenPath?.classList.contains("is-selected")).toBe(true);
+
+      // Re-click table row to clear
+      aikenRow?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(aikenRow?.classList.contains("is-selected")).toBe(false);
+      expect(aikenRow?.getAttribute("aria-selected")).toBe("false");
+      expect(aikenPath?.classList.contains("is-selected")).toBe(false);
+      expect(aikenPath?.getAttribute("aria-selected")).toBe("false");
+    });
+
+    it("clicking anywhere outside the map and table clears the selection", () => {
+      renderClearancePage(root, { summaries: sampleSummaries });
+
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      const aikenRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+
+      // Select
+      aikenPath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(aikenPath?.classList.contains("is-selected")).toBe(true);
+
+      // Click outside (e.g. heading or page header or outside area)
+      const heading = root.querySelector("h1");
+      heading?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(aikenPath?.classList.contains("is-selected")).toBe(false);
+      expect(aikenPath?.getAttribute("aria-selected")).toBe("false");
+      expect(aikenRow?.classList.contains("is-selected")).toBe(false);
+      expect(aikenRow?.getAttribute("aria-selected")).toBe("false");
+    });
+
+    it("supports keyboard selection using Enter and Space on map paths and table rows", () => {
+      renderClearancePage(root, { summaries: sampleSummaries });
+
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      const aikenRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+
+      // Enter on map path
+      aikenPath?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+      expect(aikenPath?.classList.contains("is-selected")).toBe(true);
+      expect(aikenRow?.classList.contains("is-selected")).toBe(true);
+
+      // Space on table row toggles it off
+      aikenRow?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: " ", bubbles: true }),
+      );
+      expect(aikenPath?.classList.contains("is-selected")).toBe(false);
+      expect(aikenRow?.classList.contains("is-selected")).toBe(false);
+    });
+
+    it("maintains a unified selected county state so selecting another county switches selection", () => {
+      renderClearancePage(root, { summaries: sampleSummaries });
+
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      const abbevillePath = root.querySelector<SVGPathElement>(
+        'path[data-county="Abbeville"]',
+      );
+      const aikenRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+      const abbevilleRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Abbeville",
+      );
+
+      // Select Aiken
+      aikenPath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(aikenPath?.classList.contains("is-selected")).toBe(true);
+      expect(aikenRow?.classList.contains("is-selected")).toBe(true);
+
+      // Select Abbeville
+      abbevillePath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(abbevillePath?.classList.contains("is-selected")).toBe(true);
+      expect(abbevilleRow?.classList.contains("is-selected")).toBe(true);
+      expect(aikenPath?.classList.contains("is-selected")).toBe(false);
+      expect(aikenRow?.classList.contains("is-selected")).toBe(false);
+    });
   });
 });

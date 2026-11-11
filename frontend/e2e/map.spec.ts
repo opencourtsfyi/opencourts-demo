@@ -229,4 +229,139 @@ test.describe("Map View", () => {
       await expect(page.locator("body")).toContainText(/no records found/i);
     });
   });
+
+  test.describe("Bi-directional County Selection between Map and Table", () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto("/");
+    });
+
+    test("clicking a county on the map visually highlights both map path and table row", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      const aikenRow = page
+        .locator("tr.county-row")
+        .filter({ hasText: "Aiken" });
+
+      await expect(aikenPath).toBeVisible();
+      await expect(aikenRow).toBeVisible();
+
+      // Click county path on the map
+      await aikenPath.click();
+
+      // Assert .is-selected class and aria-selected="true" on both
+      await expect(aikenPath).toHaveClass(/is-selected/);
+      await expect(aikenPath).toHaveAttribute("aria-selected", "true");
+      await expect(aikenRow).toHaveClass(/is-selected/);
+      await expect(aikenRow).toHaveAttribute("aria-selected", "true");
+
+      // Verify other counties remain unselected
+      const abbevillePath = page.locator("svg path[data-county='Abbeville']");
+      const abbevilleRow = page
+        .locator("tr.county-row")
+        .filter({ hasText: "Abbeville" });
+      await expect(abbevillePath).not.toHaveClass(/is-selected/);
+      await expect(abbevillePath).toHaveAttribute("aria-selected", "false");
+      await expect(abbevilleRow).not.toHaveClass(/is-selected/);
+      await expect(abbevilleRow).toHaveAttribute("aria-selected", "false");
+    });
+
+    test("clicking a table row visually highlights both the table row and corresponding map path", async ({
+      page,
+    }) => {
+      const aikenRow = page
+        .locator("tr.county-row")
+        .filter({ hasText: "Aiken" });
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+
+      // Click row in table
+      await aikenRow.click();
+
+      await expect(aikenRow).toHaveClass(/is-selected/);
+      await expect(aikenRow).toHaveAttribute("aria-selected", "true");
+      await expect(aikenPath).toHaveClass(/is-selected/);
+      await expect(aikenPath).toHaveAttribute("aria-selected", "true");
+    });
+
+    test("clicking an already-selected county clears the selection on both map and table", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      const aikenRow = page
+        .locator("tr.county-row")
+        .filter({ hasText: "Aiken" });
+
+      // Click to select
+      await aikenPath.click();
+      await expect(aikenPath).toHaveClass(/is-selected/);
+      await expect(aikenRow).toHaveClass(/is-selected/);
+
+      // Re-click on map path to deselect
+      await aikenPath.click();
+      await expect(aikenPath).not.toHaveClass(/is-selected/);
+      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenRow).not.toHaveClass(/is-selected/);
+      await expect(aikenRow).toHaveAttribute("aria-selected", "false");
+
+      // Select again via table row
+      await aikenRow.click();
+      await expect(aikenRow).toHaveClass(/is-selected/);
+
+      // Re-click table row to deselect
+      await aikenRow.click();
+      await expect(aikenPath).not.toHaveClass(/is-selected/);
+      await expect(aikenRow).not.toHaveClass(/is-selected/);
+    });
+
+    test("clicking anywhere outside the map or table clears the selection", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      const aikenRow = page
+        .locator("tr.county-row")
+        .filter({ hasText: "Aiken" });
+
+      // Select county
+      await aikenPath.click();
+      await expect(aikenPath).toHaveClass(/is-selected/);
+      await expect(aikenRow).toHaveClass(/is-selected/);
+
+      // Click outside (e.g. main page title heading)
+      await page
+        .getByRole("heading", { name: "SC County Probate Clearance Rates" })
+        .click();
+
+      await expect(aikenPath).not.toHaveClass(/is-selected/);
+      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenRow).not.toHaveClass(/is-selected/);
+      await expect(aikenRow).toHaveAttribute("aria-selected", "false");
+    });
+
+    test("supports selecting and deselecting via keyboard navigation (Enter and Space keys)", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      const aikenRow = page
+        .locator("tr.county-row")
+        .filter({ hasText: "Aiken" });
+
+      // Focus map path and press Enter
+      await aikenPath.focus();
+      await page.keyboard.press("Enter");
+
+      await expect(aikenPath).toHaveClass(/is-selected/);
+      await expect(aikenPath).toHaveAttribute("aria-selected", "true");
+      await expect(aikenRow).toHaveClass(/is-selected/);
+      await expect(aikenRow).toHaveAttribute("aria-selected", "true");
+
+      // Focus table row and press Space to toggle off
+      await aikenRow.focus();
+      await page.keyboard.press("Space");
+
+      await expect(aikenPath).not.toHaveClass(/is-selected/);
+      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenRow).not.toHaveClass(/is-selected/);
+      await expect(aikenRow).toHaveAttribute("aria-selected", "false");
+    });
+  });
 });

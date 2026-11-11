@@ -15,6 +15,8 @@ export function renderCountyRateTable(
   summaries: readonly CountyClearanceSummary[],
   dateRange?: DateRangeFilter,
   loading = false,
+  selectedCounty?: string | null,
+  onSelectCounty?: (county: string | null) => void,
 ): HTMLTableElement {
   const table = document.createElement("table");
   table.className = "clearance-table";
@@ -58,7 +60,37 @@ export function renderCountyRateTable(
     for (const item of summaries) {
       const row = document.createElement("tr");
       const statusClass = getClearanceStatus(item.clearanceRate);
-      row.className = `county-row ${statusClass}`;
+      const isSelected = Boolean(
+        selectedCounty &&
+        item.county.toLowerCase() === selectedCounty.toLowerCase(),
+      );
+      row.className = `county-row ${statusClass}${isSelected ? " is-selected" : ""}`;
+      row.setAttribute("data-county", item.county);
+      row.tabIndex = 0;
+      row.setAttribute("aria-selected", isSelected ? "true" : "false");
+
+      const triggerSelect = () => {
+        const willSelect = !row.classList.contains("is-selected");
+        const nextSelected = willSelect ? item.county : null;
+        onSelectCounty?.(nextSelected);
+        row.dispatchEvent(
+          new CustomEvent("countySelected", {
+            bubbles: true,
+            detail: { county: nextSelected },
+          }),
+        );
+      };
+
+      row.addEventListener("click", () => {
+        triggerSelect();
+      });
+
+      row.addEventListener("keydown", (event: KeyboardEvent) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          triggerSelect();
+        }
+      });
 
       const countyCell = document.createElement("td");
       countyCell.className = "county-name-cell";

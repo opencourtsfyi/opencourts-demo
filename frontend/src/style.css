@@ -124,12 +124,26 @@ body {
 .county-path {
   stroke: #ffffff;
   stroke-width: 1px;
-  transition: opacity 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    stroke-width 0.15s ease;
+  cursor: pointer;
 }
 
 .county-path:hover {
   opacity: 0.82;
   stroke-width: 1.5px;
+}
+
+.county-path.is-selected {
+  stroke: #111827;
+  stroke-width: 2.5px;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5));
+}
+
+.county-path:focus-visible {
+  outline: 2px dashed #0284c7;
+  outline-offset: 2px;
 }
 
 .table-section {
@@ -141,6 +155,26 @@ body {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+}
+
+.clearance-table tbody tr.county-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.clearance-table tbody tr.county-row:hover {
+  background-color: rgba(128, 128, 128, 0.08);
+}
+
+.clearance-table tbody tr.county-row.is-selected {
+  background-color: rgba(37, 99, 235, 0.15);
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+
+.clearance-table tbody tr.county-row:focus-visible {
+  outline: 2px dashed #0284c7;
+  outline-offset: -2px;
 }
 
 .clearance-table th,
