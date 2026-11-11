@@ -24,6 +24,33 @@ test.describe("Map View", () => {
     );
   });
 
+  test("stacks legend items vertically on narrow screens (e.g. mobile viewport)", async ({
+    page,
+  }) => {
+    // Set viewport to mobile width (e.g. 390px like an iPhone 12/13/14)
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+
+    const legendList = page.locator(".legend-list");
+    await expect(legendList).toBeVisible();
+    await expect(legendList).toHaveCSS("flex-direction", "column");
+
+    // Verify all legend items are vertically stacked (each item is below the previous one)
+    const items = page.locator(".legend-item");
+    const count = await items.count();
+    expect(count).toBeGreaterThan(1);
+
+    for (let i = 1; i < count; i++) {
+      const prevBox = await items.nth(i - 1).boundingBox();
+      const currBox = await items.nth(i).boundingBox();
+      expect(prevBox).not.toBeNull();
+      expect(currBox).not.toBeNull();
+      if (prevBox && currBox) {
+        expect(currBox.y).toBeGreaterThanOrEqual(prevBox.y + prevBox.height);
+      }
+    }
+  });
+
   test.describe("Date Range Selector and Filtering", () => {
     test.beforeEach(async ({ page }) => {
       await page.goto("/");
@@ -63,6 +90,33 @@ test.describe("Map View", () => {
         );
       });
       expect(endAccessibleName).toMatch(/end date/i);
+    });
+
+    test("stacks date range selector dropdowns vertically on narrow screens (e.g. mobile viewport)", async ({
+      page,
+    }) => {
+      // Set viewport to mobile width (390px - iPhone 12/13/14)
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto("/");
+
+      const dateRangeSelector = page.locator(".date-range-selector");
+      await expect(dateRangeSelector).toBeVisible();
+      await expect(dateRangeSelector).toHaveCSS("flex-direction", "column");
+
+      const startControl = page.locator(".start-date-control");
+      const endControl = page.locator(".end-date-control");
+
+      await expect(startControl).toBeVisible();
+      await expect(endControl).toBeVisible();
+
+      const startBox = await startControl.boundingBox();
+      const endBox = await endControl.boundingBox();
+
+      expect(startBox).not.toBeNull();
+      expect(endBox).not.toBeNull();
+      if (startBox && endBox) {
+        expect(endBox.y).toBeGreaterThanOrEqual(startBox.y + startBox.height);
+      }
     });
 
     test("a start date cannot be selected that's before the earliest date in the data", async ({

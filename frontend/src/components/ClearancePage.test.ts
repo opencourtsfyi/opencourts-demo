@@ -184,4 +184,3 @@ describe("ClearancePage component", () => {
     expect(tableSection?.textContent).toMatch(/July 2024\s+to\s+June 2025/i);
   });
 });
-

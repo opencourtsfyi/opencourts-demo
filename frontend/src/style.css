@@ -214,6 +214,28 @@ body {
   font-style: italic;
 }
 
+@media (max-width: 480px) {
+  .clearance-legend {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .legend-list {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .date-range-selector {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .date-range-selector {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
 @media (forced-colors: active) {
   .legend-swatch {
     forced-color-adjust: none;
