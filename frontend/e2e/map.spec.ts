@@ -363,5 +363,19 @@ test.describe("Map View", () => {
       await expect(aikenRow).not.toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
     });
+
+    test("clicking on a map county does not display a rectangular focus outline", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      await expect(aikenPath).toBeVisible();
+
+      // Click / focus the county path
+      await aikenPath.click();
+
+      // Verify outline is none / 0px so no rectangular bounding box is shown
+      await expect(aikenPath).toHaveCSS("outline-style", "none");
+      await expect(aikenPath).toHaveCSS("outline-width", "0px");
+    });
   });
 });

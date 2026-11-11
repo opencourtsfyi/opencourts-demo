@@ -135,6 +135,10 @@ body {
   stroke-width: 1.5px;
 }
 
+.county-path:focus {
+  outline: none;
+}
+
 .county-path.is-selected {
   stroke: #111827;
   stroke-width: 2.5px;
@@ -142,8 +146,14 @@ body {
 }
 
 .county-path:focus-visible {
-  outline: 2px dashed #0284c7;
-  outline-offset: 2px;
+  outline: none;
+  stroke: #0284c7;
+  stroke-width: 2px;
+}
+
+.county-path.is-selected:focus-visible {
+  stroke: #0284c7;
+  stroke-width: 3px;
 }
 
 .table-section {
