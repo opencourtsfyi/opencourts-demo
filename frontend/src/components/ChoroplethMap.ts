@@ -159,12 +159,6 @@ export function renderChoroplethMap(
           }),
         );
       }
-    })
-    .append("title")
-    .text((d) => {
-      const countyName = d.properties?.name ?? "";
-      const rate = rateByCounty.get(countyName.toLowerCase()) ?? null;
-      return `${countyName}: ${formatClearanceRate(rate)}`;
     });
 
   return svgElement;

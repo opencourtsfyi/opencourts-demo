@@ -15,7 +15,7 @@ test.describe("Map View", () => {
     await expect(page.locator("svg.choropleth-svg")).toBeVisible();
     const aikenMapSection = page.locator("svg path[data-county='Aiken']");
     await expect(aikenMapSection).toBeVisible();
-    await expect(aikenMapSection.locator("title")).toHaveText("Aiken: 97%");
+    await expect(aikenMapSection).toHaveAttribute("aria-label", "Aiken: 97%");
 
     //Check Data Table
     await expect(page.getByRole("cell", { name: "Aiken" })).toBeVisible();
@@ -135,7 +135,8 @@ test.describe("Map View", () => {
 
       // In 2024-2025, Abbeville rate is 89%
       const abbevillePath = page.locator("svg path[data-county='Abbeville']");
-      await expect(abbevillePath.locator("title")).toHaveText(
+      await expect(abbevillePath).toHaveAttribute(
+        "aria-label",
         /Abbeville:\s*89%/i,
       );
 
@@ -149,7 +150,8 @@ test.describe("Map View", () => {
       await endDateSelect.selectOption({ label: "June 2024" });
 
       // In 2023-2024, Abbeville rate is 138%
-      await expect(abbevillePath.locator("title")).toHaveText(
+      await expect(abbevillePath).toHaveAttribute(
+        "aria-label",
         /Abbeville:\s*138%/i,
       );
       await expect(abbevilleRow.locator(".county-rate-cell")).toHaveText(
