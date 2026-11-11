@@ -107,15 +107,6 @@ export function renderClearancePage(
     header.appendChild(createLegend());
   }
 
-  let dateRangeBanner =
-    header.querySelector<HTMLParagraphElement>(".date-range-banner");
-  if (!dateRangeBanner) {
-    dateRangeBanner = document.createElement("p");
-    dateRangeBanner.className = "date-range-banner";
-    header.appendChild(dateRangeBanner);
-  }
-  dateRangeBanner.textContent = formatDateRange(dateRange.start, dateRange.end);
-
   let selectorContainer = header.querySelector<
     HTMLElement & { _onDateRangeChange?: (r: DateRangeFilter) => void }
   >(".date-range-selector");
@@ -176,8 +167,8 @@ export function renderClearancePage(
   }
   tableSection.replaceChildren();
   const tableDateRange = document.createElement("p");
-  tableDateRange.className = "table-date-range";
-  tableDateRange.textContent = formatDateRange(dateRange.start, dateRange.end);
+  // tableDateRange.className = "table-date-range";
+  // tableDateRange.textContent = formatDateRange(dateRange.start, dateRange.end);
   const table = renderCountyRateTable(summaries, dateRange);
   tableSection.append(tableDateRange, table);
 }

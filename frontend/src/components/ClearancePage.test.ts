@@ -14,7 +14,7 @@ describe("ClearancePage component", () => {
     root = document.createElement("div");
   });
 
-  it("renders page header, title, and date banner", () => {
+  it("renders page header and title", () => {
     renderClearancePage(root, {
       summaries: sampleSummaries,
       dateRange: {
@@ -25,9 +25,6 @@ describe("ClearancePage component", () => {
 
     const heading = root.querySelector("h1");
     expect(heading?.textContent).toBe(t("pageTitle"));
-
-    const banner = root.querySelector(".date-range-banner");
-    expect(banner?.textContent).toBe("July 2025 to June 2026");
   });
 
   it("renders the color legend with swatch indicators", () => {
@@ -66,7 +63,6 @@ describe("ClearancePage component", () => {
       },
     });
 
-    // Check dropdown selectors exist at top of page (header / before map)
     const startSelect = root.querySelector<HTMLSelectElement>(
       'select[aria-label*="start" i], select[name="startDate"], select#start-date',
     );
@@ -77,7 +73,6 @@ describe("ClearancePage component", () => {
     expect(startSelect).not.toBeNull();
     expect(endSelect).not.toBeNull();
 
-    // Verify screen reader indication (aria-label, associated label, or aria-describedby)
     const hasStartAccessibleLabel = Boolean(
       startSelect?.getAttribute("aria-label") ||
       root.querySelector(`label[for="${startSelect?.id}"]`),
@@ -125,7 +120,6 @@ describe("ClearancePage component", () => {
     const options = Array.from(startSelect?.options ?? []).map((o) => o.text);
     expect(options.length).toBeGreaterThan(0);
 
-    // No option before July 2023 should exist
     for (const opt of options) {
       expect(opt).not.toMatch(/2022|June 2023|May 2023|January 2023/i);
     }
@@ -147,7 +141,6 @@ describe("ClearancePage component", () => {
     const options = Array.from(endSelect?.options ?? []).map((o) => o.text);
     expect(options.length).toBeGreaterThan(0);
 
-    // No option after June 2026 should exist
     for (const opt of options) {
       expect(opt).not.toMatch(/2027|July 2026|August 2026|December 2026/i);
     }
@@ -169,7 +162,6 @@ describe("ClearancePage component", () => {
     const options = Array.from(endSelect?.options ?? []);
     expect(options.length).toBeGreaterThan(0);
 
-    // End date options for October 2024 or earlier must be disabled or omitted
     const octOption = options.find((o) => /October 2024/i.test(o.text));
     if (octOption) {
       expect(octOption.disabled).toBe(true);
@@ -192,3 +184,4 @@ describe("ClearancePage component", () => {
     expect(tableSection?.textContent).toMatch(/July 2024\s+to\s+June 2025/i);
   });
 });
+

@@ -106,12 +106,6 @@ body {
   fill: var(--color-no-data);
 }
 
-.date-range-banner {
-  margin: 0.25rem 0 0;
-  font-size: 1.1rem;
-  font-weight: 500;
-}
-
 .map-box {
   width: 100%;
   max-width: 760px;
@@ -201,8 +195,7 @@ body {
   cursor: not-allowed;
 }
 
-.map-date-range,
-.table-date-range {
+.map-date-range {
   margin: 0 0 0.75rem;
   font-size: 1rem;
   font-weight: 500;
