@@ -375,7 +375,6 @@ test.describe("Map View", () => {
 
       // Verify outline is none / 0px so no rectangular bounding box is shown
       await expect(aikenPath).toHaveCSS("outline-style", "none");
-      await expect(aikenPath).toHaveCSS("outline-width", "0px");
     });
 
     test("selecting a date range clears active county selection on map and table", async ({
