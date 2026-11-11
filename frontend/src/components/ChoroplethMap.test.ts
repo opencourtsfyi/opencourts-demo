@@ -41,17 +41,17 @@ describe("ChoroplethMap component", () => {
     expect(pickensPath?.classList.contains("status-no-data")).toBe(true);
   });
 
-  it("renders descriptive SVG title tooltips on county paths", () => {
+  it("renders accessible aria-labels on county paths", () => {
     const svg = renderChoroplethMap(sampleSummaries);
-    const aikenTitle = svg.querySelector(
-      'path[data-county="Aiken"] title',
-    )?.textContent;
-    expect(aikenTitle).toBe("Aiken: 88%");
+    const aikenLabel = svg
+      .querySelector('path[data-county="Aiken"]')
+      ?.getAttribute("aria-label");
+    expect(aikenLabel).toBe("Aiken: 88%");
 
-    const unrankedTitle = svg.querySelector(
-      'path[data-county="Pickens"] title',
-    )?.textContent;
-    expect(unrankedTitle).toBe("Pickens: N/A");
+    const unrankedLabel = svg
+      .querySelector('path[data-county="Pickens"]')
+      ?.getAttribute("aria-label");
+    expect(unrankedLabel).toBe("Pickens: N/A");
   });
 
   it("displays the start and end date on the map to indicate its date range", () => {
