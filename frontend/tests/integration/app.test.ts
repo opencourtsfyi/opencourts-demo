@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { initApp, renderApp } from '../src/main';
-import { t } from '../src/i18n';
-import type { CountyClearanceSummary } from '../src/services/clearanceData';
-import * as clearanceDataService from '../src/services/clearanceData';
+import { initApp, renderApp } from '../../src/main';
+import { t } from '../../src/i18n';
+import type { CountyClearanceSummary } from '../../src/services/clearanceData';
+import * as clearanceDataService from '../../src/services/clearanceData';
 
 describe('App Integration', () => {
   let root: HTMLElement;

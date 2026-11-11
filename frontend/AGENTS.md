@@ -14,7 +14,10 @@ Frontend application for the project. This is a TypeScript-based single-page app
 - **Run dev server:** `npm run dev`
 - **Build for production:** `npm run build`
 - **Preview production build:** `npm run preview`
-- **Run tests:** `npm test`
+- **Run all tests:** `npm test`
+- **Run unit tests:** `npm run test:unit`
+- **Run integration tests:** `npm run test:integration`
+- **Run e2e tests:** `npm run test:e2e`
 - **Lint / Type-check:** `npm run typecheck` (`tsc --noEmit`; non-zero exit on type errors)
 
 <!-- ## Project Structure
@@ -54,6 +57,9 @@ frontend/
 - Add or update tests for any behavior change.
 - Use Vitest for unit and component-level validation.
 - Prefer targeted tests over broad suites when iterating.
+- Place unit tests in `src/**/*.test.ts` (co-located with the unit under test).
+- Place integration tests in `tests/integration/**/*.test.ts`.
+- Place Playwright e2e tests in `e2e/**/*.spec.ts`.
 
 ## Boundaries
 **Always do:**
