@@ -213,3 +213,9 @@ body {
   padding: 1.5rem !important;
   font-style: italic;
 }
+
+@media (forced-colors: active) {
+  .legend-swatch {
+    forced-color-adjust: none;
+  }
+}
