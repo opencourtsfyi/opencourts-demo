@@ -53,4 +53,14 @@ describe("ChoroplethMap component", () => {
     )?.textContent;
     expect(unrankedTitle).toBe("Pickens: N/A");
   });
+
+  it("displays the start and end date on the map to indicate its date range", () => {
+    const dateRange = {
+      start: { year: 2024, month: 7 },
+      end: { year: 2025, month: 6 },
+    };
+    const svg = (renderChoroplethMap as any)(sampleSummaries, undefined, dateRange);
+    const textContent = svg.textContent || svg.getAttribute("aria-label") || "";
+    expect(textContent).toMatch(/July 2024\s+to\s+June 2025/i);
+  });
 });

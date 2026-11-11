@@ -58,4 +58,19 @@ describe("CountyRateTable component", () => {
     );
     expect(allendaleRow.classList.contains("status-no-data")).toBe(true);
   });
+
+  it("indicates 'No records found' when there is no data for a given date range", () => {
+    const table = renderCountyRateTable([]);
+    expect(table.textContent).toMatch(/no records found/i);
+  });
+
+  it("displays the start and end date to indicate the date range of the table", () => {
+    const dateRange = {
+      start: { year: 2024, month: 7 },
+      end: { year: 2025, month: 6 },
+    };
+    // When dateRange is provided in table options or context
+    const table = (renderCountyRateTable as any)(sampleSummaries, dateRange);
+    expect(table.textContent).toMatch(/July 2024\s+to\s+June 2025/i);
+  });
 });

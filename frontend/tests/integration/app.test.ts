@@ -69,4 +69,88 @@ describe('App Integration', () => {
     expect(errorBanner).not.toBeNull();
     expect(errorBanner?.textContent).toBe(t('errorLoadingData'));
   });
+
+  it('reloads map and table when date range selector is changed across multi-year data', async () => {
+    vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+      // 2024-2025 records
+      {
+        file: 'test.csv',
+        category: 'Estate',
+        year: 2024,
+        month: 8,
+        county: 'Abbeville',
+        metric: 'Added',
+        value: 100,
+      },
+      {
+        file: 'test.csv',
+        category: 'Estate',
+        year: 2024,
+        month: 8,
+        county: 'Abbeville',
+        metric: 'Disposed',
+        value: 89,
+      },
+      // 2023-2024 records
+      {
+        file: 'test.csv',
+        category: 'Estate',
+        year: 2023,
+        month: 8,
+        county: 'Abbeville',
+        metric: 'Added',
+        value: 50,
+      },
+      {
+        file: 'test.csv',
+        category: 'Estate',
+        year: 2023,
+        month: 8,
+        county: 'Abbeville',
+        metric: 'Disposed',
+        value: 69,
+      },
+    ]);
+
+    await initApp(root);
+
+    const startSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="start" i], select[name="startDate"], select#start-date',
+    );
+    const endSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="end" i], select[name="endDate"], select#end-date',
+    );
+
+    expect(startSelect).not.toBeNull();
+    expect(endSelect).not.toBeNull();
+
+    // Select 2023-2024
+    if (startSelect && endSelect) {
+      startSelect.value = '2023-07';
+      startSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      endSelect.value = '2024-06';
+      endSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      // Abbeville rate for 2023-2024 is 138%
+      expect(root.querySelector('.county-name-cell')?.textContent).toBe('Abbeville');
+      expect(root.querySelector('.county-rate-cell')?.textContent).toBe('138%');
+    }
+  });
+
+  it('disables date selectors and indicates no records found when data is empty', async () => {
+    vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([]);
+
+    await initApp(root);
+
+    const startSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="start" i], select[name="startDate"], select#start-date',
+    );
+    const endSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="end" i], select[name="endDate"], select#end-date',
+    );
+
+    expect(startSelect?.disabled).toBe(true);
+    expect(endSelect?.disabled).toBe(true);
+    expect(root.textContent).toMatch(/no records found/i);
+  });
 });

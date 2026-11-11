@@ -56,4 +56,139 @@ describe("ClearancePage component", () => {
       root.querySelector(".table-section table.clearance-table"),
     ).not.toBeNull();
   });
+
+  it("renders start date and end date dropdown selectors at the top of the page with screen reader support", () => {
+    renderClearancePage(root, {
+      summaries: sampleSummaries,
+      dateRange: {
+        start: { year: 2025, month: 7 },
+        end: { year: 2026, month: 6 },
+      },
+    });
+
+    // Check dropdown selectors exist at top of page (header / before map)
+    const startSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="start" i], select[name="startDate"], select#start-date',
+    );
+    const endSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="end" i], select[name="endDate"], select#end-date',
+    );
+
+    expect(startSelect).not.toBeNull();
+    expect(endSelect).not.toBeNull();
+
+    // Verify screen reader indication (aria-label, associated label, or aria-describedby)
+    const hasStartAccessibleLabel = Boolean(
+      startSelect?.getAttribute("aria-label") ||
+        root.querySelector(`label[for="${startSelect?.id}"]`),
+    );
+    expect(hasStartAccessibleLabel).toBe(true);
+
+    const hasEndAccessibleLabel = Boolean(
+      endSelect?.getAttribute("aria-label") ||
+        root.querySelector(`label[for="${endSelect?.id}"]`),
+    );
+    expect(hasEndAccessibleLabel).toBe(true);
+  });
+
+  it("disables date selectors and indicates 'No records found' when there is no data", () => {
+    renderClearancePage(root, {
+      summaries: [],
+    });
+
+    const startSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="start" i], select[name="startDate"], select#start-date',
+    );
+    const endSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="end" i], select[name="endDate"], select#end-date',
+    );
+
+    expect(startSelect?.disabled).toBe(true);
+    expect(endSelect?.disabled).toBe(true);
+
+    expect(root.textContent).toMatch(/no records found/i);
+  });
+
+  it("constrains selectable start dates so dates before the earliest data date cannot be selected", () => {
+    (renderClearancePage as any)(root, {
+      summaries: sampleSummaries,
+      availableRange: {
+        start: { year: 2023, month: 7 },
+        end: { year: 2026, month: 6 },
+      },
+    });
+
+    const startSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="start" i], select[name="startDate"], select#start-date',
+    );
+    expect(startSelect).not.toBeNull();
+    const options = Array.from(startSelect?.options ?? []).map((o) => o.text);
+    expect(options.length).toBeGreaterThan(0);
+
+    // No option before July 2023 should exist
+    for (const opt of options) {
+      expect(opt).not.toMatch(/2022|June 2023|May 2023|January 2023/i);
+    }
+  });
+
+  it("constrains selectable end dates so dates later than the latest data date cannot be selected", () => {
+    (renderClearancePage as any)(root, {
+      summaries: sampleSummaries,
+      availableRange: {
+        start: { year: 2023, month: 7 },
+        end: { year: 2026, month: 6 },
+      },
+    });
+
+    const endSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="end" i], select[name="endDate"], select#end-date',
+    );
+    expect(endSelect).not.toBeNull();
+    const options = Array.from(endSelect?.options ?? []).map((o) => o.text);
+    expect(options.length).toBeGreaterThan(0);
+
+    // No option after June 2026 should exist
+    for (const opt of options) {
+      expect(opt).not.toMatch(/2027|July 2026|August 2026|December 2026/i);
+    }
+  });
+
+  it("enforces that end date must be at least 1 month later than start date", () => {
+    (renderClearancePage as any)(root, {
+      summaries: sampleSummaries,
+      dateRange: {
+        start: { year: 2024, month: 10 },
+        end: { year: 2025, month: 6 },
+      },
+    });
+
+    const endSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="end" i], select[name="endDate"], select#end-date',
+    );
+    expect(endSelect).not.toBeNull();
+    const options = Array.from(endSelect?.options ?? []);
+    expect(options.length).toBeGreaterThan(0);
+
+    // End date options for October 2024 or earlier must be disabled or omitted
+    const octOption = options.find((o) => /October 2024/i.test(o.text));
+    if (octOption) {
+      expect(octOption.disabled).toBe(true);
+    }
+  });
+
+  it("displays the start and end date on both the map section and table section", () => {
+    renderClearancePage(root, {
+      summaries: sampleSummaries,
+      dateRange: {
+        start: { year: 2024, month: 7 },
+        end: { year: 2025, month: 6 },
+      },
+    });
+
+    const mapSection = root.querySelector(".map-box");
+    const tableSection = root.querySelector(".table-section");
+
+    expect(mapSection?.textContent).toMatch(/July 2024\s+to\s+June 2025/i);
+    expect(tableSection?.textContent).toMatch(/July 2024\s+to\s+June 2025/i);
+  });
 });
