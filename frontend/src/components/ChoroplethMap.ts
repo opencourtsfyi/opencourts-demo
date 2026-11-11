@@ -14,6 +14,7 @@ import type {
 } from "../services/clearanceData";
 import { formatClearanceRate, formatDateRange } from "../utils/formatters";
 import { t } from "../i18n";
+import { MapTooltip } from "./MapTooltip";
 
 export interface CountyProperties {
   name: string;
@@ -66,6 +67,7 @@ export function renderChoroplethMap(
       .text(formatDateRange(dateRange.start, dateRange.end));
   }
 
+  const tooltip = new MapTooltip();
   const countyGroup = svg.append("g").attr("class", "counties-layer");
 
   countyGroup
@@ -87,6 +89,11 @@ export function renderChoroplethMap(
     .attr("data-county", (d) => d.properties?.name ?? "")
     .attr("tabindex", "0")
     .attr("role", "button")
+    .attr("aria-label", (d) => {
+      const countyName = d.properties?.name ?? "";
+      const rate = rateByCounty.get(countyName.toLowerCase()) ?? null;
+      return `${countyName}: ${formatClearanceRate(rate)}`;
+    })
     .attr("aria-selected", (d) => {
       const countyName = d.properties?.name ?? "";
       const isSelected = Boolean(
@@ -96,6 +103,23 @@ export function renderChoroplethMap(
       return isSelected ? "true" : "false";
     })
     .attr("d", (d) => pathGenerator(d) ?? "")
+    .on("mouseover", (event: MouseEvent, d) => {
+      const countyName = d.properties?.name ?? "";
+      const rate = rateByCounty.get(countyName.toLowerCase()) ?? null;
+      tooltip.show(`${countyName}: ${formatClearanceRate(rate)}`, {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
+    })
+    .on("mousemove", (event: MouseEvent) => {
+      tooltip.move({
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
+    })
+    .on("mouseout", () => {
+      tooltip.hide();
+    })
     .on("click", (event, d) => {
       const countyName = d.properties?.name ?? "";
       const pathEl = event.currentTarget as SVGPathElement;

@@ -37,6 +37,12 @@ export const DATE_SELECTION_CONSTRAINTS = {
   EMPTY_COUNT: 0,
 } as const;
 
+export const TOOLTIP_CONFIG = {
+  OFFSET_X: 12,
+  OFFSET_Y: 12,
+  VIEWPORT_PADDING: 16,
+} as const;
+
 export const GOLD_DATA_PATH = "/data/caseloads_sample.json";
 
 export function getClearanceStatus(rate: number | null): ClearanceStatusType {
