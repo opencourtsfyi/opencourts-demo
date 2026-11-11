@@ -132,4 +132,100 @@ describe("DateRangeSelector component", () => {
       end: { year: 2024, month: 7 },
     });
   });
+
+  it("auto-advances end date forward by 1 month when start date is selected to be the same as current end date", () => {
+    const onDateRangeChange = vi.fn();
+    const el = renderDateRangeSelector({
+      availableRange: defaultAvailableRange,
+      selectedRange: {
+        start: { year: 2024, month: 7 },
+        end: { year: 2024, month: 9 },
+      },
+      onDateRangeChange,
+    });
+
+    const startSelect = el.querySelector<HTMLSelectElement>("#start-date")!;
+    const endSelect = el.querySelector<HTMLSelectElement>("#end-date")!;
+
+    // Select start date identical to current end date (September 2024)
+    startSelect.value = "2024-09";
+    startSelect.dispatchEvent(new Event("change", { bubbles: true }));
+
+    // End date should auto-advance to October 2024 (+1 month)
+    expect(endSelect.value).toBe("2024-10");
+    expect(onDateRangeChange).toHaveBeenCalledWith({
+      start: { year: 2024, month: 9 },
+      end: { year: 2024, month: 10 },
+    });
+  });
+
+  it("prevents start date from moving before earliest data when selecting the earliest possible end date", () => {
+    const onDateRangeChange = vi.fn();
+    const el = renderDateRangeSelector({
+      availableRange: defaultAvailableRange,
+      selectedRange: {
+        start: { year: 2024, month: 7 },
+        end: { year: 2024, month: 9 },
+      },
+      onDateRangeChange,
+    });
+
+    const startSelect = el.querySelector<HTMLSelectElement>("#start-date")!;
+    const endSelect = el.querySelector<HTMLSelectElement>("#end-date")!;
+
+    // The earliest selectable end date is August 2023 (1 month after earliest data July 2023)
+    const endOptions = Array.from(endSelect.options).map((o) => o.value);
+    expect(endOptions[0]).toBe("2023-08");
+    expect(endOptions).not.toContain("2023-07");
+
+    // Selecting earliest end date pulls start date back to earliest possible data month (July 2023)
+    endSelect.value = "2023-08";
+    endSelect.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(startSelect.value).toBe("2023-07");
+    expect(onDateRangeChange).toHaveBeenCalledWith({
+      start: { year: 2023, month: 7 },
+      end: { year: 2023, month: 8 },
+    });
+
+    // Start options do not allow anything before July 2023
+    const startOptions = Array.from(startSelect.options).map((o) => o.value);
+    expect(startOptions[0]).toBe("2023-07");
+    expect(startOptions).not.toContain("2023-06");
+  });
+
+  it("prevents end date from moving after latest data when selecting the latest possible start date", () => {
+    const onDateRangeChange = vi.fn();
+    const el = renderDateRangeSelector({
+      availableRange: defaultAvailableRange,
+      selectedRange: {
+        start: { year: 2024, month: 7 },
+        end: { year: 2024, month: 9 },
+      },
+      onDateRangeChange,
+    });
+
+    const startSelect = el.querySelector<HTMLSelectElement>("#start-date")!;
+    const endSelect = el.querySelector<HTMLSelectElement>("#end-date")!;
+
+    // The latest selectable start date is May 2026 (1 month prior to latest data June 2026)
+    const startOptions = Array.from(startSelect.options).map((o) => o.value);
+    expect(startOptions[startOptions.length - 1]).toBe("2026-05");
+    expect(startOptions).not.toContain("2026-06");
+
+    // Selecting latest start date pushes end date forward to latest possible data month (June 2026)
+    startSelect.value = "2026-05";
+    startSelect.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(endSelect.value).toBe("2026-06");
+    expect(onDateRangeChange).toHaveBeenCalledWith({
+      start: { year: 2026, month: 5 },
+      end: { year: 2026, month: 6 },
+    });
+
+    // End options do not allow anything after June 2026
+    const endOptions = Array.from(endSelect.options).map((o) => o.value);
+    expect(endOptions[endOptions.length - 1]).toBe("2026-06");
+    expect(endOptions).not.toContain("2026-07");
+  });
 });

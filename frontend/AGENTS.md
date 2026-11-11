@@ -57,6 +57,7 @@ frontend/
 - Add or update tests for any behavior change.
 - Use Vitest for unit and component-level validation.
 - Prefer targeted tests over broad suites when iterating.
+- Prefer testing with Vitest which is fast over Playwright which is slower. Keep E2E tests light and lean.
 - Place unit tests in `src/**/*.test.ts` (co-located with the unit under test).
 - Place integration tests in `tests/integration/**/*.test.ts`.
 - Place Playwright e2e tests in `e2e/**/*.spec.ts`.
