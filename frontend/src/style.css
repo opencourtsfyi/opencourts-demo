@@ -310,3 +310,15 @@ body {
     border: 1px solid CanvasText;
   }
 }
+/* Bugfix: dropdown items should show under dark theme */
+select {
+  background-color: #1f2937;
+  /* Tailwind gray-800 or your dark theme bg */
+  color: #f3f4f6;
+  /* Tailwind gray-150 or your light text color */
+}
+
+select option {
+  background-color: #1f2937;
+  color: #f3f4f6;
+}
