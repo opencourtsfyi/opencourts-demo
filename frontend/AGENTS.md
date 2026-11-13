@@ -19,6 +19,8 @@ Frontend application for the project. This is a TypeScript-based single-page app
 - **Run integration tests:** `npm run test:integration`
 - **Run e2e tests:** `npm run test:e2e`
 - **Lint / Type-check:** `npm run typecheck` (`tsc --noEmit`; non-zero exit on type errors)
+- **Format source and tests (TS, HTML, CSS):** `npm run format:` 
+- **Formatting check:** `npm run format:check` (non-zero exit on formatting errors)
 
 <!-- ## Project Structure
 ```text

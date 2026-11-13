@@ -39,3 +39,6 @@ Run these scripts from within the `frontend/` directory:
 | `npm run typecheck` | Type-check the project without emitting output files (`tsc --noEmit`). |
 | `npm run build` | Compile TypeScript and bundle production assets into `dist/`. |
 | `npm run preview` | Locally preview the production build output from `dist/`. |
+| `npm run format` | Runs prettier formatting on the source and tests |
+| `npm run format:` | Runs formatting on the source and tests (HTML, CSS, TS) |
+| `npm run format:check` | Checks formatting on the source and tests but does not modify (HTML, CSS, TS) |
