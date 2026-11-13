@@ -190,4 +190,28 @@ describe("ClearancePage component", () => {
     expect(mapSection?.textContent).toMatch(/July 2024\s+to\s+June 2025/i);
     expect(tableSection?.textContent).toMatch(/July 2024\s+to\s+June 2025/i);
   });
+
+  it("shows loading text in map-date-range while loading is true and shows the formatted date range once loaded", () => {
+    renderClearancePage(root, {
+      summaries: [],
+      loading: true,
+    });
+
+    const mapDateRangeDuringLoad = root.querySelector(".map-date-range");
+    expect(mapDateRangeDuringLoad?.textContent).toBe(t("loadingData"));
+
+    renderClearancePage(root, {
+      summaries: sampleSummaries,
+      dateRange: {
+        start: { year: 2024, month: 7 },
+        end: { year: 2025, month: 6 },
+      },
+      loading: false,
+    });
+
+    const mapDateRangeAfterLoad = root.querySelector(".map-date-range");
+    expect(mapDateRangeAfterLoad?.textContent).toMatch(
+      /July 2024\s+to\s+June 2025/i,
+    );
+  });
 });

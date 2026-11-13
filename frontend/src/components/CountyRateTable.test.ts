@@ -73,4 +73,30 @@ describe("CountyRateTable component", () => {
     const table = (renderCountyRateTable as any)(sampleSummaries, dateRange);
     expect(table.textContent).toMatch(/July 2024\s+to\s+June 2025/i);
   });
+
+  it("shows loading text in table-date-range-caption while loading and shows formatted date range once loaded", () => {
+    const dateRange = {
+      start: { year: 2024, month: 7 },
+      end: { year: 2025, month: 6 },
+    };
+
+    const loadingTable = renderCountyRateTable([], dateRange, true);
+    const loadingCaption = loadingTable.querySelector(
+      ".table-date-range-caption",
+    );
+    expect(loadingCaption?.textContent).toBe(t("loadingData"));
+
+    const loadedTable = renderCountyRateTable(sampleSummaries, dateRange, false);
+    const loadedCaption = loadedTable.querySelector(
+      ".table-date-range-caption",
+    );
+    expect(loadedCaption?.textContent).toMatch(/July 2024\s+to\s+June 2025/i);
+  });
+
+  it("displays no table body rows while loading is in progress", () => {
+    const loadingTable = renderCountyRateTable([], undefined, true);
+    const rows = loadingTable.querySelectorAll("tbody tr");
+    expect(rows).toHaveLength(0);
+    expect(loadingTable.querySelector(".empty-table-row")).toBeNull();
+  });
 });

@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { renderDateRangeSelector } from "./DateRangeSelector";
+import {
+  renderDateRangeSelector,
+  updateDateRangeSelector,
+} from "./DateRangeSelector";
 import { t } from "../i18n";
 import type { DateRangeFilter } from "../services/clearanceData";
 
@@ -227,5 +230,47 @@ describe("DateRangeSelector component", () => {
     const endOptions = Array.from(endSelect.options).map((o) => o.value);
     expect(endOptions[endOptions.length - 1]).toBe("2026-06");
     expect(endOptions).not.toContain("2026-07");
+  });
+
+  it("disables controls with loading text while loading and rebuilds options when updated with a new availableRange", () => {
+    const el = renderDateRangeSelector({
+      availableRange: defaultAvailableRange,
+      selectedRange: defaultSelectedRange,
+      loading: true,
+    });
+
+    const startSelect = el.querySelector<HTMLSelectElement>("#start-date")!;
+    const endSelect = el.querySelector<HTMLSelectElement>("#end-date")!;
+
+    expect(startSelect.disabled).toBe(true);
+    expect(endSelect.disabled).toBe(true);
+    expect(startSelect.selectedOptions[0]?.textContent).toMatch(/loading/i);
+    expect(endSelect.selectedOptions[0]?.textContent).toMatch(/loading/i);
+
+    const loadedRange: DateRangeFilter = {
+      start: { year: 2015, month: 1 },
+      end: { year: 2016, month: 12 },
+    };
+
+    updateDateRangeSelector(el, {
+      availableRange: loadedRange,
+      selectedRange: loadedRange,
+      disabled: false,
+      loading: false,
+    });
+
+    expect(startSelect.disabled).toBe(false);
+    expect(endSelect.disabled).toBe(false);
+
+    const startValues = Array.from(startSelect.options).map((o) => o.value);
+    const endValues = Array.from(endSelect.options).map((o) => o.value);
+
+    expect(startValues).toContain("2015-01");
+    expect(startValues).not.toContain("2023-07");
+    expect(endValues).toContain("2016-12");
+    expect(endValues).not.toContain("2026-06");
+
+    expect(startSelect.value).toBe("2015-01");
+    expect(endSelect.value).toBe("2016-12");
   });
 });
