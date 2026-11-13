@@ -8,10 +8,14 @@ import {
   type CountyClearanceSummary,
   type DateRangeFilter,
 } from "../services/clearanceData";
-import { formatDateRange, toYearMonthValue } from "../utils/formatters";
+import { formatDateRange } from "../utils/formatters";
 import { renderChoroplethMap, type ScTopology } from "./ChoroplethMap";
 import { renderCountyRateTable } from "./CountyRateTable";
-import { renderDateRangeSelector } from "./DateRangeSelector";
+import {
+  renderDateRangeSelector,
+  updateDateRangeSelector,
+  type DateRangeSelectorElement,
+} from "./DateRangeSelector";
 
 export interface ClearancePageOptions {
   summaries: readonly CountyClearanceSummary[];
@@ -111,42 +115,25 @@ export function renderClearancePage(
     header.appendChild(createLegend());
   }
 
-  let selectorContainer = header.querySelector<
-    HTMLElement & { _onDateRangeChange?: (r: DateRangeFilter) => void }
-  >(".date-range-selector");
+  let selectorContainer =
+    header.querySelector<DateRangeSelectorElement>(".date-range-selector");
   if (!selectorContainer) {
     selectorContainer = renderDateRangeSelector({
       availableRange,
       selectedRange: dateRange,
       disabled: isSelectorDisabled,
+      loading: isLoading,
       onDateRangeChange,
     });
     header.appendChild(selectorContainer);
   } else {
-    selectorContainer._onDateRangeChange = onDateRangeChange;
-    const startSelect =
-      selectorContainer.querySelector<HTMLSelectElement>("#start-date");
-    const endSelect =
-      selectorContainer.querySelector<HTMLSelectElement>("#end-date");
-    if (startSelect && endSelect) {
-      startSelect.disabled = isSelectorDisabled;
-      endSelect.disabled = isSelectorDisabled;
-      startSelect.value = toYearMonthValue(dateRange.start);
-      endSelect.value = toYearMonthValue(dateRange.end);
-    }
-  }
-
-  let loadingNotice =
-    header.querySelector<HTMLParagraphElement>(".loading-notice");
-  if (isLoading) {
-    if (!loadingNotice) {
-      loadingNotice = document.createElement("p");
-      loadingNotice.className = "loading-notice";
-      loadingNotice.textContent = t("loadingData");
-      header.appendChild(loadingNotice);
-    }
-  } else if (loadingNotice) {
-    loadingNotice.remove();
+    updateDateRangeSelector(selectorContainer, {
+      availableRange,
+      selectedRange: dateRange,
+      disabled: isSelectorDisabled,
+      loading: isLoading,
+      onDateRangeChange,
+    });
   }
 
   let emptyNotice =
@@ -171,7 +158,9 @@ export function renderClearancePage(
   mapSection.replaceChildren();
   const mapDateRange = document.createElement("p");
   mapDateRange.className = "map-date-range";
-  mapDateRange.textContent = formatDateRange(dateRange.start, dateRange.end);
+  mapDateRange.textContent = isLoading
+    ? t("loadingData")
+    : formatDateRange(dateRange.start, dateRange.end);
   const svgMap = renderChoroplethMap(summaries, topology, dateRange);
   mapSection.append(mapDateRange, svgMap);
 

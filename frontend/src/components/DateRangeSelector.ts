@@ -14,23 +14,101 @@ export interface DateRangeSelectorOptions {
   availableRange: DateRangeFilter;
   selectedRange: DateRangeFilter;
   disabled?: boolean;
+  loading?: boolean;
   onDateRangeChange?: (newRange: DateRangeFilter) => void;
 }
 
 export interface DateRangeSelectorElement extends HTMLElement {
   _onDateRangeChange?: (newRange: DateRangeFilter) => void;
+  _selectedRange?: DateRangeFilter;
+}
+
+function populateMonthOptions(
+  select: HTMLSelectElement,
+  months: ReturnType<typeof generateMonthYearList>,
+  selectedMonth: DateRangeFilter["start"],
+): void {
+  const options: HTMLOptionElement[] = [];
+  for (const ym of months) {
+    const opt = document.createElement("option");
+    opt.value = toYearMonthValue(ym);
+    opt.textContent = formatMonthYear(ym);
+    if (compareYearMonth(ym, selectedMonth) === 0) {
+      opt.selected = true;
+    }
+    options.push(opt);
+  }
+  select.replaceChildren(...options);
+  select.value = toYearMonthValue(selectedMonth);
+}
+
+function populateLoadingOption(select: HTMLSelectElement): void {
+  const opt = document.createElement("option");
+  opt.value = "";
+  opt.textContent = t("loadingData");
+  opt.selected = true;
+  select.replaceChildren(opt);
+}
+
+function applyDateRangeSelectorOptions(
+  container: DateRangeSelectorElement,
+  startSelect: HTMLSelectElement,
+  endSelect: HTMLSelectElement,
+  options: DateRangeSelectorOptions,
+): void {
+  const {
+    availableRange,
+    selectedRange,
+    disabled = false,
+    loading = false,
+    onDateRangeChange,
+  } = options;
+
+  container._onDateRangeChange = onDateRangeChange;
+  container._selectedRange = selectedRange;
+
+  const isDisabled = disabled || loading;
+  startSelect.disabled = isDisabled;
+  endSelect.disabled = isDisabled;
+
+  if (loading) {
+    populateLoadingOption(startSelect);
+    populateLoadingOption(endSelect);
+    return;
+  }
+
+  const maxStartMonth = addMonths(
+    availableRange.end,
+    -DATE_SELECTION_CONSTRAINTS.MIN_MONTH_DIFF,
+  );
+  const startMonths = generateMonthYearList(
+    availableRange.start,
+    maxStartMonth,
+  );
+  populateMonthOptions(startSelect, startMonths, selectedRange.start);
+
+  const minEndMonth = addMonths(
+    availableRange.start,
+    DATE_SELECTION_CONSTRAINTS.MIN_MONTH_DIFF,
+  );
+  const endMonths = generateMonthYearList(minEndMonth, availableRange.end);
+  populateMonthOptions(endSelect, endMonths, selectedRange.end);
+}
+
+export function updateDateRangeSelector(
+  container: DateRangeSelectorElement,
+  options: DateRangeSelectorOptions,
+): void {
+  const startSelect = container.querySelector<HTMLSelectElement>("#start-date");
+  const endSelect = container.querySelector<HTMLSelectElement>("#end-date");
+  if (!startSelect || !endSelect) return;
+
+  applyDateRangeSelectorOptions(container, startSelect, endSelect, options);
 }
 
 export function renderDateRangeSelector(
   options: DateRangeSelectorOptions,
 ): DateRangeSelectorElement {
-  const {
-    availableRange,
-    selectedRange,
-    disabled = false,
-    onDateRangeChange,
-  } = options;
-
   const container = document.createElement("div") as DateRangeSelectorElement;
   container.className = "date-range-selector";
   container.setAttribute("role", "group");
@@ -38,7 +116,6 @@ export function renderDateRangeSelector(
     "aria-label",
     `${t("startDateLabel")} ${t("dateRangeSeparator")} ${t("endDateLabel")}`,
   );
-  container._onDateRangeChange = onDateRangeChange;
 
   // Start Date Control
   const startControl = document.createElement("div");
@@ -52,27 +129,6 @@ export function renderDateRangeSelector(
   startSelect.id = "start-date";
   startSelect.name = "startDate";
   startSelect.setAttribute("aria-label", t("startDateLabel"));
-  startSelect.disabled = disabled;
-
-  // Generate start options: from earliest up to latest - 1 month
-  const maxStartMonth = addMonths(
-    availableRange.end,
-    -DATE_SELECTION_CONSTRAINTS.MIN_MONTH_DIFF,
-  );
-  const startMonths = generateMonthYearList(
-    availableRange.start,
-    maxStartMonth,
-  );
-
-  for (const ym of startMonths) {
-    const opt = document.createElement("option");
-    opt.value = toYearMonthValue(ym);
-    opt.textContent = formatMonthYear(ym);
-    if (compareYearMonth(ym, selectedRange.start) === 0) {
-      opt.selected = true;
-    }
-    startSelect.appendChild(opt);
-  }
 
   startControl.append(startLabel, startSelect);
 
@@ -88,33 +144,20 @@ export function renderDateRangeSelector(
   endSelect.id = "end-date";
   endSelect.name = "endDate";
   endSelect.setAttribute("aria-label", t("endDateLabel"));
-  endSelect.disabled = disabled;
-
-  // Generate end options: from earliest + 1 month up to latest
-  const minEndMonth = addMonths(
-    availableRange.start,
-    DATE_SELECTION_CONSTRAINTS.MIN_MONTH_DIFF,
-  );
-  const endMonths = generateMonthYearList(minEndMonth, availableRange.end);
-
-  for (const ym of endMonths) {
-    const opt = document.createElement("option");
-    opt.value = toYearMonthValue(ym);
-    opt.textContent = formatMonthYear(ym);
-    if (compareYearMonth(ym, selectedRange.end) === 0) {
-      opt.selected = true;
-    }
-    endSelect.appendChild(opt);
-  }
 
   endControl.append(endLabel, endSelect);
+
+  applyDateRangeSelectorOptions(container, startSelect, endSelect, options);
 
   // Events
   startSelect.addEventListener("change", () => {
     const newStart = parseYearMonthValue(startSelect.value);
     if (!newStart) return;
 
-    let currentEnd = parseYearMonthValue(endSelect.value) ?? selectedRange.end;
+    let currentEnd =
+      parseYearMonthValue(endSelect.value) ??
+      container._selectedRange?.end ??
+      options.selectedRange.end;
     const minValidEnd = addMonths(
       newStart,
       DATE_SELECTION_CONSTRAINTS.MIN_MONTH_DIFF,
@@ -131,7 +174,9 @@ export function renderDateRangeSelector(
 
   endSelect.addEventListener("change", () => {
     let currentStart =
-      parseYearMonthValue(startSelect.value) ?? selectedRange.start;
+      parseYearMonthValue(startSelect.value) ??
+      container._selectedRange?.start ??
+      options.selectedRange.start;
     const newEnd = parseYearMonthValue(endSelect.value);
     if (!newEnd) return;
 

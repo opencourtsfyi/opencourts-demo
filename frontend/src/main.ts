@@ -74,7 +74,6 @@ export async function initApp(rootElement: HTMLElement): Promise<void> {
     }
     updateView();
   } catch {
-    rootElement.querySelector(".loading-notice")?.remove();
     const errorBanner = document.createElement("p");
     errorBanner.className = "error-banner";
     errorBanner.textContent = t("errorLoadingData");

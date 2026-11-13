@@ -22,7 +22,9 @@ export function renderCountyRateTable(
   if (dateRange) {
     const caption = document.createElement("caption");
     caption.className = "table-date-range-caption";
-    caption.textContent = formatDateRange(dateRange.start, dateRange.end);
+    caption.textContent = loading
+      ? t("loadingData")
+      : formatDateRange(dateRange.start, dateRange.end);
     table.appendChild(caption);
   }
 
