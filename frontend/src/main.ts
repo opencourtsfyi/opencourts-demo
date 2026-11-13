@@ -25,6 +25,7 @@ export function renderApp(
     dateRange: options?.dateRange ?? getDefaultDateRange(),
     availableRange: options?.availableRange,
     disabled: options?.disabled,
+    loading: options?.loading,
     topology: options?.topology,
     onDateRangeChange: options?.onDateRangeChange,
   });
@@ -51,7 +52,11 @@ export async function initApp(rootElement: HTMLElement): Promise<void> {
     });
   }
 
-  renderApp(rootElement, { summaries: [], dateRange: currentDateRange });
+  renderApp(rootElement, {
+    summaries: [],
+    dateRange: currentDateRange,
+    loading: true,
+  });
 
   try {
     loadedRecords = await loadGoldCaseloadRecords();
@@ -69,6 +74,7 @@ export async function initApp(rootElement: HTMLElement): Promise<void> {
     }
     updateView();
   } catch {
+    rootElement.querySelector(".loading-notice")?.remove();
     const errorBanner = document.createElement("p");
     errorBanner.className = "error-banner";
     errorBanner.textContent = t("errorLoadingData");

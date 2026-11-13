@@ -14,6 +14,7 @@ const TABLE_COL_SPAN = 2;
 export function renderCountyRateTable(
   summaries: readonly CountyClearanceSummary[],
   dateRange?: DateRangeFilter,
+  loading = false,
 ): HTMLTableElement {
   const table = document.createElement("table");
   table.className = "clearance-table";
@@ -41,14 +42,16 @@ export function renderCountyRateTable(
 
   const tbody = document.createElement("tbody");
   if (summaries.length === DATE_SELECTION_CONSTRAINTS.EMPTY_COUNT) {
-    const emptyRow = document.createElement("tr");
-    emptyRow.className = "empty-table-row";
-    const emptyCell = document.createElement("td");
-    emptyCell.colSpan = TABLE_COL_SPAN;
-    emptyCell.className = "empty-table-cell";
-    emptyCell.textContent = t("noRecordsFound");
-    emptyRow.appendChild(emptyCell);
-    tbody.appendChild(emptyRow);
+    if (!loading) {
+      const emptyRow = document.createElement("tr");
+      emptyRow.className = "empty-table-row";
+      const emptyCell = document.createElement("td");
+      emptyCell.colSpan = TABLE_COL_SPAN;
+      emptyCell.className = "empty-table-cell";
+      emptyCell.textContent = t("noRecordsFound");
+      emptyRow.appendChild(emptyCell);
+      tbody.appendChild(emptyRow);
+    }
   } else {
     for (const item of summaries) {
       const row = document.createElement("tr");

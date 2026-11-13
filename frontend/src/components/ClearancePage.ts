@@ -18,6 +18,7 @@ export interface ClearancePageOptions {
   dateRange?: DateRangeFilter;
   availableRange?: DateRangeFilter;
   disabled?: boolean;
+  loading?: boolean;
   topology?: ScTopology;
   onDateRangeChange?: (newRange: DateRangeFilter) => void;
 }
@@ -77,10 +78,13 @@ export function renderClearancePage(
     onDateRangeChange,
   } = options;
 
+  const isLoading = options.loading ?? false;
   const isDataEmpty =
-    options.disabled ??
-    (summaries.length === DATE_SELECTION_CONSTRAINTS.EMPTY_COUNT &&
-      !options.availableRange);
+    !isLoading &&
+    (options.disabled ??
+      (summaries.length === DATE_SELECTION_CONSTRAINTS.EMPTY_COUNT &&
+        !options.availableRange));
+  const isSelectorDisabled = isLoading || isDataEmpty;
 
   let main = container.querySelector<HTMLElement>(".clearance-page");
   if (!main) {
@@ -114,7 +118,7 @@ export function renderClearancePage(
     selectorContainer = renderDateRangeSelector({
       availableRange,
       selectedRange: dateRange,
-      disabled: isDataEmpty,
+      disabled: isSelectorDisabled,
       onDateRangeChange,
     });
     header.appendChild(selectorContainer);
@@ -125,11 +129,24 @@ export function renderClearancePage(
     const endSelect =
       selectorContainer.querySelector<HTMLSelectElement>("#end-date");
     if (startSelect && endSelect) {
-      startSelect.disabled = isDataEmpty;
-      endSelect.disabled = isDataEmpty;
+      startSelect.disabled = isSelectorDisabled;
+      endSelect.disabled = isSelectorDisabled;
       startSelect.value = toYearMonthValue(dateRange.start);
       endSelect.value = toYearMonthValue(dateRange.end);
     }
+  }
+
+  let loadingNotice =
+    header.querySelector<HTMLParagraphElement>(".loading-notice");
+  if (isLoading) {
+    if (!loadingNotice) {
+      loadingNotice = document.createElement("p");
+      loadingNotice.className = "loading-notice";
+      loadingNotice.textContent = t("loadingData");
+      header.appendChild(loadingNotice);
+    }
+  } else if (loadingNotice) {
+    loadingNotice.remove();
   }
 
   let emptyNotice =
@@ -169,6 +186,6 @@ export function renderClearancePage(
   const tableDateRange = document.createElement("p");
   // tableDateRange.className = "table-date-range";
   // tableDateRange.textContent = formatDateRange(dateRange.start, dateRange.end);
-  const table = renderCountyRateTable(summaries, dateRange);
+  const table = renderCountyRateTable(summaries, dateRange, isLoading);
   tableSection.append(tableDateRange, table);
 }
