@@ -231,4 +231,247 @@ describe('App Integration', () => {
       expect(root.querySelector('.county-rate-cell')?.textContent).toBe('100%');
     }
   });
+
+  describe('Map and table bi-directional selection integration', () => {
+    it('synchronizes selection between map click and table row without scrolling', async () => {
+      vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+        {
+          file: 'test.csv',
+          category: 'Estate',
+          year: 2025,
+          month: 7,
+          county: 'Abbeville',
+          metric: 'Added',
+          value: 10,
+        },
+        {
+          file: 'test.csv',
+          category: 'Estate',
+          year: 2025,
+          month: 7,
+          county: 'Charleston',
+          metric: 'Added',
+          value: 20,
+        },
+      ]);
+
+      await initApp(root);
+
+      const abbevillePath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
+      const abbevilleRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
+        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      );
+      const charlestonPath = root.querySelector<SVGPathElement>('path[data-county="Charleston"]');
+      const charlestonRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
+        (row) => row.querySelector('.county-name-cell')?.textContent === 'Charleston',
+      );
+
+      expect(abbevillePath).not.toBeNull();
+      expect(abbevilleRow).not.toBeNull();
+
+      const scrollSpy = vi.fn();
+      abbevilleRow!.scrollIntoView = scrollSpy;
+
+      // Click map path
+      abbevillePath?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(abbevillePath?.classList.contains('is-selected')).toBe(true);
+      expect(abbevillePath?.getAttribute('aria-selected')).toBe('true');
+      expect(abbevilleRow?.classList.contains('is-selected')).toBe(true);
+      expect(abbevilleRow?.getAttribute('aria-selected')).toBe('true');
+      expect(scrollSpy).not.toHaveBeenCalled();
+
+      // Charleston should remain unselected
+      expect(charlestonPath?.classList.contains('is-selected')).toBe(false);
+      expect(charlestonPath?.getAttribute('aria-selected')).toBe('false');
+      expect(charlestonRow?.classList.contains('is-selected')).toBe(false);
+      expect(charlestonRow?.getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('synchronizes selection between table row click and map path', async () => {
+      vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+        {
+          file: 'test.csv',
+          category: 'Estate',
+          year: 2025,
+          month: 7,
+          county: 'Abbeville',
+          metric: 'Added',
+          value: 10,
+        },
+      ]);
+
+      await initApp(root);
+
+      const abbevillePath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
+      const abbevilleRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
+        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      );
+
+      // Click table row
+      abbevilleRow?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(abbevilleRow?.classList.contains('is-selected')).toBe(true);
+      expect(abbevilleRow?.getAttribute('aria-selected')).toBe('true');
+      expect(abbevillePath?.classList.contains('is-selected')).toBe(true);
+      expect(abbevillePath?.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('clears selection when clicking already-selected county or clicking outside map and table', async () => {
+      vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+        {
+          file: 'test.csv',
+          category: 'Estate',
+          year: 2025,
+          month: 7,
+          county: 'Abbeville',
+          metric: 'Added',
+          value: 10,
+        },
+      ]);
+
+      await initApp(root);
+
+      const abbevillePath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
+      const abbevilleRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
+        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      );
+
+      // Select
+      abbevillePath?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(abbevillePath?.classList.contains('is-selected')).toBe(true);
+
+      // Re-click to clear
+      abbevillePath?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(abbevillePath?.classList.contains('is-selected')).toBe(false);
+      expect(abbevilleRow?.classList.contains('is-selected')).toBe(false);
+
+      // Select again
+      abbevilleRow?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(abbevilleRow?.classList.contains('is-selected')).toBe(true);
+
+      // Click outside (e.g. page heading)
+      root.querySelector('h1')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(abbevillePath?.classList.contains('is-selected')).toBe(false);
+      expect(abbevilleRow?.classList.contains('is-selected')).toBe(false);
+    });
+
+    it('supports selecting and deselecting via keyboard navigation (Enter and Space)', async () => {
+      vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+        {
+          file: 'test.csv',
+          category: 'Estate',
+          year: 2025,
+          month: 7,
+          county: 'Abbeville',
+          metric: 'Added',
+          value: 10,
+        },
+      ]);
+
+      await initApp(root);
+
+      const abbevillePath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
+      const abbevilleRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
+        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      );
+
+      // Select via Enter on map path
+      abbevillePath?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      expect(abbevillePath?.classList.contains('is-selected')).toBe(true);
+      expect(abbevilleRow?.classList.contains('is-selected')).toBe(true);
+
+      // Deselect via Space on table row
+      abbevilleRow?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      expect(abbevillePath?.classList.contains('is-selected')).toBe(false);
+      expect(abbevilleRow?.classList.contains('is-selected')).toBe(false);
+    });
+
+    it('clears active selection on both map and table when changing date range selectors', async () => {
+      vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+        {
+          file: 'test.csv',
+          category: 'Estate',
+          year: 2024,
+          month: 7,
+          county: 'Abbeville',
+          metric: 'Added',
+          value: 10,
+        },
+        {
+          file: 'test.csv',
+          category: 'Estate',
+          year: 2025,
+          month: 6,
+          county: 'Abbeville',
+          metric: 'Added',
+          value: 10,
+        },
+      ]);
+
+      await initApp(root);
+
+      const abbevillePath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
+      const abbevilleRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
+        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      );
+
+      // Select county via map
+      abbevillePath?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(abbevillePath?.classList.contains('is-selected')).toBe(true);
+      expect(abbevilleRow?.classList.contains('is-selected')).toBe(true);
+
+      // Change start date range selector
+      const startSelect = root.querySelector<HTMLSelectElement>('#start-date');
+      expect(startSelect).not.toBeNull();
+      if (startSelect) {
+        startSelect.value = '2024-07';
+        startSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      // Assert selection is cleared on both map and table
+      const updatedPath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
+      const updatedRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
+        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      );
+      expect(updatedPath?.classList.contains('is-selected')).toBe(false);
+      expect(updatedPath?.getAttribute('aria-selected')).toBe('false');
+      expect(updatedRow?.classList.contains('is-selected')).toBe(false);
+      expect(updatedRow?.getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('[A11y] clears selection across map and table when pressing the Escape key', async () => {
+      vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+        {
+          file: 'test.csv',
+          category: 'Estate',
+          year: 2025,
+          month: 7,
+          county: 'Abbeville',
+          metric: 'Added',
+          value: 10,
+        },
+      ]);
+
+      await initApp(root);
+
+      const abbevillePath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
+      const abbevilleRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
+        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      );
+
+      // Select county
+      abbevillePath?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(abbevillePath?.classList.contains('is-selected')).toBe(true);
+      expect(abbevilleRow?.classList.contains('is-selected')).toBe(true);
+
+      // Press Escape on root
+      root.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+      expect(abbevillePath?.classList.contains('is-selected')).toBe(false);
+      expect(abbevillePath?.getAttribute('aria-selected')).toBe('false');
+      expect(abbevilleRow?.classList.contains('is-selected')).toBe(false);
+      expect(abbevilleRow?.getAttribute('aria-selected')).toBe('false');
+    });
+  });
 });

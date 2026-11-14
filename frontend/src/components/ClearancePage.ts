@@ -25,6 +25,8 @@ export interface ClearancePageOptions {
   loading?: boolean;
   topology?: ScTopology;
   onDateRangeChange?: (newRange: DateRangeFilter) => void;
+  selectedCounty?: string | null;
+  onSelectCounty?: (county: string | null) => void;
 }
 
 const DEFAULT_AVAILABLE_RANGE: DateRangeFilter = {
@@ -80,9 +82,13 @@ export function renderClearancePage(
     availableRange = DEFAULT_AVAILABLE_RANGE,
     topology,
     onDateRangeChange,
+    selectedCounty: initialSelectedCounty = null,
+    onSelectCounty,
   } = options;
 
   const isLoading = options.loading ?? false;
+  let currentSelectedCounty: string | null = initialSelectedCounty;
+
   const isDataEmpty =
     !isLoading &&
     (options.disabled ??
@@ -95,6 +101,46 @@ export function renderClearancePage(
     main = document.createElement("main");
     main.className = "clearance-page";
     container.replaceChildren(main);
+  }
+  const mainElement = main;
+
+  function syncSelection(county: string | null): void {
+    currentSelectedCounty = county;
+
+    const allPaths =
+      mainElement.querySelectorAll<SVGPathElement>("path.county-path");
+    for (const path of allPaths) {
+      const name = path.getAttribute("data-county") ?? "";
+      const isTarget =
+        county !== null && name.toLowerCase() === county.toLowerCase();
+      if (isTarget) {
+        path.classList.add("is-selected");
+        path.setAttribute("aria-selected", "true");
+      } else {
+        path.classList.remove("is-selected");
+        path.setAttribute("aria-selected", "false");
+      }
+    }
+
+    const allRows =
+      mainElement.querySelectorAll<HTMLTableRowElement>("tr.county-row");
+    for (const row of allRows) {
+      const name =
+        row.getAttribute("data-county") ??
+        row.querySelector(".county-name-cell")?.textContent ??
+        "";
+      const isTarget =
+        county !== null && name.toLowerCase() === county.toLowerCase();
+      if (isTarget) {
+        row.classList.add("is-selected");
+        row.setAttribute("aria-selected", "true");
+      } else {
+        row.classList.remove("is-selected");
+        row.setAttribute("aria-selected", "false");
+      }
+    }
+
+    onSelectCounty?.(county);
   }
 
   let header = main.querySelector<HTMLElement>(".clearance-header");
@@ -161,7 +207,13 @@ export function renderClearancePage(
   mapDateRange.textContent = isLoading
     ? t("loadingData")
     : formatDateRange(dateRange.start, dateRange.end);
-  const svgMap = renderChoroplethMap(summaries, topology, dateRange);
+  const svgMap = renderChoroplethMap(
+    summaries,
+    topology,
+    dateRange,
+    currentSelectedCounty,
+    (county) => syncSelection(county),
+  );
   mapSection.append(mapDateRange, svgMap);
 
   const tableSection =
@@ -173,8 +225,68 @@ export function renderClearancePage(
   }
   tableSection.replaceChildren();
   const tableDateRange = document.createElement("p");
-  // tableDateRange.className = "table-date-range";
-  // tableDateRange.textContent = formatDateRange(dateRange.start, dateRange.end);
-  const table = renderCountyRateTable(summaries, dateRange, isLoading);
+  const table = renderCountyRateTable(
+    summaries,
+    dateRange,
+    isLoading,
+    currentSelectedCounty,
+    (county) => syncSelection(county),
+  );
   tableSection.append(tableDateRange, table);
+
+  const handleOutsideClick = (event: MouseEvent) => {
+    const target = event.target as Node | null;
+    if (!target) return;
+    const isInsideMap = mapSection.contains(target);
+    const isInsideTable = tableSection.contains(target);
+    if (!isInsideMap && !isInsideTable && currentSelectedCounty !== null) {
+      syncSelection(null);
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Escape" && currentSelectedCounty !== null) {
+      syncSelection(null);
+    }
+  };
+
+  const doc = container.ownerDocument;
+  const containerWithListener = container as HTMLElement & {
+    _outsideClickListener?: (e: MouseEvent) => void;
+    _docClickListener?: (e: MouseEvent) => void;
+    _keyDownListener?: (e: KeyboardEvent) => void;
+    _docKeyDownListener?: (e: KeyboardEvent) => void;
+  };
+  if (containerWithListener._outsideClickListener) {
+    container.removeEventListener(
+      "click",
+      containerWithListener._outsideClickListener,
+    );
+  }
+  if (containerWithListener._docClickListener && doc) {
+    doc.removeEventListener("click", containerWithListener._docClickListener);
+  }
+  if (containerWithListener._keyDownListener) {
+    container.removeEventListener(
+      "keydown",
+      containerWithListener._keyDownListener,
+    );
+  }
+  if (containerWithListener._docKeyDownListener && doc) {
+    doc.removeEventListener(
+      "keydown",
+      containerWithListener._docKeyDownListener,
+    );
+  }
+
+  containerWithListener._outsideClickListener = handleOutsideClick;
+  container.addEventListener("click", handleOutsideClick);
+  containerWithListener._keyDownListener = handleKeyDown;
+  container.addEventListener("keydown", handleKeyDown);
+  if (doc) {
+    containerWithListener._docClickListener = handleOutsideClick;
+    doc.addEventListener("click", handleOutsideClick);
+    containerWithListener._docKeyDownListener = handleKeyDown;
+    doc.addEventListener("keydown", handleKeyDown);
+  }
 }

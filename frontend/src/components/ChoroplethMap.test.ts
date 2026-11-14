@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderChoroplethMap } from "./ChoroplethMap";
 import { MAP_DIMENSIONS } from "../constants/clearanceThresholds";
 import { t } from "../../src/i18n";
@@ -66,5 +66,103 @@ describe("ChoroplethMap component", () => {
     );
     const textContent = svg.textContent || svg.getAttribute("aria-label") || "";
     expect(textContent).toMatch(/July 2024\s+to\s+June 2025/i);
+  });
+
+  describe("interactivity, selection, and accessibility", () => {
+    it("renders county paths with keyboard focusability and initial aria-selected attribute", () => {
+      const svg = renderChoroplethMap(sampleSummaries);
+      const paths = svg.querySelectorAll<SVGPathElement>("path.county-path");
+
+      expect(paths.length).toBeGreaterThan(0);
+      for (const path of paths) {
+        expect(path.getAttribute("tabindex")).toBe("0");
+        expect(path.getAttribute("aria-selected")).toBe("false");
+        expect(path.classList.contains("is-selected")).toBe(false);
+      }
+    });
+
+    it("applies is-selected class and aria-selected='true' to the path matching selectedCounty", () => {
+      const svg: SVGSVGElement = (renderChoroplethMap as any)(
+        sampleSummaries,
+        undefined,
+        undefined,
+        "Aiken",
+      );
+
+      const aikenPath = svg.querySelector('path[data-county="Aiken"]');
+      const abbevillePath = svg.querySelector('path[data-county="Abbeville"]');
+
+      expect(aikenPath?.classList.contains("is-selected")).toBe(true);
+      expect(aikenPath?.getAttribute("aria-selected")).toBe("true");
+
+      expect(abbevillePath?.classList.contains("is-selected")).toBe(false);
+      expect(abbevillePath?.getAttribute("aria-selected")).toBe("false");
+    });
+
+    it("invokes onSelectCounty callback with county name when an unselected path is clicked", () => {
+      const onSelectCounty = vi.fn();
+      const svg: SVGSVGElement = (renderChoroplethMap as any)(
+        sampleSummaries,
+        undefined,
+        undefined,
+        null,
+        onSelectCounty,
+      );
+
+      const aikenPath = svg.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      expect(aikenPath).not.toBeNull();
+      aikenPath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(onSelectCounty).toHaveBeenCalledWith("Aiken");
+    });
+
+    it("invokes onSelectCounty callback with null when the already-selected path is clicked", () => {
+      const onSelectCounty = vi.fn();
+      const svg: SVGSVGElement = (renderChoroplethMap as any)(
+        sampleSummaries,
+        undefined,
+        undefined,
+        "Aiken",
+        onSelectCounty,
+      );
+
+      const aikenPath = svg.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      expect(aikenPath).not.toBeNull();
+      aikenPath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(onSelectCounty).toHaveBeenCalledWith(null);
+    });
+
+    it("supports keyboard selection using Enter and Space keys", () => {
+      const onSelectCounty = vi.fn();
+      const svg: SVGSVGElement = (renderChoroplethMap as any)(
+        sampleSummaries,
+        undefined,
+        undefined,
+        null,
+        onSelectCounty,
+      );
+
+      const aikenPath = svg.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      expect(aikenPath).not.toBeNull();
+
+      aikenPath?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+      expect(onSelectCounty).toHaveBeenCalledWith("Aiken");
+
+      onSelectCounty.mockClear();
+
+      aikenPath?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: " ", bubbles: true }),
+      );
+      expect(onSelectCounty).toHaveBeenCalledWith("Aiken");
+    });
   });
 });
