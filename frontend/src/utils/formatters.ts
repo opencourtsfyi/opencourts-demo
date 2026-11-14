@@ -69,7 +69,7 @@ export function generateMonthYearList(
   let current = { ...start };
   while (compareYearMonth(current, end) <= 0) {
     list.push(current);
-    current = addMonths(current, DATE_SELECTION_CONSTRAINTS.MIN_MONTH_DIFF);
+    current = addMonths(current, MONTH_INDEX_OFFSET);
   }
   return list;
 }
