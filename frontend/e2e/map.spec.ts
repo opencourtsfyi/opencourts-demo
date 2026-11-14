@@ -54,6 +54,8 @@ test.describe("Map View", () => {
   test.describe("Date Range Selector and Filtering", () => {
     test.beforeEach(async ({ page }) => {
       await page.goto("/");
+      //Wait for data to load
+      await expect(page.locator("tr.county-row").first()).toBeVisible();
     });
 
     test("renders start and end date dropdown selectors at the top of the map page with screen reader support", async ({
@@ -150,7 +152,9 @@ test.describe("Map View", () => {
       await expect(abbevillePath.locator("title")).toHaveText(
         /Abbeville:\s*138%/i,
       );
-      await expect(abbevilleRow.locator(".county-rate-cell")).toHaveText("138%");
+      await expect(abbevilleRow.locator(".county-rate-cell")).toHaveText(
+        "138%",
+      );
     });
 
     test("the start and end date should be displayed on the map and table to indicate their date ranges", async ({
@@ -233,6 +237,8 @@ test.describe("Map View", () => {
   test.describe("Bi-directional County Selection between Map and Table", () => {
     test.beforeEach(async ({ page }) => {
       await page.goto("/");
+      //Wait for data to load
+      await expect(page.locator("tr.county-row").first()).toBeVisible();
     });
 
     test("clicking a county on the map visually highlights both map path and table row", async ({
@@ -407,6 +413,8 @@ test.describe("Map View", () => {
   test.describe("Accessibility (A11y) Keyboard Navigation and Focus Management", () => {
     test.beforeEach(async ({ page }) => {
       await page.goto("/");
+      //Wait for data to load
+      await expect(page.locator("tr.county-row").first()).toBeVisible();
     });
 
     test("[A11y] pressing Tab from the map moves focus into the data table", async ({
