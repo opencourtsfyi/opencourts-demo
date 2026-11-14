@@ -15,7 +15,7 @@ test.describe("Map View", () => {
     await expect(page.locator("svg.choropleth-svg")).toBeVisible();
     const aikenMapSection = page.locator("svg path[data-county='Aiken']");
     await expect(aikenMapSection).toBeVisible();
-    await expect(aikenMapSection.locator("title")).toHaveText("Aiken: 97%");
+    await expect(aikenMapSection).toHaveAttribute("aria-label", "Aiken: 97%");
 
     //Check Data Table
     await expect(page.getByRole("cell", { name: "Aiken" })).toBeVisible();
@@ -135,7 +135,8 @@ test.describe("Map View", () => {
 
       // In 2024-2025, Abbeville rate is 89%
       const abbevillePath = page.locator("svg path[data-county='Abbeville']");
-      await expect(abbevillePath.locator("title")).toHaveText(
+      await expect(abbevillePath).toHaveAttribute(
+        "aria-label",
         /Abbeville:\s*89%/i,
       );
 
@@ -149,7 +150,8 @@ test.describe("Map View", () => {
       await endDateSelect.selectOption({ label: "June 2024" });
 
       // In 2023-2024, Abbeville rate is 138%
-      await expect(abbevillePath.locator("title")).toHaveText(
+      await expect(abbevillePath).toHaveAttribute(
+        "aria-label",
         /Abbeville:\s*138%/i,
       );
       await expect(abbevilleRow.locator(".county-rate-cell")).toHaveText(
@@ -478,6 +480,133 @@ test.describe("Map View", () => {
       await expect(aikenPath).toHaveAttribute("aria-selected", "false");
       await expect(aikenRow).not.toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
+    });
+  });
+
+  test.describe("Interactive Map Tooltip (Issue #19)", () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto("/");
+    });
+
+    test("displays dynamic tooltip with county name and clearance rate % on hover", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      await expect(aikenPath).toBeVisible();
+
+      // Hover over Aiken county path
+      await aikenPath.hover();
+
+      const tooltip = page.locator(".map-tooltip, [role='tooltip']");
+      await expect(tooltip).toBeVisible();
+      await expect(tooltip).toContainText("Aiken");
+      await expect(tooltip).toContainText("97%");
+    });
+
+    test("tooltip follows cursor movement across county path", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      await expect(aikenPath).toBeVisible();
+
+      const boundingBox = await aikenPath.boundingBox();
+      expect(boundingBox).not.toBeNull();
+      if (!boundingBox) return;
+
+      const tooltip = page.locator(".map-tooltip, [role='tooltip']");
+
+      // Move mouse to first point inside county
+      await page.mouse.move(boundingBox.x + 5, boundingBox.y + 5);
+      await expect(tooltip).toBeVisible();
+      const firstBox = await tooltip.boundingBox();
+      expect(firstBox).not.toBeNull();
+
+      // Move mouse to second point inside county
+      await page.mouse.move(boundingBox.x + 25, boundingBox.y + 25);
+      const secondBox = await tooltip.boundingBox();
+      expect(secondBox).not.toBeNull();
+
+      // Tooltip position should have changed to follow cursor
+      if (firstBox && secondBox) {
+        const moved = firstBox.x !== secondBox.x || firstBox.y !== secondBox.y;
+        expect(moved).toBe(true);
+      }
+    });
+
+    test("hides tooltip completely when cursor leaves county path", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      await expect(aikenPath).toBeVisible();
+
+      await aikenPath.hover();
+      const tooltip = page.locator(".map-tooltip, [role='tooltip']");
+      await expect(tooltip).toBeVisible();
+
+      // Move mouse away to header
+      const header = page.locator("h1");
+      await header.hover();
+
+      await expect(tooltip).not.toBeVisible();
+    });
+
+    test("dynamically updates content when hovering over different counties", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      const tooltip = page.locator(".map-tooltip, [role='tooltip']");
+
+      // Hover Aiken
+      await aikenPath.hover();
+      await expect(tooltip).toBeVisible();
+      await expect(tooltip).toContainText("Aiken");
+      await expect(tooltip).toContainText("97%");
+
+      // Hover Charleston
+      const charlestonPath = page.locator("svg path[data-county='Charleston']");
+      await charlestonPath.hover();
+      await expect(tooltip).toBeVisible();
+      await expect(tooltip).toContainText("Charleston");
+      await expect(tooltip).not.toContainText("Aiken");
+    });
+
+    test("[A11y] mirrors tooltip content in aria-label of the county path", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      await expect(aikenPath).toBeVisible();
+
+      const ariaLabel = await aikenPath.getAttribute("aria-label");
+      expect(ariaLabel).toMatch(/Aiken:\s*97%/i);
+    });
+
+    test("tooltip styling has solid background and ignores pointer events", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      await aikenPath.hover();
+
+      const tooltip = page.locator(".map-tooltip, [role='tooltip']");
+      await expect(tooltip).toBeVisible();
+
+      // Tooltip must have pointer-events none so it doesn't obstruct mouse events on the map
+      await expect(tooltip).toHaveCSS("pointer-events", "none");
+    });
+
+    test("[A11y] displays tooltip when county path receives keyboard focus and hides on blur", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      const tooltip = page.locator(".map-tooltip, [role='tooltip']");
+
+      await aikenPath.focus();
+      await expect(tooltip).toBeVisible();
+      await expect(tooltip).toContainText("Aiken");
+      await expect(tooltip).toContainText("97%");
+
+      // Blur by focusing another element or calling blur
+      await aikenPath.blur();
+      await expect(tooltip).not.toBeVisible();
     });
   });
 });

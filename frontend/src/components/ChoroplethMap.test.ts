@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderChoroplethMap } from "./ChoroplethMap";
 import { MAP_DIMENSIONS } from "../constants/clearanceThresholds";
 import { t } from "../../src/i18n";
@@ -41,17 +41,17 @@ describe("ChoroplethMap component", () => {
     expect(pickensPath?.classList.contains("status-no-data")).toBe(true);
   });
 
-  it("renders descriptive SVG title tooltips on county paths", () => {
+  it("renders accessible aria-labels on county paths", () => {
     const svg = renderChoroplethMap(sampleSummaries);
-    const aikenTitle = svg.querySelector(
-      'path[data-county="Aiken"] title',
-    )?.textContent;
-    expect(aikenTitle).toBe("Aiken: 88%");
+    const aikenLabel = svg
+      .querySelector('path[data-county="Aiken"]')
+      ?.getAttribute("aria-label");
+    expect(aikenLabel).toBe("Aiken: 88%");
 
-    const unrankedTitle = svg.querySelector(
-      'path[data-county="Pickens"] title',
-    )?.textContent;
-    expect(unrankedTitle).toBe("Pickens: N/A");
+    const unrankedLabel = svg
+      .querySelector('path[data-county="Pickens"]')
+      ?.getAttribute("aria-label");
+    expect(unrankedLabel).toBe("Pickens: N/A");
   });
 
   it("displays the start and end date on the map to indicate its date range", () => {
@@ -163,6 +163,179 @@ describe("ChoroplethMap component", () => {
         new KeyboardEvent("keydown", { key: " ", bubbles: true }),
       );
       expect(onSelectCounty).toHaveBeenCalledWith("Aiken");
+    });
+  });
+
+  describe("interactive tooltip", () => {
+    let container: HTMLDivElement;
+
+    beforeEach(() => {
+      container = document.createElement("div");
+      document.body.appendChild(container);
+    });
+
+    afterEach(() => {
+      container.remove();
+      document
+        .querySelectorAll(".map-tooltip, [role='tooltip']")
+        .forEach((el) => el.remove());
+    });
+
+    it("mirrors county name and clearance rate in the county path aria-label for accessibility", () => {
+      const svg = renderChoroplethMap(sampleSummaries);
+      container.appendChild(svg);
+
+      const aikenPath = svg.querySelector('path[data-county="Aiken"]');
+      const pickensPath = svg.querySelector('path[data-county="Pickens"]');
+
+      expect(aikenPath?.getAttribute("aria-label")).toBe("Aiken: 88%");
+      expect(pickensPath?.getAttribute("aria-label")).toBe("Pickens: N/A");
+    });
+
+    it("displays a dynamic tooltip with county name and clearance rate percentage on mouseover", () => {
+      const svg = renderChoroplethMap(sampleSummaries);
+      container.appendChild(svg);
+
+      const aikenPath = svg.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      expect(aikenPath).not.toBeNull();
+
+      aikenPath?.dispatchEvent(
+        new MouseEvent("mouseover", {
+          bubbles: true,
+          clientX: 120,
+          clientY: 200,
+        }),
+      );
+
+      const tooltip = document.querySelector<HTMLElement>(
+        ".map-tooltip, [role='tooltip']",
+      );
+      expect(tooltip).not.toBeNull();
+      expect(tooltip?.textContent).toContain("Aiken");
+      expect(tooltip?.textContent).toContain("88%");
+    });
+
+    it("displays county name and N/A in the tooltip for counties with no clearance data", () => {
+      const svg = renderChoroplethMap(sampleSummaries);
+      container.appendChild(svg);
+
+      const pickensPath = svg.querySelector<SVGPathElement>(
+        'path[data-county="Pickens"]',
+      );
+      expect(pickensPath).not.toBeNull();
+
+      pickensPath?.dispatchEvent(
+        new MouseEvent("mouseover", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 150,
+        }),
+      );
+
+      const tooltip = document.querySelector<HTMLElement>(
+        ".map-tooltip, [role='tooltip']",
+      );
+      expect(tooltip).not.toBeNull();
+      expect(tooltip?.textContent).toContain("Pickens");
+      expect(tooltip?.textContent).toContain("N/A");
+    });
+
+    it("updates tooltip position when moving cursor (mousemove) over a county path", () => {
+      const svg = renderChoroplethMap(sampleSummaries);
+      container.appendChild(svg);
+
+      const aikenPath = svg.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      expect(aikenPath).not.toBeNull();
+
+      aikenPath?.dispatchEvent(
+        new MouseEvent("mouseover", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 100,
+        }),
+      );
+      const tooltip = document.querySelector<HTMLElement>(
+        ".map-tooltip, [role='tooltip']",
+      );
+      expect(tooltip).not.toBeNull();
+
+      aikenPath?.dispatchEvent(
+        new MouseEvent("mousemove", {
+          bubbles: true,
+          clientX: 180,
+          clientY: 240,
+        }),
+      );
+
+      const hasUpdatedPosition =
+        Boolean(tooltip?.style.left && tooltip?.style.top) ||
+        Boolean(tooltip?.style.transform);
+      expect(hasUpdatedPosition).toBe(true);
+    });
+
+    it("hides the tooltip when the mouse leaves the county path (mouseout)", () => {
+      const svg = renderChoroplethMap(sampleSummaries);
+      container.appendChild(svg);
+
+      const aikenPath = svg.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      expect(aikenPath).not.toBeNull();
+
+      aikenPath?.dispatchEvent(
+        new MouseEvent("mouseover", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 100,
+        }),
+      );
+      const tooltip = document.querySelector<HTMLElement>(
+        ".map-tooltip, [role='tooltip']",
+      );
+      expect(tooltip).not.toBeNull();
+
+      aikenPath?.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
+
+      const isHidden =
+        !document.body.contains(tooltip) ||
+        tooltip?.style.display === "none" ||
+        tooltip?.style.opacity === "0" ||
+        tooltip?.classList.contains("is-hidden") ||
+        tooltip?.getAttribute("aria-hidden") === "true";
+      expect(isHidden).toBe(true);
+    });
+
+    it("displays tooltip on focus and hides on blur for keyboard navigation parity", () => {
+      const svg = renderChoroplethMap(sampleSummaries);
+      container.appendChild(svg);
+
+      const aikenPath = svg.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      expect(aikenPath).not.toBeNull();
+
+      aikenPath?.dispatchEvent(new FocusEvent("focus", { bubbles: true }));
+
+      const tooltip = document.querySelector<HTMLElement>(
+        ".map-tooltip, [role='tooltip']",
+      );
+      expect(tooltip).not.toBeNull();
+      expect(tooltip?.textContent).toContain("Aiken");
+      expect(tooltip?.textContent).toContain("88%");
+
+      aikenPath?.dispatchEvent(new FocusEvent("blur", { bubbles: true }));
+
+      const isHidden =
+        !document.body.contains(tooltip) ||
+        tooltip?.style.display === "none" ||
+        tooltip?.style.opacity === "0" ||
+        tooltip?.classList.contains("is-hidden") ||
+        tooltip?.getAttribute("aria-hidden") === "true";
+      expect(isHidden).toBe(true);
     });
   });
 });

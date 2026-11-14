@@ -31,10 +31,16 @@ export const CASELOAD_METRICS = {
 } as const;
 
 export const DATE_SELECTION_CONSTRAINTS = {
-  MIN_MONTH_DIFF: 1,
+  MIN_MONTH_DIFF: 0,
   MONTHS_PER_YEAR: 12,
   FIRST_MONTH_OF_YEAR: 1,
   EMPTY_COUNT: 0,
+} as const;
+
+export const TOOLTIP_CONFIG = {
+  OFFSET_X: 12,
+  OFFSET_Y: 12,
+  VIEWPORT_PADDING: 16,
 } as const;
 
 export const GOLD_DATA_PATH = "/data/caseloads_sample.json";

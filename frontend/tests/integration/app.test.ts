@@ -1,19 +1,19 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { initApp, renderApp } from '../../src/main';
-import { t } from '../../src/i18n';
-import type { CountyClearanceSummary } from '../../src/services/clearanceData';
-import * as clearanceDataService from '../../src/services/clearanceData';
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { initApp, renderApp } from "../../src/main";
+import { t } from "../../src/i18n";
+import type { CountyClearanceSummary } from "../../src/services/clearanceData";
+import * as clearanceDataService from "../../src/services/clearanceData";
 
-describe('App Integration', () => {
+describe("App Integration", () => {
   let root: HTMLElement;
   const sampleSummaries: CountyClearanceSummary[] = [
-    { county: 'Abbeville', added: 100, disposed: 22, clearanceRate: 0.22 },
-    { county: 'Charleston', added: 100, disposed: 104, clearanceRate: 1.04 },
+    { county: "Abbeville", added: 100, disposed: 22, clearanceRate: 0.22 },
+    { county: "Charleston", added: 100, disposed: 104, clearanceRate: 1.04 },
   ];
 
   beforeEach(() => {
-    root = document.createElement('div');
-    root.id = 'app';
+    root = document.createElement("div");
+    root.id = "app";
     document.body.appendChild(root);
   });
 
@@ -22,92 +22,101 @@ describe('App Integration', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders the complete clearance rates application', () => {
+  it("renders the complete clearance rates application", () => {
     renderApp(root, { summaries: sampleSummaries });
 
-    expect(root.querySelector('h1')?.textContent).toBe(t('pageTitle'));
-    expect(root.querySelector('svg.choropleth-svg')).not.toBeNull();
-    expect(root.querySelector('table.clearance-table')).not.toBeNull();
+    expect(root.querySelector("h1")?.textContent).toBe(t("pageTitle"));
+    expect(root.querySelector("svg.choropleth-svg")).not.toBeNull();
+    expect(root.querySelector("table.clearance-table")).not.toBeNull();
   });
 
-  it('initializes app, loads data, and renders aggregated summaries', async () => {
-    vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+  it("initializes app, loads data, and renders aggregated summaries", async () => {
+    vi.spyOn(
+      clearanceDataService,
+      "loadGoldCaseloadRecords",
+    ).mockResolvedValueOnce([
       {
-        file: 'test.csv',
-        category: 'Estate',
+        file: "test.csv",
+        category: "Estate",
         year: 2025,
         month: 7,
-        county: 'Abbeville',
-        metric: 'Added',
+        county: "Abbeville",
+        metric: "Added",
         value: 10,
       },
       {
-        file: 'test.csv',
-        category: 'Estate',
+        file: "test.csv",
+        category: "Estate",
         year: 2025,
         month: 7,
-        county: 'Abbeville',
-        metric: 'Disposed',
+        county: "Abbeville",
+        metric: "Disposed",
         value: 10,
       },
     ]);
 
     await initApp(root);
 
-    expect(root.querySelector('.county-name-cell')?.textContent).toBe('Abbeville');
-    expect(root.querySelector('.county-rate-cell')?.textContent).toBe('100%');
+    expect(root.querySelector(".county-name-cell")?.textContent).toBe(
+      "Abbeville",
+    );
+    expect(root.querySelector(".county-rate-cell")?.textContent).toBe("100%");
   });
 
-  it('displays an error banner when data loading fails', async () => {
-    vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockRejectedValueOnce(
-      new Error('Network error'),
-    );
+  it("displays an error banner when data loading fails", async () => {
+    vi.spyOn(
+      clearanceDataService,
+      "loadGoldCaseloadRecords",
+    ).mockRejectedValueOnce(new Error("Network error"));
 
     await initApp(root);
 
-    const errorBanner = root.querySelector('.error-banner');
+    const errorBanner = root.querySelector(".error-banner");
     expect(errorBanner).not.toBeNull();
-    expect(errorBanner?.textContent).toBe(t('errorLoadingData'));
+    expect(errorBanner?.textContent).toBe(t("errorLoadingData"));
   });
 
-  it('reloads map and table when date range selector is changed across multi-year data', async () => {
-    vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+  it("reloads map and table when date range selector is changed across multi-year data", async () => {
+    vi.spyOn(
+      clearanceDataService,
+      "loadGoldCaseloadRecords",
+    ).mockResolvedValueOnce([
       // 2024-2025 records
       {
-        file: 'test.csv',
-        category: 'Estate',
+        file: "test.csv",
+        category: "Estate",
         year: 2024,
         month: 8,
-        county: 'Abbeville',
-        metric: 'Added',
+        county: "Abbeville",
+        metric: "Added",
         value: 100,
       },
       {
-        file: 'test.csv',
-        category: 'Estate',
+        file: "test.csv",
+        category: "Estate",
         year: 2024,
         month: 8,
-        county: 'Abbeville',
-        metric: 'Disposed',
+        county: "Abbeville",
+        metric: "Disposed",
         value: 89,
       },
       // 2023-2024 records
       {
-        file: 'test.csv',
-        category: 'Estate',
+        file: "test.csv",
+        category: "Estate",
         year: 2023,
         month: 7,
-        county: 'Abbeville',
-        metric: 'Added',
+        county: "Abbeville",
+        metric: "Added",
         value: 50,
       },
       {
-        file: 'test.csv',
-        category: 'Estate',
+        file: "test.csv",
+        category: "Estate",
         year: 2023,
         month: 7,
-        county: 'Abbeville',
-        metric: 'Disposed',
+        county: "Abbeville",
+        metric: "Disposed",
         value: 69,
       },
     ]);
@@ -126,19 +135,24 @@ describe('App Integration', () => {
 
     // Select 2023-2024
     if (startSelect && endSelect) {
-      startSelect.value = '2023-07';
-      startSelect.dispatchEvent(new Event('change', { bubbles: true }));
-      endSelect.value = '2024-06';
-      endSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      startSelect.value = "2023-07";
+      startSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      endSelect.value = "2024-06";
+      endSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
       // Abbeville rate for 2023-2024 is 138%
-      expect(root.querySelector('.county-name-cell')?.textContent).toBe('Abbeville');
-      expect(root.querySelector('.county-rate-cell')?.textContent).toBe('138%');
+      expect(root.querySelector(".county-name-cell")?.textContent).toBe(
+        "Abbeville",
+      );
+      expect(root.querySelector(".county-rate-cell")?.textContent).toBe("138%");
     }
   });
 
-  it('disables date selectors and indicates no records found when data is empty', async () => {
-    vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([]);
+  it("disables date selectors and indicates no records found when data is empty", async () => {
+    vi.spyOn(
+      clearanceDataService,
+      "loadGoldCaseloadRecords",
+    ).mockResolvedValueOnce([]);
 
     await initApp(root);
 
@@ -154,42 +168,45 @@ describe('App Integration', () => {
     expect(root.textContent).toMatch(/no records found/i);
   });
 
-  it('keeps date selectors enabled and shows no records found in table when selected range has no matching records', async () => {
-    vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+  it("keeps date selectors enabled and shows no records found in table when selected range has no matching records", async () => {
+    vi.spyOn(
+      clearanceDataService,
+      "loadGoldCaseloadRecords",
+    ).mockResolvedValueOnce([
       {
-        file: 'test.csv',
-        category: 'Estate',
+        file: "test.csv",
+        category: "Estate",
         year: 2023,
         month: 7,
-        county: 'Abbeville',
-        metric: 'Added',
+        county: "Abbeville",
+        metric: "Added",
         value: 10,
       },
       {
-        file: 'test.csv',
-        category: 'Estate',
+        file: "test.csv",
+        category: "Estate",
         year: 2023,
         month: 7,
-        county: 'Abbeville',
-        metric: 'Disposed',
+        county: "Abbeville",
+        metric: "Disposed",
         value: 10,
       },
       {
-        file: 'test.csv',
-        category: 'Estate',
+        file: "test.csv",
+        category: "Estate",
         year: 2026,
         month: 6,
-        county: 'Abbeville',
-        metric: 'Added',
+        county: "Abbeville",
+        metric: "Added",
         value: 10,
       },
       {
-        file: 'test.csv',
-        category: 'Estate',
+        file: "test.csv",
+        category: "Estate",
         year: 2026,
         month: 6,
-        county: 'Abbeville',
-        metric: 'Disposed',
+        county: "Abbeville",
+        metric: "Disposed",
         value: 10,
       },
     ]);
@@ -208,62 +225,81 @@ describe('App Integration', () => {
 
     // Select a date range with no matching records (e.g. Aug 2024 to May 2025)
     if (startSelect && endSelect) {
-      startSelect.value = '2024-08';
-      startSelect.dispatchEvent(new Event('change', { bubbles: true }));
-      endSelect.value = '2025-05';
-      endSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      startSelect.value = "2024-08";
+      startSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      endSelect.value = "2025-05";
+      endSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
       // Table indicates no records found
-      expect(root.querySelector('.table-section')?.textContent).toMatch(/no records found/i);
-      expect(root.querySelector('.empty-table-cell')?.textContent).toBe(t('noRecordsFound'));
+      expect(root.querySelector(".table-section")?.textContent).toMatch(
+        /no records found/i,
+      );
+      expect(root.querySelector(".empty-table-cell")?.textContent).toBe(
+        t("noRecordsFound"),
+      );
 
       // Date selectors must remain enabled so user can navigate away from the empty range
       expect(startSelect.disabled).toBe(false);
       expect(endSelect.disabled).toBe(false);
 
       // Verify user can select a range with data (July 2023 to June 2024) and see records
-      startSelect.value = '2023-07';
-      startSelect.dispatchEvent(new Event('change', { bubbles: true }));
-      endSelect.value = '2024-06';
-      endSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      startSelect.value = "2023-07";
+      startSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      endSelect.value = "2024-06";
+      endSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
-      expect(root.querySelector('.county-name-cell')?.textContent).toBe('Abbeville');
-      expect(root.querySelector('.county-rate-cell')?.textContent).toBe('100%');
+      expect(root.querySelector(".county-name-cell")?.textContent).toBe(
+        "Abbeville",
+      );
+      expect(root.querySelector(".county-rate-cell")?.textContent).toBe("100%");
     }
   });
 
-  describe('Map and table bi-directional selection integration', () => {
-    it('synchronizes selection between map click and table row without scrolling', async () => {
-      vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+  describe("Map and table bi-directional selection integration", () => {
+    it("synchronizes selection between map click and table row without scrolling", async () => {
+      vi.spyOn(
+        clearanceDataService,
+        "loadGoldCaseloadRecords",
+      ).mockResolvedValueOnce([
         {
-          file: 'test.csv',
-          category: 'Estate',
+          file: "test.csv",
+          category: "Estate",
           year: 2025,
           month: 7,
-          county: 'Abbeville',
-          metric: 'Added',
+          county: "Abbeville",
+          metric: "Added",
           value: 10,
         },
         {
-          file: 'test.csv',
-          category: 'Estate',
+          file: "test.csv",
+          category: "Estate",
           year: 2025,
           month: 7,
-          county: 'Charleston',
-          metric: 'Added',
+          county: "Charleston",
+          metric: "Added",
           value: 20,
         },
       ]);
 
       await initApp(root);
 
-      const abbevillePath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
-      const abbevilleRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
-        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      const abbevillePath = root.querySelector<SVGPathElement>(
+        'path[data-county="Abbeville"]',
       );
-      const charlestonPath = root.querySelector<SVGPathElement>('path[data-county="Charleston"]');
-      const charlestonRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
-        (row) => row.querySelector('.county-name-cell')?.textContent === 'Charleston',
+      const abbevilleRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Abbeville",
+      );
+      const charlestonPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Charleston"]',
+      );
+      const charlestonRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Charleston",
       );
 
       expect(abbevillePath).not.toBeNull();
@@ -273,205 +309,489 @@ describe('App Integration', () => {
       abbevilleRow!.scrollIntoView = scrollSpy;
 
       // Click map path
-      abbevillePath?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      abbevillePath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-      expect(abbevillePath?.classList.contains('is-selected')).toBe(true);
-      expect(abbevillePath?.getAttribute('aria-selected')).toBe('true');
-      expect(abbevilleRow?.classList.contains('is-selected')).toBe(true);
-      expect(abbevilleRow?.getAttribute('aria-selected')).toBe('true');
+      expect(abbevillePath?.classList.contains("is-selected")).toBe(true);
+      expect(abbevillePath?.getAttribute("aria-selected")).toBe("true");
+      expect(abbevilleRow?.classList.contains("is-selected")).toBe(true);
+      expect(abbevilleRow?.getAttribute("aria-selected")).toBe("true");
       expect(scrollSpy).not.toHaveBeenCalled();
 
       // Charleston should remain unselected
-      expect(charlestonPath?.classList.contains('is-selected')).toBe(false);
-      expect(charlestonPath?.getAttribute('aria-selected')).toBe('false');
-      expect(charlestonRow?.classList.contains('is-selected')).toBe(false);
-      expect(charlestonRow?.getAttribute('aria-selected')).toBe('false');
+      expect(charlestonPath?.classList.contains("is-selected")).toBe(false);
+      expect(charlestonPath?.getAttribute("aria-selected")).toBe("false");
+      expect(charlestonRow?.classList.contains("is-selected")).toBe(false);
+      expect(charlestonRow?.getAttribute("aria-selected")).toBe("false");
     });
 
-    it('synchronizes selection between table row click and map path', async () => {
-      vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+    it("synchronizes selection between table row click and map path", async () => {
+      vi.spyOn(
+        clearanceDataService,
+        "loadGoldCaseloadRecords",
+      ).mockResolvedValueOnce([
         {
-          file: 'test.csv',
-          category: 'Estate',
+          file: "test.csv",
+          category: "Estate",
           year: 2025,
           month: 7,
-          county: 'Abbeville',
-          metric: 'Added',
+          county: "Abbeville",
+          metric: "Added",
           value: 10,
         },
       ]);
 
       await initApp(root);
 
-      const abbevillePath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
-      const abbevilleRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
-        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      const abbevillePath = root.querySelector<SVGPathElement>(
+        'path[data-county="Abbeville"]',
+      );
+      const abbevilleRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Abbeville",
       );
 
       // Click table row
-      abbevilleRow?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      abbevilleRow?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-      expect(abbevilleRow?.classList.contains('is-selected')).toBe(true);
-      expect(abbevilleRow?.getAttribute('aria-selected')).toBe('true');
-      expect(abbevillePath?.classList.contains('is-selected')).toBe(true);
-      expect(abbevillePath?.getAttribute('aria-selected')).toBe('true');
+      expect(abbevilleRow?.classList.contains("is-selected")).toBe(true);
+      expect(abbevilleRow?.getAttribute("aria-selected")).toBe("true");
+      expect(abbevillePath?.classList.contains("is-selected")).toBe(true);
+      expect(abbevillePath?.getAttribute("aria-selected")).toBe("true");
     });
 
-    it('clears selection when clicking already-selected county or clicking outside map and table', async () => {
-      vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+    it("clears selection when clicking already-selected county or clicking outside map and table", async () => {
+      vi.spyOn(
+        clearanceDataService,
+        "loadGoldCaseloadRecords",
+      ).mockResolvedValueOnce([
         {
-          file: 'test.csv',
-          category: 'Estate',
+          file: "test.csv",
+          category: "Estate",
           year: 2025,
           month: 7,
-          county: 'Abbeville',
-          metric: 'Added',
+          county: "Abbeville",
+          metric: "Added",
           value: 10,
         },
       ]);
 
       await initApp(root);
 
-      const abbevillePath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
-      const abbevilleRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
-        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      const abbevillePath = root.querySelector<SVGPathElement>(
+        'path[data-county="Abbeville"]',
+      );
+      const abbevilleRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Abbeville",
       );
 
       // Select
-      abbevillePath?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      expect(abbevillePath?.classList.contains('is-selected')).toBe(true);
+      abbevillePath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(abbevillePath?.classList.contains("is-selected")).toBe(true);
 
       // Re-click to clear
-      abbevillePath?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      expect(abbevillePath?.classList.contains('is-selected')).toBe(false);
-      expect(abbevilleRow?.classList.contains('is-selected')).toBe(false);
+      abbevillePath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(abbevillePath?.classList.contains("is-selected")).toBe(false);
+      expect(abbevilleRow?.classList.contains("is-selected")).toBe(false);
 
       // Select again
-      abbevilleRow?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      expect(abbevilleRow?.classList.contains('is-selected')).toBe(true);
+      abbevilleRow?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(abbevilleRow?.classList.contains("is-selected")).toBe(true);
 
       // Click outside (e.g. page heading)
-      root.querySelector('h1')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      expect(abbevillePath?.classList.contains('is-selected')).toBe(false);
-      expect(abbevilleRow?.classList.contains('is-selected')).toBe(false);
+      root
+        .querySelector("h1")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(abbevillePath?.classList.contains("is-selected")).toBe(false);
+      expect(abbevilleRow?.classList.contains("is-selected")).toBe(false);
     });
 
-    it('supports selecting and deselecting via keyboard navigation (Enter and Space)', async () => {
-      vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+    it("supports selecting and deselecting via keyboard navigation (Enter and Space)", async () => {
+      vi.spyOn(
+        clearanceDataService,
+        "loadGoldCaseloadRecords",
+      ).mockResolvedValueOnce([
         {
-          file: 'test.csv',
-          category: 'Estate',
+          file: "test.csv",
+          category: "Estate",
           year: 2025,
           month: 7,
-          county: 'Abbeville',
-          metric: 'Added',
+          county: "Abbeville",
+          metric: "Added",
           value: 10,
         },
       ]);
 
       await initApp(root);
 
-      const abbevillePath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
-      const abbevilleRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
-        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      const abbevillePath = root.querySelector<SVGPathElement>(
+        'path[data-county="Abbeville"]',
+      );
+      const abbevilleRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Abbeville",
       );
 
       // Select via Enter on map path
-      abbevillePath?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      expect(abbevillePath?.classList.contains('is-selected')).toBe(true);
-      expect(abbevilleRow?.classList.contains('is-selected')).toBe(true);
+      abbevillePath?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+      expect(abbevillePath?.classList.contains("is-selected")).toBe(true);
+      expect(abbevilleRow?.classList.contains("is-selected")).toBe(true);
 
       // Deselect via Space on table row
-      abbevilleRow?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
-      expect(abbevillePath?.classList.contains('is-selected')).toBe(false);
-      expect(abbevilleRow?.classList.contains('is-selected')).toBe(false);
+      abbevilleRow?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: " ", bubbles: true }),
+      );
+      expect(abbevillePath?.classList.contains("is-selected")).toBe(false);
+      expect(abbevilleRow?.classList.contains("is-selected")).toBe(false);
     });
 
-    it('clears active selection on both map and table when changing date range selectors', async () => {
-      vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+    it("clears active selection on both map and table when changing date range selectors", async () => {
+      vi.spyOn(
+        clearanceDataService,
+        "loadGoldCaseloadRecords",
+      ).mockResolvedValueOnce([
         {
-          file: 'test.csv',
-          category: 'Estate',
+          file: "test.csv",
+          category: "Estate",
           year: 2024,
           month: 7,
-          county: 'Abbeville',
-          metric: 'Added',
+          county: "Abbeville",
+          metric: "Added",
           value: 10,
         },
         {
-          file: 'test.csv',
-          category: 'Estate',
+          file: "test.csv",
+          category: "Estate",
           year: 2025,
           month: 6,
-          county: 'Abbeville',
-          metric: 'Added',
+          county: "Abbeville",
+          metric: "Added",
           value: 10,
         },
       ]);
 
       await initApp(root);
 
-      const abbevillePath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
-      const abbevilleRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
-        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      const abbevillePath = root.querySelector<SVGPathElement>(
+        'path[data-county="Abbeville"]',
+      );
+      const abbevilleRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Abbeville",
       );
 
       // Select county via map
-      abbevillePath?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      expect(abbevillePath?.classList.contains('is-selected')).toBe(true);
-      expect(abbevilleRow?.classList.contains('is-selected')).toBe(true);
+      abbevillePath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(abbevillePath?.classList.contains("is-selected")).toBe(true);
+      expect(abbevilleRow?.classList.contains("is-selected")).toBe(true);
 
       // Change start date range selector
-      const startSelect = root.querySelector<HTMLSelectElement>('#start-date');
+      const startSelect = root.querySelector<HTMLSelectElement>("#start-date");
       expect(startSelect).not.toBeNull();
       if (startSelect) {
-        startSelect.value = '2024-07';
-        startSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        startSelect.value = "2024-07";
+        startSelect.dispatchEvent(new Event("change", { bubbles: true }));
       }
 
       // Assert selection is cleared on both map and table
-      const updatedPath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
-      const updatedRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
-        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      const updatedPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Abbeville"]',
       );
-      expect(updatedPath?.classList.contains('is-selected')).toBe(false);
-      expect(updatedPath?.getAttribute('aria-selected')).toBe('false');
-      expect(updatedRow?.classList.contains('is-selected')).toBe(false);
-      expect(updatedRow?.getAttribute('aria-selected')).toBe('false');
+      const updatedRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Abbeville",
+      );
+      expect(updatedPath?.classList.contains("is-selected")).toBe(false);
+      expect(updatedPath?.getAttribute("aria-selected")).toBe("false");
+      expect(updatedRow?.classList.contains("is-selected")).toBe(false);
+      expect(updatedRow?.getAttribute("aria-selected")).toBe("false");
     });
 
-    it('[A11y] clears selection across map and table when pressing the Escape key', async () => {
-      vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+    it("[A11y] clears selection across map and table when pressing the Escape key", async () => {
+      vi.spyOn(
+        clearanceDataService,
+        "loadGoldCaseloadRecords",
+      ).mockResolvedValueOnce([
         {
-          file: 'test.csv',
-          category: 'Estate',
+          file: "test.csv",
+          category: "Estate",
           year: 2025,
           month: 7,
-          county: 'Abbeville',
-          metric: 'Added',
+          county: "Abbeville",
+          metric: "Added",
           value: 10,
         },
       ]);
 
       await initApp(root);
 
-      const abbevillePath = root.querySelector<SVGPathElement>('path[data-county="Abbeville"]');
-      const abbevilleRow = Array.from(root.querySelectorAll<HTMLTableRowElement>('tr.county-row')).find(
-        (row) => row.querySelector('.county-name-cell')?.textContent === 'Abbeville',
+      const abbevillePath = root.querySelector<SVGPathElement>(
+        'path[data-county="Abbeville"]',
+      );
+      const abbevilleRow = Array.from(
+        root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
+      ).find(
+        (row) =>
+          row.querySelector(".county-name-cell")?.textContent === "Abbeville",
       );
 
       // Select county
-      abbevillePath?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      expect(abbevillePath?.classList.contains('is-selected')).toBe(true);
-      expect(abbevilleRow?.classList.contains('is-selected')).toBe(true);
+      abbevillePath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(abbevillePath?.classList.contains("is-selected")).toBe(true);
+      expect(abbevilleRow?.classList.contains("is-selected")).toBe(true);
 
       // Press Escape on root
-      root.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      root.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
 
-      expect(abbevillePath?.classList.contains('is-selected')).toBe(false);
-      expect(abbevillePath?.getAttribute('aria-selected')).toBe('false');
-      expect(abbevilleRow?.classList.contains('is-selected')).toBe(false);
-      expect(abbevilleRow?.getAttribute('aria-selected')).toBe('false');
+      expect(abbevillePath?.classList.contains("is-selected")).toBe(false);
+      expect(abbevillePath?.getAttribute("aria-selected")).toBe("false");
+      expect(abbevilleRow?.classList.contains("is-selected")).toBe(false);
+      expect(abbevilleRow?.getAttribute("aria-selected")).toBe("false");
+    });
+  });
+
+  describe("Interactive Map Tooltip integration (issue #19)", () => {
+    const mockRecords = [
+      {
+        file: "test.csv",
+        category: "Estate",
+        year: 2025,
+        month: 7,
+        county: "Abbeville",
+        metric: "Added",
+        value: 10,
+      },
+      {
+        file: "test.csv",
+        category: "Estate",
+        year: 2025,
+        month: 7,
+        county: "Abbeville",
+        metric: "Disposed",
+        value: 10,
+      },
+      {
+        file: "test.csv",
+        category: "Estate",
+        year: 2025,
+        month: 7,
+        county: "Aiken",
+        metric: "Added",
+        value: 100,
+      },
+      {
+        file: "test.csv",
+        category: "Estate",
+        year: 2025,
+        month: 7,
+        county: "Aiken",
+        metric: "Disposed",
+        value: 88,
+      },
+    ];
+
+    it("renders interactive tooltip showing county name and calculated clearance rate on map hover", async () => {
+      vi.spyOn(
+        clearanceDataService,
+        "loadGoldCaseloadRecords",
+      ).mockResolvedValueOnce(mockRecords);
+
+      await initApp(root);
+
+      const abbevillePath = root.querySelector<SVGPathElement>(
+        'path[data-county="Abbeville"]',
+      );
+      expect(abbevillePath).not.toBeNull();
+
+      abbevillePath?.dispatchEvent(
+        new MouseEvent("mouseover", {
+          bubbles: true,
+          clientX: 150,
+          clientY: 220,
+        }),
+      );
+
+      const tooltip = document.querySelector<HTMLElement>(
+        '.map-tooltip, [role="tooltip"]',
+      );
+      expect(tooltip).not.toBeNull();
+      expect(tooltip?.textContent).toContain("Abbeville");
+      expect(tooltip?.textContent).toContain("100%");
+    });
+
+    it("updates tooltip position on cursor movement and hides on mouseout", async () => {
+      vi.spyOn(
+        clearanceDataService,
+        "loadGoldCaseloadRecords",
+      ).mockResolvedValueOnce(mockRecords);
+
+      await initApp(root);
+
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      expect(aikenPath).not.toBeNull();
+
+      aikenPath?.dispatchEvent(
+        new MouseEvent("mouseover", {
+          bubbles: true,
+          clientX: 200,
+          clientY: 300,
+        }),
+      );
+
+      const tooltip = document.querySelector<HTMLElement>(
+        '.map-tooltip, [role="tooltip"]',
+      );
+      expect(tooltip).not.toBeNull();
+      expect(tooltip?.textContent).toContain("Aiken");
+      expect(tooltip?.textContent).toContain("88%");
+
+      aikenPath?.dispatchEvent(
+        new MouseEvent("mousemove", {
+          bubbles: true,
+          clientX: 250,
+          clientY: 320,
+        }),
+      );
+
+      const hasCoordinates =
+        Boolean(tooltip?.style.left && tooltip?.style.top) ||
+        Boolean(tooltip?.style.transform);
+      expect(hasCoordinates).toBe(true);
+
+      aikenPath?.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
+
+      const isHidden =
+        !document.body.contains(tooltip) ||
+        tooltip?.style.display === "none" ||
+        tooltip?.style.opacity === "0" ||
+        tooltip?.classList.contains("is-hidden") ||
+        tooltip?.getAttribute("aria-hidden") === "true";
+      expect(isHidden).toBe(true);
+    });
+
+    it("updates tooltip clearance rate when date range selector changes", async () => {
+      vi.spyOn(
+        clearanceDataService,
+        "loadGoldCaseloadRecords",
+      ).mockResolvedValueOnce([
+        ...mockRecords,
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2024,
+          month: 7,
+          county: "Abbeville",
+          metric: "Added",
+          value: 100,
+        },
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2024,
+          month: 7,
+          county: "Abbeville",
+          metric: "Disposed",
+          value: 75,
+        },
+      ]);
+
+      await initApp(root);
+
+      // Change date range to 2024-07 to 2024-07
+      const startSelect = root.querySelector<HTMLSelectElement>("#start-date");
+      const endSelect = root.querySelector<HTMLSelectElement>("#end-date");
+      if (startSelect && endSelect) {
+        startSelect.value = "2024-07";
+        startSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        endSelect.value = "2024-07";
+        endSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+
+      const abbevillePath = root.querySelector<SVGPathElement>(
+        'path[data-county="Abbeville"]',
+      );
+      abbevillePath?.dispatchEvent(
+        new MouseEvent("mouseover", {
+          bubbles: true,
+          clientX: 150,
+          clientY: 220,
+        }),
+      );
+
+      const tooltip = document.querySelector<HTMLElement>(
+        '.map-tooltip, [role="tooltip"]',
+      );
+      expect(tooltip).not.toBeNull();
+      expect(tooltip?.textContent).toContain("Abbeville");
+      expect(tooltip?.textContent).toContain("75%");
+    });
+
+    it("[A11y] mirrors county name and clearance rate in aria-label across all county paths", async () => {
+      vi.spyOn(
+        clearanceDataService,
+        "loadGoldCaseloadRecords",
+      ).mockResolvedValueOnce(mockRecords);
+
+      await initApp(root);
+
+      const abbevillePath = root.querySelector<SVGPathElement>(
+        'path[data-county="Abbeville"]',
+      );
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+
+      expect(abbevillePath?.getAttribute("aria-label")).toBe("Abbeville: 100%");
+      expect(aikenPath?.getAttribute("aria-label")).toBe("Aiken: 88%");
+    });
+
+    it("[A11y] displays tooltip on keyboard focus and hides on blur", async () => {
+      vi.spyOn(
+        clearanceDataService,
+        "loadGoldCaseloadRecords",
+      ).mockResolvedValueOnce(mockRecords);
+
+      await initApp(root);
+
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      expect(aikenPath).not.toBeNull();
+
+      aikenPath?.dispatchEvent(new FocusEvent("focus", { bubbles: true }));
+
+      const tooltip = document.querySelector<HTMLElement>(
+        '.map-tooltip, [role="tooltip"]',
+      );
+      expect(tooltip).not.toBeNull();
+      expect(tooltip?.textContent).toContain("Aiken");
+      expect(tooltip?.textContent).toContain("88%");
+
+      aikenPath?.dispatchEvent(new FocusEvent("blur", { bubbles: true }));
+
+      const isHidden =
+        !document.body.contains(tooltip) ||
+        tooltip?.style.display === "none" ||
+        tooltip?.style.opacity === "0" ||
+        tooltip?.classList.contains("is-hidden") ||
+        tooltip?.getAttribute("aria-hidden") === "true";
+      expect(isHidden).toBe(true);
     });
   });
 });
