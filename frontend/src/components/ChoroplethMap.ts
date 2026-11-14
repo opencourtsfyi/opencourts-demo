@@ -8,8 +8,11 @@ import {
   getClearanceStatus,
   MAP_DIMENSIONS,
 } from "../constants/clearanceThresholds";
-import type { CountyClearanceSummary } from "../services/clearanceData";
-import { formatClearanceRate } from "../utils/formatters";
+import type {
+  CountyClearanceSummary,
+  DateRangeFilter,
+} from "../services/clearanceData";
+import { formatClearanceRate, formatDateRange } from "../utils/formatters";
 import { t } from "../i18n";
 
 export interface CountyProperties {
@@ -25,6 +28,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 export function renderChoroplethMap(
   summaries: readonly CountyClearanceSummary[],
   topology: ScTopology = scTopologyJson as unknown as ScTopology,
+  dateRange?: DateRangeFilter,
 ): SVGSVGElement {
   const rateByCounty = new Map<string, number | null>();
   for (const item of summaries) {
@@ -42,12 +46,23 @@ export function renderChoroplethMap(
   );
   const pathGenerator = geoPath(projection);
 
+  const ariaLabel = dateRange
+    ? `${t("mapAriaLabel")} (${formatDateRange(dateRange.start, dateRange.end)})`
+    : t("mapAriaLabel");
+
   const svgElement = document.createElementNS(SVG_NS, "svg");
   const svg = select(svgElement)
     .attr("class", "choropleth-svg")
     .attr("viewBox", `0 0 ${MAP_DIMENSIONS.WIDTH} ${MAP_DIMENSIONS.HEIGHT}`)
     .attr("role", "img")
-    .attr("aria-label", t("mapAriaLabel"));
+    .attr("aria-label", ariaLabel);
+
+  if (dateRange) {
+    svg
+      .append("desc")
+      .attr("class", "map-date-range-desc")
+      .text(formatDateRange(dateRange.start, dateRange.end));
+  }
 
   const countyGroup = svg.append("g").attr("class", "counties-layer");
 

@@ -240,6 +240,90 @@ describe("clearanceData service", () => {
 
       expect(summaries.map((s) => s.county)).toEqual(["Aiken", "York"]);
     });
+
+    it("aggregates data correctly across multiple years", () => {
+      const records: GoldCaseloadRecord[] = [
+        // Year 2023-2024
+        {
+          file: "2023_to_2024.csv",
+          category: "Estate",
+          year: 2023,
+          month: 8,
+          county: "Abbeville",
+          metric: "Added",
+          value: 50,
+        },
+        {
+          file: "2023_to_2024.csv",
+          category: "Estate",
+          year: 2023,
+          month: 8,
+          county: "Abbeville",
+          metric: "Disposed",
+          value: 69,
+        },
+        // Year 2024-2025
+        {
+          file: "2024_to_2025.csv",
+          category: "Estate",
+          year: 2024,
+          month: 8,
+          county: "Abbeville",
+          metric: "Added",
+          value: 100,
+        },
+        {
+          file: "2024_to_2025.csv",
+          category: "Estate",
+          year: 2024,
+          month: 8,
+          county: "Abbeville",
+          metric: "Disposed",
+          value: 89,
+        },
+      ];
+
+      // Aggregating only 2024-2025 range
+      const summaries2024 = aggregateClearanceRates(records, {
+        start: { year: 2024, month: 7 },
+        end: { year: 2025, month: 6 },
+      });
+      expect(summaries2024).toHaveLength(1);
+      expect(summaries2024[0].added).toBe(100);
+      expect(summaries2024[0].disposed).toBe(89);
+      expect(summaries2024[0].clearanceRate).toBe(0.89);
+
+      // Aggregating only 2023-2024 range
+      const summaries2023 = aggregateClearanceRates(records, {
+        start: { year: 2023, month: 7 },
+        end: { year: 2024, month: 6 },
+      });
+      expect(summaries2023).toHaveLength(1);
+      expect(summaries2023[0].added).toBe(50);
+      expect(summaries2023[0].disposed).toBe(69);
+      expect(summaries2023[0].clearanceRate).toBe(1.38);
+    });
+
+    it("returns empty summaries when no records match the date range", () => {
+      const records: GoldCaseloadRecord[] = [
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 7,
+          county: "Aiken",
+          metric: "Added",
+          value: 10,
+        },
+      ];
+
+      const summaries = aggregateClearanceRates(records, {
+        start: { year: 2023, month: 1 },
+        end: { year: 2023, month: 6 },
+      });
+
+      expect(summaries).toHaveLength(0);
+    });
   });
 
   describe("loadGoldCaseloadRecords", () => {

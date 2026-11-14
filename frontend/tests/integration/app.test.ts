@@ -69,4 +69,166 @@ describe('App Integration', () => {
     expect(errorBanner).not.toBeNull();
     expect(errorBanner?.textContent).toBe(t('errorLoadingData'));
   });
+
+  it('reloads map and table when date range selector is changed across multi-year data', async () => {
+    vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+      // 2024-2025 records
+      {
+        file: 'test.csv',
+        category: 'Estate',
+        year: 2024,
+        month: 8,
+        county: 'Abbeville',
+        metric: 'Added',
+        value: 100,
+      },
+      {
+        file: 'test.csv',
+        category: 'Estate',
+        year: 2024,
+        month: 8,
+        county: 'Abbeville',
+        metric: 'Disposed',
+        value: 89,
+      },
+      // 2023-2024 records
+      {
+        file: 'test.csv',
+        category: 'Estate',
+        year: 2023,
+        month: 7,
+        county: 'Abbeville',
+        metric: 'Added',
+        value: 50,
+      },
+      {
+        file: 'test.csv',
+        category: 'Estate',
+        year: 2023,
+        month: 7,
+        county: 'Abbeville',
+        metric: 'Disposed',
+        value: 69,
+      },
+    ]);
+
+    await initApp(root);
+
+    const startSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="start" i], select[name="startDate"], select#start-date',
+    );
+    const endSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="end" i], select[name="endDate"], select#end-date',
+    );
+
+    expect(startSelect).not.toBeNull();
+    expect(endSelect).not.toBeNull();
+
+    // Select 2023-2024
+    if (startSelect && endSelect) {
+      startSelect.value = '2023-07';
+      startSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      endSelect.value = '2024-06';
+      endSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      // Abbeville rate for 2023-2024 is 138%
+      expect(root.querySelector('.county-name-cell')?.textContent).toBe('Abbeville');
+      expect(root.querySelector('.county-rate-cell')?.textContent).toBe('138%');
+    }
+  });
+
+  it('disables date selectors and indicates no records found when data is empty', async () => {
+    vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([]);
+
+    await initApp(root);
+
+    const startSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="start" i], select[name="startDate"], select#start-date',
+    );
+    const endSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="end" i], select[name="endDate"], select#end-date',
+    );
+
+    expect(startSelect?.disabled).toBe(true);
+    expect(endSelect?.disabled).toBe(true);
+    expect(root.textContent).toMatch(/no records found/i);
+  });
+
+  it('keeps date selectors enabled and shows no records found in table when selected range has no matching records', async () => {
+    vi.spyOn(clearanceDataService, 'loadGoldCaseloadRecords').mockResolvedValueOnce([
+      {
+        file: 'test.csv',
+        category: 'Estate',
+        year: 2023,
+        month: 7,
+        county: 'Abbeville',
+        metric: 'Added',
+        value: 10,
+      },
+      {
+        file: 'test.csv',
+        category: 'Estate',
+        year: 2023,
+        month: 7,
+        county: 'Abbeville',
+        metric: 'Disposed',
+        value: 10,
+      },
+      {
+        file: 'test.csv',
+        category: 'Estate',
+        year: 2026,
+        month: 6,
+        county: 'Abbeville',
+        metric: 'Added',
+        value: 10,
+      },
+      {
+        file: 'test.csv',
+        category: 'Estate',
+        year: 2026,
+        month: 6,
+        county: 'Abbeville',
+        metric: 'Disposed',
+        value: 10,
+      },
+    ]);
+
+    await initApp(root);
+
+    const startSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="start" i], select[name="startDate"], select#start-date',
+    );
+    const endSelect = root.querySelector<HTMLSelectElement>(
+      'select[aria-label*="end" i], select[name="endDate"], select#end-date',
+    );
+
+    expect(startSelect).not.toBeNull();
+    expect(endSelect).not.toBeNull();
+
+    // Select a date range with no matching records (e.g. Aug 2024 to May 2025)
+    if (startSelect && endSelect) {
+      startSelect.value = '2024-08';
+      startSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      endSelect.value = '2025-05';
+      endSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      // Table indicates no records found
+      expect(root.querySelector('.table-section')?.textContent).toMatch(/no records found/i);
+      expect(root.querySelector('.empty-table-cell')?.textContent).toBe(t('noRecordsFound'));
+
+      // Date selectors must remain enabled so user can navigate away from the empty range
+      expect(startSelect.disabled).toBe(false);
+      expect(endSelect.disabled).toBe(false);
+
+      // Verify user can select a range with data (July 2023 to June 2024) and see records
+      startSelect.value = '2023-07';
+      startSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      endSelect.value = '2024-06';
+      endSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(root.querySelector('.county-name-cell')?.textContent).toBe('Abbeville');
+      expect(root.querySelector('.county-rate-cell')?.textContent).toBe('100%');
+    }
+  });
 });

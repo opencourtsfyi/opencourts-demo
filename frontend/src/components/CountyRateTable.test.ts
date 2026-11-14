@@ -58,4 +58,45 @@ describe("CountyRateTable component", () => {
     );
     expect(allendaleRow.classList.contains("status-no-data")).toBe(true);
   });
+
+  it("indicates 'No records found' when there is no data for a given date range", () => {
+    const table = renderCountyRateTable([]);
+    expect(table.textContent).toMatch(/no records found/i);
+  });
+
+  it("displays the start and end date to indicate the date range of the table", () => {
+    const dateRange = {
+      start: { year: 2024, month: 7 },
+      end: { year: 2025, month: 6 },
+    };
+    // When dateRange is provided in table options or context
+    const table = (renderCountyRateTable as any)(sampleSummaries, dateRange);
+    expect(table.textContent).toMatch(/July 2024\s+to\s+June 2025/i);
+  });
+
+  it("shows loading text in table-date-range-caption while loading and shows formatted date range once loaded", () => {
+    const dateRange = {
+      start: { year: 2024, month: 7 },
+      end: { year: 2025, month: 6 },
+    };
+
+    const loadingTable = renderCountyRateTable([], dateRange, true);
+    const loadingCaption = loadingTable.querySelector(
+      ".table-date-range-caption",
+    );
+    expect(loadingCaption?.textContent).toBe(t("loadingData"));
+
+    const loadedTable = renderCountyRateTable(sampleSummaries, dateRange, false);
+    const loadedCaption = loadedTable.querySelector(
+      ".table-date-range-caption",
+    );
+    expect(loadedCaption?.textContent).toMatch(/July 2024\s+to\s+June 2025/i);
+  });
+
+  it("displays no table body rows while loading is in progress", () => {
+    const loadingTable = renderCountyRateTable([], undefined, true);
+    const rows = loadingTable.querySelectorAll("tbody tr");
+    expect(rows).toHaveLength(0);
+    expect(loadingTable.querySelector(".empty-table-row")).toBeNull();
+  });
 });

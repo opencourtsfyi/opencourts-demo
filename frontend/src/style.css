@@ -106,12 +106,6 @@ body {
   fill: var(--color-no-data);
 }
 
-.date-range-banner {
-  margin: 0.25rem 0 0;
-  font-size: 1.1rem;
-  font-weight: 500;
-}
-
 .map-box {
   width: 100%;
   max-width: 760px;
@@ -164,4 +158,86 @@ body {
 .clearance-table td:last-child {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.date-range-selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.date-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.date-control label {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.date-control select {
+  padding: 0.35rem 0.65rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.date-control select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.map-date-range {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.no-records-notice {
+  color: var(--color-red);
+  font-weight: 500;
+  margin: 0.5rem 0 0;
+}
+
+.empty-table-cell {
+  text-align: center !important;
+  color: var(--color-no-data);
+  padding: 1.5rem !important;
+  font-style: italic;
+}
+
+@media (max-width: 480px) {
+  .clearance-legend {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .legend-list {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .date-range-selector {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .date-range-selector {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+@media (forced-colors: active) {
+  .legend-swatch {
+    forced-color-adjust: none;
+  }
 }

@@ -30,6 +30,13 @@ export const CASELOAD_METRICS = {
   DISPOSED: "Disposed",
 } as const;
 
+export const DATE_SELECTION_CONSTRAINTS = {
+  MIN_MONTH_DIFF: 1,
+  MONTHS_PER_YEAR: 12,
+  FIRST_MONTH_OF_YEAR: 1,
+  EMPTY_COUNT: 0,
+} as const;
+
 export const GOLD_DATA_PATH = "/data/caseloads_sample.json";
 
 export function getClearanceStatus(rate: number | null): ClearanceStatusType {
