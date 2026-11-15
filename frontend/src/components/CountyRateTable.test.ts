@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderCountyRateTable } from "./CountyRateTable";
 import { t } from "../i18n";
 import type { CountyClearanceSummary } from "../services/clearanceData";
@@ -98,5 +98,120 @@ describe("CountyRateTable component", () => {
     const rows = loadingTable.querySelectorAll("tbody tr");
     expect(rows).toHaveLength(0);
     expect(loadingTable.querySelector(".empty-table-row")).toBeNull();
+  });
+
+  describe("interactivity, selection, and accessibility", () => {
+    it("renders county rows with keyboard focusability and initial aria-selected attribute", () => {
+      const table = renderCountyRateTable(sampleSummaries);
+      const rows = table.querySelectorAll<HTMLTableRowElement>(
+        "tbody tr.county-row",
+      );
+
+      expect(rows.length).toBeGreaterThan(0);
+      for (const row of rows) {
+        expect(row.getAttribute("tabindex")).toBe("0");
+        expect(row.getAttribute("aria-selected")).toBe("false");
+        expect(row.classList.contains("is-selected")).toBe(false);
+      }
+    });
+
+    it("applies is-selected class and aria-selected='true' to the row matching selectedCounty", () => {
+      const table: HTMLTableElement = (renderCountyRateTable as any)(
+        sampleSummaries,
+        undefined,
+        false,
+        "Aiken",
+      );
+
+      const aikenRow = Array.from(
+        table.querySelectorAll<HTMLTableRowElement>("tbody tr.county-row"),
+      ).find(
+        (r) => r.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+      const abbevilleRow = Array.from(
+        table.querySelectorAll<HTMLTableRowElement>("tbody tr.county-row"),
+      ).find(
+        (r) =>
+          r.querySelector(".county-name-cell")?.textContent === "Abbeville",
+      );
+
+      expect(aikenRow?.classList.contains("is-selected")).toBe(true);
+      expect(aikenRow?.getAttribute("aria-selected")).toBe("true");
+
+      expect(abbevilleRow?.classList.contains("is-selected")).toBe(false);
+      expect(abbevilleRow?.getAttribute("aria-selected")).toBe("false");
+    });
+
+    it("invokes onSelectCounty callback with county name when an unselected row is clicked", () => {
+      const onSelectCounty = vi.fn();
+      const table: HTMLTableElement = (renderCountyRateTable as any)(
+        sampleSummaries,
+        undefined,
+        false,
+        null,
+        onSelectCounty,
+      );
+
+      const aikenRow = Array.from(
+        table.querySelectorAll<HTMLTableRowElement>("tbody tr.county-row"),
+      ).find(
+        (r) => r.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+      expect(aikenRow).not.toBeNull();
+      aikenRow?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(onSelectCounty).toHaveBeenCalledWith("Aiken");
+    });
+
+    it("invokes onSelectCounty callback with null when the already-selected row is clicked", () => {
+      const onSelectCounty = vi.fn();
+      const table: HTMLTableElement = (renderCountyRateTable as any)(
+        sampleSummaries,
+        undefined,
+        false,
+        "Aiken",
+        onSelectCounty,
+      );
+
+      const aikenRow = Array.from(
+        table.querySelectorAll<HTMLTableRowElement>("tbody tr.county-row"),
+      ).find(
+        (r) => r.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+      expect(aikenRow).not.toBeNull();
+      aikenRow?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(onSelectCounty).toHaveBeenCalledWith(null);
+    });
+
+    it("supports keyboard selection on rows using Enter and Space keys", () => {
+      const onSelectCounty = vi.fn();
+      const table: HTMLTableElement = (renderCountyRateTable as any)(
+        sampleSummaries,
+        undefined,
+        false,
+        null,
+        onSelectCounty,
+      );
+
+      const aikenRow = Array.from(
+        table.querySelectorAll<HTMLTableRowElement>("tbody tr.county-row"),
+      ).find(
+        (r) => r.querySelector(".county-name-cell")?.textContent === "Aiken",
+      );
+      expect(aikenRow).not.toBeNull();
+
+      aikenRow?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+      expect(onSelectCounty).toHaveBeenCalledWith("Aiken");
+
+      onSelectCounty.mockClear();
+
+      aikenRow?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: " ", bubbles: true }),
+      );
+      expect(onSelectCounty).toHaveBeenCalledWith("Aiken");
+    });
   });
 });
