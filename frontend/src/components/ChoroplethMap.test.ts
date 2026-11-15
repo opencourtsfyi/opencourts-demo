@@ -19,7 +19,7 @@ describe("ChoroplethMap component", () => {
     );
     expect(svg.getAttribute("role")).toBe("group");
     expect(svg.getAttribute("aria-labelledby")).toBe("mapTitle mapDesc");
-    expect(svg.querySelector("title#mapTitle")?.textContent).toBe(
+    expect(svg.querySelector("defs title#mapTitle")?.textContent).toBe(
       t("mapTitle"),
     );
     expect(svg.querySelector("desc#mapDesc")?.textContent).toBe(t("mapDesc"));

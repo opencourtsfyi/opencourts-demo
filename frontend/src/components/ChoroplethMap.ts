@@ -63,7 +63,6 @@ export function renderChoroplethMap(
     .attr("role", "group")
     .attr("aria-labelledby", "mapTitle mapDesc");
 
-  svg.append("title").attr("id", "mapTitle").text(titleText);
   svg
     .append("desc")
     .attr("id", "mapDesc")
@@ -71,6 +70,9 @@ export function renderChoroplethMap(
     .text(descText);
 
   const defs = svg.append("defs");
+  // Place <title> inside <defs> so Chrome does not show a native hover tooltip
+  // over our custom MapTooltip while aria-labelledby still resolves #mapTitle.
+  defs.append("title").attr("id", "mapTitle").text(titleText);
 
   const yellowPattern = defs
     .append("pattern")
