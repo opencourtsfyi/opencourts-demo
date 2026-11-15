@@ -226,7 +226,7 @@ describe("ClearancePage component", () => {
       aikenPath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
       expect(aikenPath?.classList.contains("is-selected")).toBe(true);
-      expect(aikenPath?.getAttribute("aria-selected")).toBe("true");
+      expect(aikenPath?.getAttribute("aria-pressed")).toBe("true");
 
       const aikenRow = Array.from(
         root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
@@ -248,7 +248,7 @@ describe("ClearancePage component", () => {
           row.querySelector(".county-name-cell")?.textContent === "Abbeville",
       );
       expect(abbevillePath?.classList.contains("is-selected")).toBe(false);
-      expect(abbevillePath?.getAttribute("aria-selected")).toBe("false");
+      expect(abbevillePath?.getAttribute("aria-pressed")).toBe("false");
       expect(abbevilleRow?.classList.contains("is-selected")).toBe(false);
       expect(abbevilleRow?.getAttribute("aria-selected")).toBe("false");
     });
@@ -293,7 +293,7 @@ describe("ClearancePage component", () => {
         'path[data-county="Aiken"]',
       );
       expect(aikenPath?.classList.contains("is-selected")).toBe(true);
-      expect(aikenPath?.getAttribute("aria-selected")).toBe("true");
+      expect(aikenPath?.getAttribute("aria-pressed")).toBe("true");
     });
 
     it("clicking an already-selected county on the map clears selection on both map and table", () => {
@@ -317,7 +317,7 @@ describe("ClearancePage component", () => {
       // Re-click to clear
       aikenPath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       expect(aikenPath?.classList.contains("is-selected")).toBe(false);
-      expect(aikenPath?.getAttribute("aria-selected")).toBe("false");
+      expect(aikenPath?.getAttribute("aria-pressed")).toBe("false");
       expect(aikenRow?.classList.contains("is-selected")).toBe(false);
       expect(aikenRow?.getAttribute("aria-selected")).toBe("false");
     });
@@ -345,7 +345,7 @@ describe("ClearancePage component", () => {
       expect(aikenRow?.classList.contains("is-selected")).toBe(false);
       expect(aikenRow?.getAttribute("aria-selected")).toBe("false");
       expect(aikenPath?.classList.contains("is-selected")).toBe(false);
-      expect(aikenPath?.getAttribute("aria-selected")).toBe("false");
+      expect(aikenPath?.getAttribute("aria-pressed")).toBe("false");
     });
 
     it("clicking anywhere outside the map and table clears the selection", () => {
@@ -370,7 +370,7 @@ describe("ClearancePage component", () => {
       heading?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
       expect(aikenPath?.classList.contains("is-selected")).toBe(false);
-      expect(aikenPath?.getAttribute("aria-selected")).toBe("false");
+      expect(aikenPath?.getAttribute("aria-pressed")).toBe("false");
       expect(aikenRow?.classList.contains("is-selected")).toBe(false);
       expect(aikenRow?.getAttribute("aria-selected")).toBe("false");
     });
@@ -468,7 +468,7 @@ describe("ClearancePage component", () => {
       startSelect?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
       expect(aikenPath?.classList.contains("is-selected")).toBe(false);
-      expect(aikenPath?.getAttribute("aria-selected")).toBe("false");
+      expect(aikenPath?.getAttribute("aria-pressed")).toBe("false");
       expect(aikenRow?.classList.contains("is-selected")).toBe(false);
       expect(aikenRow?.getAttribute("aria-selected")).toBe("false");
     });
@@ -497,7 +497,7 @@ describe("ClearancePage component", () => {
       );
 
       expect(aikenPath?.classList.contains("is-selected")).toBe(false);
-      expect(aikenPath?.getAttribute("aria-selected")).toBe("false");
+      expect(aikenPath?.getAttribute("aria-pressed")).toBe("false");
       expect(aikenRow?.classList.contains("is-selected")).toBe(false);
       expect(aikenRow?.getAttribute("aria-selected")).toBe("false");
     });

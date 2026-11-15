@@ -260,7 +260,7 @@ test.describe("Map View", () => {
 
       // Assert .is-selected class and aria-selected="true" on both
       await expect(aikenPath).toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "true");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "true");
       await expect(aikenRow).toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "true");
 
@@ -270,7 +270,7 @@ test.describe("Map View", () => {
         .locator("tr.county-row")
         .filter({ hasText: "Abbeville" });
       await expect(abbevillePath).not.toHaveClass(/is-selected/);
-      await expect(abbevillePath).toHaveAttribute("aria-selected", "false");
+      await expect(abbevillePath).toHaveAttribute("aria-pressed", "false");
       await expect(abbevilleRow).not.toHaveClass(/is-selected/);
       await expect(abbevilleRow).toHaveAttribute("aria-selected", "false");
     });
@@ -289,7 +289,7 @@ test.describe("Map View", () => {
       await expect(aikenRow).toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "true");
       await expect(aikenPath).toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "true");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "true");
     });
 
     test("clicking an already-selected county clears the selection on both map and table", async ({
@@ -308,7 +308,7 @@ test.describe("Map View", () => {
       // Re-click on map path to deselect
       await aikenPath.click();
       await expect(aikenPath).not.toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "false");
       await expect(aikenRow).not.toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
 
@@ -341,7 +341,7 @@ test.describe("Map View", () => {
         .click();
 
       await expect(aikenPath).not.toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "false");
       await expect(aikenRow).not.toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
     });
@@ -359,7 +359,7 @@ test.describe("Map View", () => {
       await page.keyboard.press("Enter");
 
       await expect(aikenPath).toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "true");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "true");
       await expect(aikenRow).toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "true");
 
@@ -368,7 +368,7 @@ test.describe("Map View", () => {
       await page.keyboard.press("Space");
 
       await expect(aikenPath).not.toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "false");
       await expect(aikenRow).not.toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
     });
@@ -407,7 +407,7 @@ test.describe("Map View", () => {
 
       // Verify active county selection is cleared on both map and table
       await expect(aikenPath).not.toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "false");
       await expect(aikenRow).not.toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
     });
@@ -478,7 +478,7 @@ test.describe("Map View", () => {
 
       // Verify selection is cleared on both map and table
       await expect(aikenPath).not.toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "false");
       await expect(aikenRow).not.toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
     });
