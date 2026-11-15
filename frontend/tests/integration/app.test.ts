@@ -312,14 +312,14 @@ describe("App Integration", () => {
       abbevillePath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
       expect(abbevillePath?.classList.contains("is-selected")).toBe(true);
-      expect(abbevillePath?.getAttribute("aria-selected")).toBe("true");
+      expect(abbevillePath?.getAttribute("aria-pressed")).toBe("true");
       expect(abbevilleRow?.classList.contains("is-selected")).toBe(true);
       expect(abbevilleRow?.getAttribute("aria-selected")).toBe("true");
       expect(scrollSpy).not.toHaveBeenCalled();
 
       // Charleston should remain unselected
       expect(charlestonPath?.classList.contains("is-selected")).toBe(false);
-      expect(charlestonPath?.getAttribute("aria-selected")).toBe("false");
+      expect(charlestonPath?.getAttribute("aria-pressed")).toBe("false");
       expect(charlestonRow?.classList.contains("is-selected")).toBe(false);
       expect(charlestonRow?.getAttribute("aria-selected")).toBe("false");
     });
@@ -358,7 +358,7 @@ describe("App Integration", () => {
       expect(abbevilleRow?.classList.contains("is-selected")).toBe(true);
       expect(abbevilleRow?.getAttribute("aria-selected")).toBe("true");
       expect(abbevillePath?.classList.contains("is-selected")).toBe(true);
-      expect(abbevillePath?.getAttribute("aria-selected")).toBe("true");
+      expect(abbevillePath?.getAttribute("aria-pressed")).toBe("true");
     });
 
     it("clears selection when clicking already-selected county or clicking outside map and table", async () => {
@@ -514,7 +514,7 @@ describe("App Integration", () => {
           row.querySelector(".county-name-cell")?.textContent === "Abbeville",
       );
       expect(updatedPath?.classList.contains("is-selected")).toBe(false);
-      expect(updatedPath?.getAttribute("aria-selected")).toBe("false");
+      expect(updatedPath?.getAttribute("aria-pressed")).toBe("false");
       expect(updatedRow?.classList.contains("is-selected")).toBe(false);
       expect(updatedRow?.getAttribute("aria-selected")).toBe("false");
     });
@@ -558,7 +558,7 @@ describe("App Integration", () => {
       );
 
       expect(abbevillePath?.classList.contains("is-selected")).toBe(false);
-      expect(abbevillePath?.getAttribute("aria-selected")).toBe("false");
+      expect(abbevillePath?.getAttribute("aria-pressed")).toBe("false");
       expect(abbevilleRow?.classList.contains("is-selected")).toBe(false);
       expect(abbevilleRow?.getAttribute("aria-selected")).toBe("false");
     });

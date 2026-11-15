@@ -57,7 +57,7 @@ export function renderChoroplethMap(
   const svg = select(svgElement)
     .attr("class", "choropleth-svg")
     .attr("viewBox", `0 0 ${MAP_DIMENSIONS.WIDTH} ${MAP_DIMENSIONS.HEIGHT}`)
-    .attr("role", "img")
+    .attr("role", "group")
     .attr("aria-label", ariaLabel);
 
   if (dateRange) {
@@ -94,7 +94,7 @@ export function renderChoroplethMap(
       const rate = rateByCounty.get(countyName.toLowerCase()) ?? null;
       return `${countyName}: ${formatClearanceRate(rate)}`;
     })
-    .attr("aria-selected", (d) => {
+    .attr("aria-pressed", (d) => {
       const countyName = d.properties?.name ?? "";
       const isSelected = Boolean(
         selectedCounty &&

@@ -16,6 +16,7 @@
   --color-yellow: #f9a825;
   --color-red: #c62828;
   --color-no-data: #9e9e9e;
+  --color-text-muted: #595959;
   --border-color: rgba(128, 128, 128, 0.4);
   --select-bg: #ffffff;
   --select-color: #111827;
@@ -262,7 +263,7 @@ body {
 
 .empty-table-cell {
   text-align: center !important;
-  color: var(--color-no-data);
+  color: var(--color-text-muted);
   padding: 1.5rem !important;
   font-style: italic;
 }
