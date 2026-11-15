@@ -21,14 +21,16 @@ export function renderCountyRateTable(
   const table = document.createElement("table");
   table.className = "clearance-table";
 
-  if (dateRange) {
-    const caption = document.createElement("caption");
-    caption.className = "table-date-range-caption";
-    caption.textContent = loading
-      ? t("loadingData")
-      : formatDateRange(dateRange.start, dateRange.end);
-    table.appendChild(caption);
+  const caption = document.createElement("caption");
+  caption.className = "table-date-range-caption";
+  if (loading) {
+    caption.textContent = t("loadingData");
+  } else if (dateRange) {
+    caption.textContent = `${t("pageTitle")} (${formatDateRange(dateRange.start, dateRange.end)})`;
+  } else {
+    caption.textContent = t("pageTitle");
   }
+  table.appendChild(caption);
 
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
@@ -102,7 +104,8 @@ export function renderCountyRateTable(
         }
       });
 
-      const countyCell = document.createElement("td");
+      const countyCell = document.createElement("th");
+      countyCell.scope = "row";
       countyCell.className = "county-name-cell";
       countyCell.textContent = item.county;
 

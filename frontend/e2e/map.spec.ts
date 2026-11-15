@@ -19,7 +19,7 @@ test.describe("Map View", () => {
     await expect(aikenMapSection).toHaveAttribute("aria-label", "Aiken: 97%");
 
     //Check Data Table
-    await expect(page.getByRole("cell", { name: "Aiken" })).toBeVisible();
+    await expect(page.getByRole("rowheader", { name: "Aiken" })).toBeVisible();
     await expect(page.getByRole("cell", { name: "%" }).nth(1)).toHaveText(
       "97%",
     );

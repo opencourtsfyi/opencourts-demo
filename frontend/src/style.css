@@ -203,9 +203,13 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 
-.clearance-table th {
+.clearance-table thead th {
   font-weight: 600;
   border-bottom: 2px solid var(--border-color);
+}
+
+.clearance-table tbody th {
+  font-weight: 400;
 }
 
 .clearance-table th:last-child,
