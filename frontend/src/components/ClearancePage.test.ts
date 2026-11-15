@@ -501,5 +501,18 @@ describe("ClearancePage component", () => {
       expect(aikenRow?.classList.contains("is-selected")).toBe(false);
       expect(aikenRow?.getAttribute("aria-selected")).toBe("false");
     });
+
+    it("[A11y] mounts the map tooltip inside the main landmark", () => {
+      document.body.appendChild(root);
+      try {
+        renderClearancePage(root, { summaries: sampleSummaries });
+
+        const main = root.querySelector("main");
+        expect(main).not.toBeNull();
+        expect(main?.querySelector(".map-tooltip")).not.toBeNull();
+      } finally {
+        root.remove();
+      }
+    });
   });
 });

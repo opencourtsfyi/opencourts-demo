@@ -19,10 +19,26 @@ test.describe("Map View", () => {
     await expect(aikenMapSection).toHaveAttribute("aria-label", "Aiken: 97%");
 
     //Check Data Table
-    await expect(page.getByRole("rowheader", { name: "Aiken" })).toBeVisible();
+    const aikenHeader = page.getByRole("rowheader", { name: "Aiken" });
+    await expect(aikenHeader).toBeVisible();
+    await expect(aikenHeader).toHaveCSS("font-weight", "400");
     await expect(page.getByRole("cell", { name: "%" }).nth(1)).toHaveText(
       "97%",
     );
+
+    // Check SVG pattern fill and legend swatch pattern
+    await expect(aikenMapSection).toHaveCSS("fill", /pattern-status-yellow/);
+    await expect(page.locator(".legend-swatch.status-yellow")).toHaveCSS(
+      "background-image",
+      /linear-gradient/,
+    );
+
+    // Check favicon link and asset serving
+    const faviconLink = page.locator('link[rel="icon"]');
+    await expect(faviconLink).toHaveAttribute("href", "/favicon.svg");
+    const faviconResponse = await page.request.get("/favicon.svg");
+    expect(faviconResponse.status()).toBe(200);
+    expect(await faviconResponse.text()).toContain("<svg");
   });
 
   test("stacks legend items vertically on narrow screens (e.g. mobile viewport)", async ({

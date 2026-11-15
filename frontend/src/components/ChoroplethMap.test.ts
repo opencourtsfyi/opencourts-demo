@@ -18,7 +18,18 @@ describe("ChoroplethMap component", () => {
       `0 0 ${MAP_DIMENSIONS.WIDTH} ${MAP_DIMENSIONS.HEIGHT}`,
     );
     expect(svg.getAttribute("role")).toBe("group");
-    expect(svg.getAttribute("aria-label")).toBe(t("mapAriaLabel"));
+    expect(svg.getAttribute("aria-labelledby")).toBe("mapTitle mapDesc");
+    expect(svg.querySelector("title#mapTitle")?.textContent).toBe(
+      t("mapTitle"),
+    );
+    expect(svg.querySelector("desc#mapDesc")?.textContent).toBe(t("mapDesc"));
+    expect(
+      svg.querySelector("defs pattern#pattern-status-yellow"),
+    ).not.toBeNull();
+    expect(svg.querySelector("defs pattern#pattern-status-red")).not.toBeNull();
+    expect(
+      svg.querySelector("defs pattern#pattern-status-no-data"),
+    ).not.toBeNull();
   });
 
   it("renders paths for all 46 South Carolina counties", () => {

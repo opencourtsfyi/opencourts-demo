@@ -49,23 +49,84 @@ export function renderChoroplethMap(
   );
   const pathGenerator = geoPath(projection);
 
-  const ariaLabel = dateRange
-    ? `${t("mapAriaLabel")} (${formatDateRange(dateRange.start, dateRange.end)})`
-    : t("mapAriaLabel");
+  const titleText = dateRange
+    ? `${t("mapTitle")} (${formatDateRange(dateRange.start, dateRange.end)})`
+    : t("mapTitle");
+  const descText = dateRange
+    ? `${t("mapDesc")} (${formatDateRange(dateRange.start, dateRange.end)})`
+    : t("mapDesc");
 
   const svgElement = document.createElementNS(SVG_NS, "svg");
   const svg = select(svgElement)
     .attr("class", "choropleth-svg")
     .attr("viewBox", `0 0 ${MAP_DIMENSIONS.WIDTH} ${MAP_DIMENSIONS.HEIGHT}`)
     .attr("role", "group")
-    .attr("aria-label", ariaLabel);
+    .attr("aria-labelledby", "mapTitle mapDesc");
 
-  if (dateRange) {
-    svg
-      .append("desc")
-      .attr("class", "map-date-range-desc")
-      .text(formatDateRange(dateRange.start, dateRange.end));
-  }
+  svg.append("title").attr("id", "mapTitle").text(titleText);
+  svg
+    .append("desc")
+    .attr("id", "mapDesc")
+    .attr("class", "map-date-range-desc")
+    .text(descText);
+
+  const defs = svg.append("defs");
+
+  const yellowPattern = defs
+    .append("pattern")
+    .attr("id", "pattern-status-yellow")
+    .attr("width", 8)
+    .attr("height", 8)
+    .attr("patternUnits", "userSpaceOnUse")
+    .attr("patternTransform", "rotate(45)");
+  yellowPattern
+    .append("rect")
+    .attr("width", 8)
+    .attr("height", 8)
+    .attr("fill", "var(--color-yellow)");
+  yellowPattern
+    .append("line")
+    .attr("x1", 0)
+    .attr("y1", 0)
+    .attr("x2", 0)
+    .attr("y2", 8)
+    .attr("stroke", "rgba(0, 0, 0, 0.22)")
+    .attr("stroke-width", 2);
+
+  const redPattern = defs
+    .append("pattern")
+    .attr("id", "pattern-status-red")
+    .attr("width", 8)
+    .attr("height", 8)
+    .attr("patternUnits", "userSpaceOnUse");
+  redPattern
+    .append("rect")
+    .attr("width", 8)
+    .attr("height", 8)
+    .attr("fill", "var(--color-red)");
+  redPattern
+    .append("path")
+    .attr("d", "M0 0 L8 8 M8 0 L0 8")
+    .attr("stroke", "rgba(255, 255, 255, 0.28)")
+    .attr("stroke-width", 1.5);
+
+  const noDataPattern = defs
+    .append("pattern")
+    .attr("id", "pattern-status-no-data")
+    .attr("width", 8)
+    .attr("height", 8)
+    .attr("patternUnits", "userSpaceOnUse");
+  noDataPattern
+    .append("rect")
+    .attr("width", 8)
+    .attr("height", 8)
+    .attr("fill", "var(--color-no-data)");
+  noDataPattern
+    .append("circle")
+    .attr("cx", 4)
+    .attr("cy", 4)
+    .attr("r", 1.5)
+    .attr("fill", "rgba(255, 255, 255, 0.45)");
 
   const tooltip = new MapTooltip();
   const countyGroup = svg.append("g").attr("class", "counties-layer");
