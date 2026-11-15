@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 test.describe("Map View", () => {
   test("loads the map page", async ({ page }) => {
@@ -480,6 +481,46 @@ test.describe("Map View", () => {
       await expect(aikenPath).toHaveAttribute("aria-selected", "false");
       await expect(aikenRow).not.toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
+    });
+
+    test("[A11y] passes axe-core scan on the default map and table view", async ({
+      page,
+    }) => {
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations).toEqual([]);
+    });
+
+    test("[A11y] passes axe-core scan when a county is selected and tooltip is visible", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      await aikenPath.focus();
+      await page.keyboard.press("Enter");
+      await expect(aikenPath).toHaveClass(/is-selected/);
+      await expect(
+        page.locator(".map-tooltip, [role='tooltip']"),
+      ).toBeVisible();
+
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations).toEqual([]);
+    });
+
+    test("[A11y] passes axe-core scan when no records are found", async ({
+      page,
+    }) => {
+      await page.route("**/data/caseloads_sample.json", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        });
+      });
+
+      await page.goto("/");
+      await expect(page.locator("body")).toContainText(/no records found/i);
+
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations).toEqual([]);
     });
   });
 
