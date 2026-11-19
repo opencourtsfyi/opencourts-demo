@@ -11,7 +11,10 @@ const VISIBLE_CLASS = "is-visible";
 export class MapTooltip {
   private element: HTMLElement;
 
-  constructor(container: HTMLElement = document.body) {
+  constructor(
+    container: HTMLElement = document.querySelector<HTMLElement>("main") ??
+      document.body,
+  ) {
     const existing = container.querySelector<HTMLElement>(`.${TOOLTIP_CLASS}`);
     if (existing) {
       this.element = existing;

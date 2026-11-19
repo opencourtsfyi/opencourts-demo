@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- <rect width="64" height="64" rx="10" fill="#faf8f5" /> -->
+  <g stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Pediment roof (open on right for network icon) -->
+    <path d="M12 27 L32 15 L44 22.5" />
+    <!-- Entablature -->
+    <rect x="14" y="27" width="36" height="4" rx="0.5" />
+    <!-- Four columns -->
+    <line x1="18" y1="31" x2="18" y2="47" />
+    <line x1="27" y1="31" x2="27" y2="47" />
+    <line x1="37" y1="31" x2="37" y2="47" />
+    <line x1="46" y1="31" x2="46" y2="47" />
+    <!-- Stepped base -->
+    <rect x="13" y="47" width="38" height="4" rx="0.5" />
+    <rect x="10" y="51" width="44" height="4.5" rx="0.5" />
+  </g>
+  <g stroke="#0f7b8f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 3-node network/share icon -->
+    <line x1="46" y1="14" x2="53" y2="9" />
+    <line x1="46" y1="16" x2="53" y2="21" />
+    <circle cx="44" cy="15" r="2.75" fill="#faf8f5" />
+    <circle cx="55" cy="8" r="2.75" fill="#faf8f5" />
+    <circle cx="55" cy="22" r="2.75" fill="#faf8f5" />
+  </g>
+</svg>

@@ -17,23 +17,22 @@ Frontend application for the project. This is a TypeScript-based single-page app
 - **Run all tests:** `npm test`
 - **Run unit tests:** `npm run test:unit`
 - **Run integration tests:** `npm run test:integration`
-- **Run e2e tests:** `npm run test:e2e`
+- **Run e2e tests (includes `axe-core` accessibility checks):** `npm run test:e2e`
 - **Lint / Type-check:** `npm run typecheck` (`tsc --noEmit`; non-zero exit on type errors)
 - **Format source and tests (TS, HTML, CSS):** `npm run format:` 
 - **Formatting check:** `npm run format:check` (non-zero exit on formatting errors)
 
-<!-- ## Project Structure
+## Project Structure
 ```text
 frontend/
-├── src/                    # Application source files
-├── tests/                 # Frontend tests
+├── src/                   # Application source files and unit tests
+├── tests/                 # Integration tests (e.g. database or API)
+├── e2e/                   # E2E tests with playwright (multiple browsers, mobile)
 ├── index.html             # App entry HTML
 ├── package.json           # Scripts and dependencies
 ├── tsconfig.json          # TypeScript configuration
 ├── vite.config.ts         # Vite configuration
-├── AGENTS.md              # Frontend-specific instructions
-└── node_modules/          # Installed dependencies
-``` -->
+```
 
 ## Coding Style & Rules
 - Use TypeScript for all application logic.
@@ -62,7 +61,7 @@ frontend/
 - Prefer testing with Vitest which is fast over Playwright which is slower. Keep E2E tests light and lean.
 - Place unit tests in `src/**/*.test.ts` (co-located with the unit under test).
 - Place integration tests in `tests/integration/**/*.test.ts`.
-- Place Playwright e2e tests in `e2e/**/*.spec.ts`.
+- Place Playwright e2e tests in `e2e/**/*.spec.ts` (use `@axe-core/playwright` alongside UI tests for automated WCAG checks, and verify keyboard `Tab`/`Enter` navigation and screen reader output manually for UI changes).
 
 ## Boundaries
 **Always do:**

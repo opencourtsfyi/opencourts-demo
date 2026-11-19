@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 test.describe("Map View", () => {
   test("loads the map page", async ({ page }) => {
@@ -18,10 +19,26 @@ test.describe("Map View", () => {
     await expect(aikenMapSection).toHaveAttribute("aria-label", "Aiken: 97%");
 
     //Check Data Table
-    await expect(page.getByRole("cell", { name: "Aiken" })).toBeVisible();
+    const aikenHeader = page.getByRole("rowheader", { name: "Aiken" });
+    await expect(aikenHeader).toBeVisible();
+    await expect(aikenHeader).toHaveCSS("font-weight", "400");
     await expect(page.getByRole("cell", { name: "%" }).nth(1)).toHaveText(
       "97%",
     );
+
+    // Check SVG pattern fill and legend swatch pattern
+    await expect(aikenMapSection).toHaveCSS("fill", /pattern-status-yellow/);
+    await expect(page.locator(".legend-swatch.status-yellow")).toHaveCSS(
+      "background-image",
+      /linear-gradient/,
+    );
+
+    // Check favicon link and asset serving
+    const faviconLink = page.locator('link[rel="icon"]');
+    await expect(faviconLink).toHaveAttribute("href", "/favicon.svg");
+    const faviconResponse = await page.request.get("/favicon.svg");
+    expect(faviconResponse.status()).toBe(200);
+    expect(await faviconResponse.text()).toContain("<svg");
   });
 
   test("stacks legend items vertically on narrow screens (e.g. mobile viewport)", async ({
@@ -259,7 +276,7 @@ test.describe("Map View", () => {
 
       // Assert .is-selected class and aria-selected="true" on both
       await expect(aikenPath).toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "true");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "true");
       await expect(aikenRow).toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "true");
 
@@ -269,7 +286,7 @@ test.describe("Map View", () => {
         .locator("tr.county-row")
         .filter({ hasText: "Abbeville" });
       await expect(abbevillePath).not.toHaveClass(/is-selected/);
-      await expect(abbevillePath).toHaveAttribute("aria-selected", "false");
+      await expect(abbevillePath).toHaveAttribute("aria-pressed", "false");
       await expect(abbevilleRow).not.toHaveClass(/is-selected/);
       await expect(abbevilleRow).toHaveAttribute("aria-selected", "false");
     });
@@ -288,7 +305,7 @@ test.describe("Map View", () => {
       await expect(aikenRow).toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "true");
       await expect(aikenPath).toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "true");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "true");
     });
 
     test("clicking an already-selected county clears the selection on both map and table", async ({
@@ -307,7 +324,7 @@ test.describe("Map View", () => {
       // Re-click on map path to deselect
       await aikenPath.click();
       await expect(aikenPath).not.toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "false");
       await expect(aikenRow).not.toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
 
@@ -340,7 +357,7 @@ test.describe("Map View", () => {
         .click();
 
       await expect(aikenPath).not.toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "false");
       await expect(aikenRow).not.toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
     });
@@ -358,7 +375,7 @@ test.describe("Map View", () => {
       await page.keyboard.press("Enter");
 
       await expect(aikenPath).toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "true");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "true");
       await expect(aikenRow).toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "true");
 
@@ -367,7 +384,7 @@ test.describe("Map View", () => {
       await page.keyboard.press("Space");
 
       await expect(aikenPath).not.toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "false");
       await expect(aikenRow).not.toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
     });
@@ -406,7 +423,7 @@ test.describe("Map View", () => {
 
       // Verify active county selection is cleared on both map and table
       await expect(aikenPath).not.toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "false");
       await expect(aikenRow).not.toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
     });
@@ -477,9 +494,49 @@ test.describe("Map View", () => {
 
       // Verify selection is cleared on both map and table
       await expect(aikenPath).not.toHaveClass(/is-selected/);
-      await expect(aikenPath).toHaveAttribute("aria-selected", "false");
+      await expect(aikenPath).toHaveAttribute("aria-pressed", "false");
       await expect(aikenRow).not.toHaveClass(/is-selected/);
       await expect(aikenRow).toHaveAttribute("aria-selected", "false");
+    });
+
+    test("[A11y] passes axe-core scan on the default map and table view", async ({
+      page,
+    }) => {
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations).toEqual([]);
+    });
+
+    test("[A11y] passes axe-core scan when a county is selected and tooltip is visible", async ({
+      page,
+    }) => {
+      const aikenPath = page.locator("svg path[data-county='Aiken']");
+      await aikenPath.focus();
+      await page.keyboard.press("Enter");
+      await expect(aikenPath).toHaveClass(/is-selected/);
+      await expect(
+        page.locator(".map-tooltip, [role='tooltip']"),
+      ).toBeVisible();
+
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations).toEqual([]);
+    });
+
+    test("[A11y] passes axe-core scan when no records are found", async ({
+      page,
+    }) => {
+      await page.route("**/data/caseloads_sample.json", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        });
+      });
+
+      await page.goto("/");
+      await expect(page.locator("body")).toContainText(/no records found/i);
+
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations).toEqual([]);
     });
   });
 

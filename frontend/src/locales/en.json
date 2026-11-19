@@ -8,6 +8,8 @@
   "legendNoData": "No Data (Gray)",
   "dateRangeSeparator": "to",
   "mapAriaLabel": "South Carolina County Clearance Rates Choropleth Map",
+  "mapTitle": "South Carolina Probate Clearance Rates",
+  "mapDesc": "Choropleth map displaying probate clearance rates by county.",
   "tableHeaderCounty": "County Name",
   "tableHeaderRate": "Clearance Rate",
   "noDataLabel": "N/A",

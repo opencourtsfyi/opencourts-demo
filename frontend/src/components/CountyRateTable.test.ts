@@ -11,12 +11,32 @@ describe("CountyRateTable component", () => {
     { county: "Allendale", added: 0, disposed: 0, clearanceRate: null },
   ];
 
-  it("renders table headers with localized titles", () => {
+  it("renders table headers with localized titles and scope='col'", () => {
     const table = renderCountyRateTable(sampleSummaries);
-    const headers = Array.from(table.querySelectorAll("thead th")).map(
-      (th) => th.textContent,
+    const headerEls = Array.from(
+      table.querySelectorAll<HTMLTableCellElement>("thead th"),
     );
-    expect(headers).toEqual([t("tableHeaderCounty"), t("tableHeaderRate")]);
+    expect(headerEls.map((th) => th.textContent)).toEqual([
+      t("tableHeaderCounty"),
+      t("tableHeaderRate"),
+    ]);
+    expect(headerEls.every((th) => th.scope === "col")).toBe(true);
+  });
+
+  it("renders county name cells as row headers with scope='row'", () => {
+    const table = renderCountyRateTable(sampleSummaries);
+    const rowHeaders = Array.from(
+      table.querySelectorAll<HTMLTableCellElement>("tbody th.county-name-cell"),
+    );
+    expect(rowHeaders).toHaveLength(sampleSummaries.length);
+    expect(rowHeaders.every((th) => th.scope === "row")).toBe(true);
+  });
+
+  it("always renders a caption describing the table's purpose", () => {
+    const table = renderCountyRateTable(sampleSummaries);
+    const caption = table.querySelector("caption");
+    expect(caption).not.toBeNull();
+    expect(caption?.textContent).toContain(t("pageTitle"));
   });
 
   it("renders all county rows with formatted percentages and status classes", () => {
@@ -94,6 +114,7 @@ describe("CountyRateTable component", () => {
     const loadedCaption = loadedTable.querySelector(
       ".table-date-range-caption",
     );
+    expect(loadedCaption?.textContent).toContain(t("pageTitle"));
     expect(loadedCaption?.textContent).toMatch(/July 2024\s+to\s+June 2025/i);
   });
 

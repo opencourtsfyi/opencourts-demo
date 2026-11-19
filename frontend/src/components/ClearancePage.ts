@@ -115,10 +115,10 @@ export function renderClearancePage(
         county !== null && name.toLowerCase() === county.toLowerCase();
       if (isTarget) {
         path.classList.add("is-selected");
-        path.setAttribute("aria-selected", "true");
+        path.setAttribute("aria-pressed", "true");
       } else {
         path.classList.remove("is-selected");
-        path.setAttribute("aria-selected", "false");
+        path.setAttribute("aria-pressed", "false");
       }
     }
 

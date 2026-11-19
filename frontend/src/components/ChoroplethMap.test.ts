@@ -17,8 +17,19 @@ describe("ChoroplethMap component", () => {
     expect(svg.getAttribute("viewBox")).toBe(
       `0 0 ${MAP_DIMENSIONS.WIDTH} ${MAP_DIMENSIONS.HEIGHT}`,
     );
-    expect(svg.getAttribute("role")).toBe("img");
-    expect(svg.getAttribute("aria-label")).toBe(t("mapAriaLabel"));
+    expect(svg.getAttribute("role")).toBe("group");
+    expect(svg.getAttribute("aria-labelledby")).toBe("mapTitle mapDesc");
+    expect(svg.querySelector("defs title#mapTitle")?.textContent).toBe(
+      t("mapTitle"),
+    );
+    expect(svg.querySelector("desc#mapDesc")?.textContent).toBe(t("mapDesc"));
+    expect(
+      svg.querySelector("defs pattern#pattern-status-yellow"),
+    ).not.toBeNull();
+    expect(svg.querySelector("defs pattern#pattern-status-red")).not.toBeNull();
+    expect(
+      svg.querySelector("defs pattern#pattern-status-no-data"),
+    ).not.toBeNull();
   });
 
   it("renders paths for all 46 South Carolina counties", () => {
@@ -69,19 +80,19 @@ describe("ChoroplethMap component", () => {
   });
 
   describe("interactivity, selection, and accessibility", () => {
-    it("renders county paths with keyboard focusability and initial aria-selected attribute", () => {
+    it("renders county paths with keyboard focusability and initial aria-pressed attribute", () => {
       const svg = renderChoroplethMap(sampleSummaries);
       const paths = svg.querySelectorAll<SVGPathElement>("path.county-path");
 
       expect(paths.length).toBeGreaterThan(0);
       for (const path of paths) {
         expect(path.getAttribute("tabindex")).toBe("0");
-        expect(path.getAttribute("aria-selected")).toBe("false");
+        expect(path.getAttribute("aria-pressed")).toBe("false");
         expect(path.classList.contains("is-selected")).toBe(false);
       }
     });
 
-    it("applies is-selected class and aria-selected='true' to the path matching selectedCounty", () => {
+    it("applies is-selected class and aria-pressed='true' to the path matching selectedCounty", () => {
       const svg: SVGSVGElement = (renderChoroplethMap as any)(
         sampleSummaries,
         undefined,
@@ -93,10 +104,10 @@ describe("ChoroplethMap component", () => {
       const abbevillePath = svg.querySelector('path[data-county="Abbeville"]');
 
       expect(aikenPath?.classList.contains("is-selected")).toBe(true);
-      expect(aikenPath?.getAttribute("aria-selected")).toBe("true");
+      expect(aikenPath?.getAttribute("aria-pressed")).toBe("true");
 
       expect(abbevillePath?.classList.contains("is-selected")).toBe(false);
-      expect(abbevillePath?.getAttribute("aria-selected")).toBe("false");
+      expect(abbevillePath?.getAttribute("aria-pressed")).toBe("false");
     });
 
     it("invokes onSelectCounty callback with county name when an unselected path is clicked", () => {
