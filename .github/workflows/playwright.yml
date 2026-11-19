@@ -11,6 +11,9 @@ on:
       - 'frontend/**'
       - '.github/workflows/playwright.yml'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
