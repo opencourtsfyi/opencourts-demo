@@ -609,4 +609,35 @@ test.describe("Map View", () => {
       await expect(tooltip).not.toBeVisible();
     });
   });
+
+  test("select and option colors match the active light and dark color scheme", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const startSelect = page.getByRole("combobox", { name: /start date/i });
+    const firstOption = startSelect.locator("option").first();
+    await expect(startSelect).toBeVisible();
+
+    await page.emulateMedia({ colorScheme: "light" });
+    await startSelect.click();
+    await expect(startSelect).toHaveCSS(
+      "background-color",
+      "rgb(255, 255, 255)",
+    );
+    await expect(startSelect).toHaveCSS("color", "rgb(17, 24, 39)");
+    await expect(firstOption).toHaveCSS(
+      "background-color",
+      "rgb(255, 255, 255)",
+    );
+    await expect(firstOption).toHaveCSS("color", "rgb(17, 24, 39)");
+    await startSelect.press("Escape");
+
+    await page.emulateMedia({ colorScheme: "dark" });
+    await startSelect.click();
+    await expect(startSelect).toHaveCSS("background-color", "rgb(31, 41, 55)");
+    await expect(startSelect).toHaveCSS("color", "rgb(243, 244, 246)");
+    await expect(firstOption).toHaveCSS("background-color", "rgb(31, 41, 55)");
+    await expect(firstOption).toHaveCSS("color", "rgb(243, 244, 246)");
+    await startSelect.press("Escape");
+  });
 });
