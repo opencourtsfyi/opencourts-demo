@@ -57,11 +57,11 @@ describe("DateRangeSelector component", () => {
 
     // Earliest start date is July 2023
     expect(startOptions[0].value).toBe("2023-07");
-    // Latest start date is May 2026 (1 month before June 2026)
-    expect(startOptions[startOptions.length - 1].value).toBe("2026-05");
+    // Latest start date is June 2026 (same as latest data month)
+    expect(startOptions[startOptions.length - 1].value).toBe("2026-06");
 
-    // Earliest end date is August 2023 (1 month after July 2023)
-    expect(endOptions[0].value).toBe("2023-08");
+    // Earliest end date is July 2023 (same as earliest data month)
+    expect(endOptions[0].value).toBe("2023-07");
     // Latest end date is June 2026
     expect(endOptions[endOptions.length - 1].value).toBe("2026-06");
 
@@ -84,7 +84,7 @@ describe("DateRangeSelector component", () => {
     expect(endSelect?.disabled).toBe(true);
   });
 
-  it("auto-advances end date to start + 1 month when start date is moved past end date", () => {
+  it("auto-advances end date to match start date when start date is moved past end date", () => {
     const onDateRangeChange = vi.fn();
     const el = renderDateRangeSelector({
       availableRange: defaultAvailableRange,
@@ -102,15 +102,15 @@ describe("DateRangeSelector component", () => {
     startSelect.value = "2024-10";
     startSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
-    // End date should auto-advance to November 2024
-    expect(endSelect.value).toBe("2024-11");
+    // End date should auto-advance to October 2024
+    expect(endSelect.value).toBe("2024-10");
     expect(onDateRangeChange).toHaveBeenCalledWith({
       start: { year: 2024, month: 10 },
-      end: { year: 2024, month: 11 },
+      end: { year: 2024, month: 10 },
     });
   });
 
-  it("auto-adjusts start date backward to end - 1 month when end date is moved before start date", () => {
+  it("auto-adjusts start date backward to match end date when end date is moved before start date", () => {
     const onDateRangeChange = vi.fn();
     const el = renderDateRangeSelector({
       availableRange: defaultAvailableRange,
@@ -124,19 +124,19 @@ describe("DateRangeSelector component", () => {
     const startSelect = el.querySelector<HTMLSelectElement>("#start-date")!;
     const endSelect = el.querySelector<HTMLSelectElement>("#end-date")!;
 
-    // Move end date to July 2024 (same as or before current July 2024 start date)
-    endSelect.value = "2024-07";
+    // Move end date to June 2024 (before current July 2024 start date)
+    endSelect.value = "2024-06";
     endSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
     // Start date should auto-adjust backward to June 2024
     expect(startSelect.value).toBe("2024-06");
     expect(onDateRangeChange).toHaveBeenCalledWith({
       start: { year: 2024, month: 6 },
-      end: { year: 2024, month: 7 },
+      end: { year: 2024, month: 6 },
     });
   });
 
-  it("auto-advances end date forward by 1 month when start date is selected to be the same as current end date", () => {
+  it("allows start date to be selected equal to current end date (1 month of data)", () => {
     const onDateRangeChange = vi.fn();
     const el = renderDateRangeSelector({
       availableRange: defaultAvailableRange,
@@ -154,11 +154,11 @@ describe("DateRangeSelector component", () => {
     startSelect.value = "2024-09";
     startSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
-    // End date should auto-advance to October 2024 (+1 month)
-    expect(endSelect.value).toBe("2024-10");
+    // End date should remain September 2024
+    expect(endSelect.value).toBe("2024-09");
     expect(onDateRangeChange).toHaveBeenCalledWith({
       start: { year: 2024, month: 9 },
-      end: { year: 2024, month: 10 },
+      end: { year: 2024, month: 9 },
     });
   });
 
@@ -176,19 +176,19 @@ describe("DateRangeSelector component", () => {
     const startSelect = el.querySelector<HTMLSelectElement>("#start-date")!;
     const endSelect = el.querySelector<HTMLSelectElement>("#end-date")!;
 
-    // The earliest selectable end date is August 2023 (1 month after earliest data July 2023)
+    // The earliest selectable end date is July 2023 (same as earliest data July 2023)
     const endOptions = Array.from(endSelect.options).map((o) => o.value);
-    expect(endOptions[0]).toBe("2023-08");
-    expect(endOptions).not.toContain("2023-07");
+    expect(endOptions[0]).toBe("2023-07");
+    expect(endOptions).not.toContain("2023-06");
 
     // Selecting earliest end date pulls start date back to earliest possible data month (July 2023)
-    endSelect.value = "2023-08";
+    endSelect.value = "2023-07";
     endSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
     expect(startSelect.value).toBe("2023-07");
     expect(onDateRangeChange).toHaveBeenCalledWith({
       start: { year: 2023, month: 7 },
-      end: { year: 2023, month: 8 },
+      end: { year: 2023, month: 7 },
     });
 
     // Start options do not allow anything before July 2023
@@ -211,18 +211,18 @@ describe("DateRangeSelector component", () => {
     const startSelect = el.querySelector<HTMLSelectElement>("#start-date")!;
     const endSelect = el.querySelector<HTMLSelectElement>("#end-date")!;
 
-    // The latest selectable start date is May 2026 (1 month prior to latest data June 2026)
+    // The latest selectable start date is June 2026 (same as latest data June 2026)
     const startOptions = Array.from(startSelect.options).map((o) => o.value);
-    expect(startOptions[startOptions.length - 1]).toBe("2026-05");
-    expect(startOptions).not.toContain("2026-06");
+    expect(startOptions[startOptions.length - 1]).toBe("2026-06");
+    expect(startOptions).not.toContain("2026-07");
 
     // Selecting latest start date pushes end date forward to latest possible data month (June 2026)
-    startSelect.value = "2026-05";
+    startSelect.value = "2026-06";
     startSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
     expect(endSelect.value).toBe("2026-06");
     expect(onDateRangeChange).toHaveBeenCalledWith({
-      start: { year: 2026, month: 5 },
+      start: { year: 2026, month: 6 },
       end: { year: 2026, month: 6 },
     });
 

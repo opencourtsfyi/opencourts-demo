@@ -161,8 +161,9 @@ export function renderClearancePage(
     header.appendChild(createLegend());
   }
 
-  let selectorContainer =
-    header.querySelector<DateRangeSelectorElement>(".date-range-selector");
+  let selectorContainer = header.querySelector<DateRangeSelectorElement>(
+    ".date-range-selector",
+  );
   if (!selectorContainer) {
     selectorContainer = renderDateRangeSelector({
       availableRange,

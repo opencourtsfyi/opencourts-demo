@@ -146,7 +146,7 @@ describe("ClearancePage component", () => {
     }
   });
 
-  it("enforces that end date must be at least 1 month later than start date without greyed out options", () => {
+  it("allows end date to be the same month as start date without greyed out options", () => {
     (renderClearancePage as any)(root, {
       summaries: sampleSummaries,
       dateRange: {

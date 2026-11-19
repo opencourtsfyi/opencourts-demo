@@ -78,6 +78,11 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         working-directory: frontend
         run: npm run typecheck
+      
+      - name: Format check (frontend)
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: frontend
+        run: npm run format:check
 
       - name: Run frontend tests
         working-directory: frontend

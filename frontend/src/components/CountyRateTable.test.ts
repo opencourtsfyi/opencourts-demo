@@ -86,7 +86,11 @@ describe("CountyRateTable component", () => {
     );
     expect(loadingCaption?.textContent).toBe(t("loadingData"));
 
-    const loadedTable = renderCountyRateTable(sampleSummaries, dateRange, false);
+    const loadedTable = renderCountyRateTable(
+      sampleSummaries,
+      dateRange,
+      false,
+    );
     const loadedCaption = loadedTable.querySelector(
       ".table-date-range-caption",
     );
