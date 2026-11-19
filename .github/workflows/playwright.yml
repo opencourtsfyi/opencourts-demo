@@ -16,6 +16,12 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.65.0-noble
+      # The Playwright container runs as root by default, 
+      # which can cause permission issues when writing 
+      #files to the host filesystem. To avoid this, 
+      # we run the container as a non-root user (1001) 
+      #and set the IPC mode to host.
+      options: --user 1001 --init --ipc=host
     defaults:
       run:
         working-directory: frontend
@@ -24,8 +30,6 @@ jobs:
     - name: Install dependencies
       run: npm ci
     - name: Run Playwright tests
-      env:
-        HOME: /root
       run: npx playwright test
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
