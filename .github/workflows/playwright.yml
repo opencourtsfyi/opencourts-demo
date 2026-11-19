@@ -24,6 +24,8 @@ jobs:
     - name: Install dependencies
       run: npm ci
     - name: Run Playwright tests
+      env:
+        HOME: /root
       run: npx playwright test
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
