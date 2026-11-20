@@ -162,7 +162,10 @@ class SilverExtractionStage(PipelineStage):
             self._extract_fn(context.config.bronze_dir, context.config.silver_dir, context.config.provenance_dir)
         else:
             BronzeToSilverExtractor(
-                context.config.bronze_dir, context.config.silver_dir, context.config.provenance_dir
+                context.config.bronze_dir,
+                context.config.silver_dir,
+                context.config.provenance_dir,
+                overwrite_existing=context.config.overwrite_existing,
             ).extract_all()
 
 class GoldNormalizationStage(PipelineStage):

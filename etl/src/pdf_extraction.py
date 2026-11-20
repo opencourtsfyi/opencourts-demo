@@ -15,7 +15,7 @@ from typing import Any, Final
 import pdfplumber
 import pandas as pd
 
-from provenance import log_provenance
+from provenance import compute_file_hash, log_provenance
 from i18n import t
 
 logger = logging.getLogger(__name__)
@@ -79,6 +79,7 @@ class BronzeToSilverExtractor:
     PDF_FILE_PATTERNS: Final[tuple[str, str]] = ("*.pdf", "*.PDF")
     CSV_FILE_EXTENSION: Final[str] = ".csv"
     STAGE_SILVER: Final[str] = "silver"
+    MANIFEST_FILE_NAME: Final[str] = ".extraction_manifest.json"
 
     def __init__(
         self,
@@ -86,11 +87,13 @@ class BronzeToSilverExtractor:
         output_dir: Path | str = DEFAULT_SILVER_DIR,
         provenance_dir: Path | str = DEFAULT_PROVENANCE_DIR,
         table_extractor: TableExtractor | None = None,
+        overwrite_existing: bool = False,
     ) -> None:
         self.input_dir = Path(input_dir)
         self.output_dir = Path(output_dir)
         self.provenance_dir = Path(provenance_dir)
         self.table_extractor = table_extractor or TableExtractor()
+        self.overwrite_existing = overwrite_existing
 
     def find_pdf_files(self) -> list[Path]:
         """Finds all PDF files in input_dir using case-insensitive globbing, sorted deterministically."""
@@ -134,16 +137,45 @@ class BronzeToSilverExtractor:
 
         return output_file_path
 
+    def _load_manifest(self) -> dict[str, str]:
+        """Loads {pdf filename: sha256}; a missing or corrupted manifest counts as empty."""
+        try:
+            manifest = json.loads((self.output_dir / self.MANIFEST_FILE_NAME).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+        return manifest if isinstance(manifest, dict) else {}
+
+    def _save_manifest(self, manifest: dict[str, str]) -> None:
+        (self.output_dir / self.MANIFEST_FILE_NAME).write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
     def extract_all(self) -> list[Path]:
-        """Extracts all PDFs in input_dir to CSV in output_dir, logging provenance."""
+        """Extracts new or changed PDFs in input_dir to CSV in output_dir, logging provenance.
+
+        A PDF is skipped when its Silver CSV exists and its SHA-256 matches the hash
+        recorded after its last successful extraction (unless overwrite_existing is set).
+        Returns the Silver CSV path for every PDF, whether extracted or skipped.
+        """
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        manifest = self._load_manifest()
 
         output_files: list[Path] = []
         for file_path in self.find_pdf_files():
+            current_hash = compute_file_hash(file_path)
+            expected_output = self.output_dir / f"{file_path.stem}{self.CSV_FILE_EXTENSION}"
+            if (
+                not self.overwrite_existing
+                and expected_output.exists()
+                and manifest.get(file_path.name) == current_hash
+            ):
+                logger.info(t("pdf_extraction.log_skip_unchanged", filename=file_path.name))
+                output_files.append(expected_output)
+                continue
+
             logger.info(t("pdf_extraction.log_starting_extraction", filename=file_path.name))
-            output_file = self.extract_file(file_path)
-            output_files.append(output_file)
+            output_files.append(self.extract_file(file_path))
+            manifest[file_path.name] = current_hash
+            self._save_manifest(manifest)
 
         return output_files
 

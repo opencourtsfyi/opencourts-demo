@@ -168,6 +168,14 @@ class TestRunPipeline:
         run_pipeline()
         stages["BronzeToSilverExtractor.extract_all"].assert_called_once_with()
 
+    @pytest.mark.parametrize("overwrite", [False, True])
+    def test_extractor_receives_overwrite_flag(self, stages, overwrite):
+        with patch("orchestrator.BronzeToSilverExtractor") as extractor_cls:
+            run_pipeline(overwrite_existing=overwrite)
+        extractor_cls.assert_called_once_with(
+            EXPECTED_BRONZE, EXPECTED_SILVER, EXPECTED_PROVENANCE, overwrite_existing=overwrite
+        )
+
     def test_normalize_receives_paths(self, stages):
         run_pipeline()
         stages["SilverToGoldNormalizer.normalize"].assert_called_once_with(
