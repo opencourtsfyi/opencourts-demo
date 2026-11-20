@@ -229,6 +229,7 @@ secrets.json
 
 # ignore files made by process script
 *.csv
+!docs/sample-data/caseloads_normalized.csv
 *.pbix
 
 # ignore the topojson files, should be regenerated
