@@ -16,7 +16,11 @@
   --color-yellow: #f9a825;
   --color-red: #c62828;
   --color-no-data: #9e9e9e;
+  --bg: #ffffff;
+  --text: #111827;
   --color-text-muted: #595959;
+  --color-error-text: #c62828;
+  --color-selected-stroke: #111827;
   --border-color: rgba(128, 128, 128, 0.4);
   --select-bg: #ffffff;
   --select-color: #111827;
@@ -24,12 +28,19 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --bg: #0d1117;
+    --text: #f3f4f6;
+    --color-text-muted: #a3acb9;
+    --color-error-text: #ff8a80;
+    --color-selected-stroke: #f8fafc;
     --select-bg: #1f2937;
     --select-color: #f3f4f6;
   }
 }
 
 body {
+  background-color: var(--bg);
+  color: var(--text);
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
@@ -183,7 +194,7 @@ body {
 }
 
 .county-path.is-selected {
-  stroke: #111827;
+  stroke: var(--color-selected-stroke);
   stroke-width: 2.5px;
   filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5));
 }
@@ -293,7 +304,7 @@ body {
 }
 
 .no-records-notice {
-  color: var(--color-red);
+  color: var(--color-error-text);
   font-weight: 500;
   margin: 0.5rem 0 0;
 }
