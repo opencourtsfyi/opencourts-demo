@@ -1,3 +1,4 @@
+import hashlib
 import json
 from unittest.mock import MagicMock, patch
 
@@ -311,7 +312,7 @@ class TestBronzeToSilverExtractor:
         BronzeToSilverExtractor(input_dir, output_dir, prov_dir).extract_all()
 
         assert [c.args[0].name for c in mock_open.call_args_list] == ["a.pdf", "b.pdf"]
-        assert sorted(p.name for p in output_dir.iterdir()) == ["a.csv", "b.csv"]
+        assert sorted(p.name for p in output_dir.glob("*.csv")) == ["a.csv", "b.csv"]
         assert read_rows(output_dir / "b.csv")[0]["raw_row"] == ["b"]
 
     def test_ignores_non_pdf_files_and_subdirectories(self, dirs, mock_open):
@@ -338,7 +339,7 @@ class TestBronzeToSilverExtractor:
         extractor.extract_all()
 
         mock_open.assert_called_once_with(input_dir / "UPPER.PDF")
-        assert [p.name for p in output_dir.iterdir()] == ["UPPER.csv"]
+        assert [p.name for p in output_dir.glob("*.csv")] == ["UPPER.csv"]
 
     def test_find_pdf_files_matches_mixed_extension_casings(self, tmp_path):
         """Finds files with both .pdf and .PDF extensions in the same directory."""
@@ -713,6 +714,8 @@ class TestBronzeToSilverExtractor:
         """When duplicate stems exist (e.g. x.PDF and x.pdf), they sort deterministically and extract to x.csv."""
         input_dir, output_dir, prov_dir = dirs
         mock_open.side_effect = lambda p: make_pdf([[[p.name]]])
+        (input_dir / "x.PDF").write_bytes(PDF_BYTES)
+        (input_dir / "x.pdf").write_bytes(PDF_BYTES)
 
         extractor = BronzeToSilverExtractor(input_dir, output_dir, prov_dir)
         with patch.object(
@@ -764,6 +767,7 @@ class TestBronzeToSilverExtractor:
         assert log_after_run1[0]["filename"] == "run1.csv"
         assert log_after_run1[0]["derived_from"] == ["run1.pdf"]
 
+        (input_dir / "run1.pdf").write_bytes(PDF_BYTES + b"changed")
         (input_dir / "run2.pdf").write_bytes(PDF_BYTES)
         extractor.extract_all()
         log_after_run2 = read_provenance(prov_dir)
@@ -771,3 +775,110 @@ class TestBronzeToSilverExtractor:
         assert len(log_after_run2) == 3
         assert log_after_run2[0] == log_after_run1[0]
         assert [r["filename"] for r in log_after_run2] == ["run1.csv", "run1.csv", "run2.csv"]
+
+
+class TestChangeDetection:
+    MANIFEST_NAME = ".extraction_manifest.json"
+
+    def read_manifest(self, output_dir):
+        return json.loads((output_dir / self.MANIFEST_NAME).read_text(encoding="utf-8"))
+
+    def test_first_run_extracts_and_records_hash(self, dirs, mock_open):
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "a.pdf").write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([[["x"]]])
+
+        BronzeToSilverExtractor(input_dir, output_dir, prov_dir).extract_all()
+
+        assert (output_dir / "a.csv").exists()
+        assert self.read_manifest(output_dir) == {"a.pdf": hashlib.sha256(PDF_BYTES).hexdigest()}
+
+    def test_unchanged_pdf_with_existing_output_is_skipped(self, dirs, mock_open, mock_logger):
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "a.pdf").write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([[["x"]]])
+        extractor = BronzeToSilverExtractor(input_dir, output_dir, prov_dir)
+        extractor.extract_all()
+        mock_open.reset_mock()
+
+        output_files = extractor.extract_all()
+
+        mock_open.assert_not_called()
+        assert output_files == [output_dir / "a.csv"]
+        info_messages = [c[0][0] for c in mock_logger.info.call_args_list]
+        assert "⏭️ Skipping: a.pdf (already extracted and unchanged)" in info_messages
+
+    def test_changed_pdf_is_re_extracted_and_hash_updated(self, dirs, mock_open):
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "a.pdf").write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([[["old"]]])
+        extractor = BronzeToSilverExtractor(input_dir, output_dir, prov_dir)
+        extractor.extract_all()
+        changed_bytes = PDF_BYTES + b"changed"
+        (input_dir / "a.pdf").write_bytes(changed_bytes)
+        mock_open.return_value = make_pdf([[["new"]]])
+
+        extractor.extract_all()
+
+        assert read_rows(output_dir / "a.csv")[0]["raw_row"] == ["new"]
+        assert self.read_manifest(output_dir)["a.pdf"] == hashlib.sha256(changed_bytes).hexdigest()
+
+    def test_missing_output_triggers_re_extraction(self, dirs, mock_open):
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "a.pdf").write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([[["x"]]])
+        extractor = BronzeToSilverExtractor(input_dir, output_dir, prov_dir)
+        extractor.extract_all()
+        (output_dir / "a.csv").unlink()
+
+        extractor.extract_all()
+
+        assert (output_dir / "a.csv").exists()
+
+    def test_overwrite_existing_forces_re_extraction(self, dirs, mock_open):
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "a.pdf").write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([[["x"]]])
+        BronzeToSilverExtractor(input_dir, output_dir, prov_dir).extract_all()
+        mock_open.reset_mock()
+
+        BronzeToSilverExtractor(input_dir, output_dir, prov_dir, overwrite_existing=True).extract_all()
+
+        mock_open.assert_called_once()
+
+    def test_failed_extraction_does_not_record_hash(self, dirs, mock_open):
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "a.pdf").write_bytes(PDF_BYTES)
+        mock_open.side_effect = RuntimeError("boom")
+
+        with pytest.raises(RuntimeError):
+            BronzeToSilverExtractor(input_dir, output_dir, prov_dir).extract_all()
+
+        assert not (output_dir / self.MANIFEST_NAME).exists()
+
+    def test_failed_re_extraction_keeps_previous_hash(self, dirs, mock_open):
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "a.pdf").write_bytes(PDF_BYTES)
+        mock_open.return_value = make_pdf([[["x"]]])
+        extractor = BronzeToSilverExtractor(input_dir, output_dir, prov_dir)
+        extractor.extract_all()
+        (input_dir / "a.pdf").write_bytes(PDF_BYTES + b"changed")
+        mock_open.side_effect = RuntimeError("boom")
+
+        with pytest.raises(RuntimeError):
+            extractor.extract_all()
+
+        assert self.read_manifest(output_dir)["a.pdf"] == hashlib.sha256(PDF_BYTES).hexdigest()
+
+    @pytest.mark.parametrize("content", ["not json", "[1, 2]"])
+    def test_corrupted_manifest_is_treated_as_empty(self, dirs, mock_open, content):
+        input_dir, output_dir, prov_dir = dirs
+        (input_dir / "a.pdf").write_bytes(PDF_BYTES)
+        output_dir.mkdir()
+        (output_dir / "a.csv").write_text("stale")
+        (output_dir / self.MANIFEST_NAME).write_text(content)
+        mock_open.return_value = make_pdf([[["x"]]])
+
+        BronzeToSilverExtractor(input_dir, output_dir, prov_dir).extract_all()
+
+        assert read_rows(output_dir / "a.csv")[0]["raw_row"] == ["x"]

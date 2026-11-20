@@ -19,6 +19,7 @@
     "cli_help_overwrite_existing": "Overwrite existing downloaded files instead of skipping them."
   },
   "pdf_extraction": {
+    "log_skip_unchanged": "⏭️ Skipping: {filename} (already extracted and unchanged)",
     "log_no_table_found": "No table found on page {table_index} of {filename}, skipping",
     "log_saved": "Saved {filename}",
     "log_starting_extraction": "Starting extraction on: {filename}"
