@@ -1,0 +1,11 @@
+[run]
+source = src
+omit =
+    tests/*
+    .venv/*
+    *.toml
+    *.ini
+
+[report]
+show_missing = True
+fail_under = 70

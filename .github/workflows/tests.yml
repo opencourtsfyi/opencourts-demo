@@ -63,7 +63,7 @@ jobs:
         working-directory: etl
         run: |
           uv run coverage run -m pytest -v
-          uv run coverage report -m --fail-under=70
+          uv run coverage report -m
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
