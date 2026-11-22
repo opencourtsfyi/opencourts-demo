@@ -1,4 +1,4 @@
-name: UI/UX Lighthouse & Accessibility Test
+name: UI/UX Lighthouse Tests
 
 on:
   pull_request:
@@ -6,7 +6,6 @@ on:
     paths:
       - 'frontend/**'
       - '.github/workflows/ui-qa.yml'
-      - '.lighthouserc.json'
 
 permissions:
   contents: read
@@ -44,4 +43,4 @@ jobs:
             http://localhost:3000/
           uploadArtifacts: true
           temporaryPublicStorage: true
-          configPath: ./.lighthouserc.json
+          configPath: ./frontend/.lighthouserc.json
