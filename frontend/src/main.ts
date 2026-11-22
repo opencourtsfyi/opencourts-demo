@@ -3,6 +3,7 @@ import {
   renderClearancePage,
   type ClearancePageOptions,
 } from "./components/ClearancePage";
+import type { ScTopology } from "./components/ChoroplethMap";
 import { t } from "./i18n";
 import {
   aggregateClearanceRates,
@@ -36,6 +37,7 @@ export function renderApp(
 export async function initApp(rootElement: HTMLElement): Promise<void> {
   let currentDateRange: DateRangeFilter = getDefaultDateRange();
   let loadedRecords: GoldCaseloadRecord[] = [];
+  let loadedTopology: ScTopology | undefined;
   let availableRange: DateRangeFilter | undefined;
 
   function updateView(): void {
@@ -47,6 +49,7 @@ export async function initApp(rootElement: HTMLElement): Promise<void> {
       dateRange: currentDateRange,
       availableRange,
       disabled: isDataEmpty,
+      topology: loadedTopology,
       onDateRangeChange: (newRange) => {
         currentDateRange = newRange;
         updateView();
@@ -61,7 +64,12 @@ export async function initApp(rootElement: HTMLElement): Promise<void> {
   });
 
   try {
-    loadedRecords = await loadGoldCaseloadRecords();
+    const [records, topologyModule] = await Promise.all([
+      loadGoldCaseloadRecords(),
+      import("./data/sc-counties-topo.json"),
+    ]);
+    loadedRecords = records;
+    loadedTopology = topologyModule.default as unknown as ScTopology;
     const bounds = getDataDateBounds(loadedRecords);
     if (bounds) {
       availableRange = bounds;

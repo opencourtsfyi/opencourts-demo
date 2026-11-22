@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderClearancePage } from "./ClearancePage";
+import type { ScTopology } from "./ChoroplethMap";
+import scTopologyJson from "../data/sc-counties-topo.json";
 import { t } from "../i18n";
 import type { CountyClearanceSummary } from "../services/clearanceData";
+
+const topology = scTopologyJson as unknown as ScTopology;
 
 describe("ClearancePage component", () => {
   let root: HTMLElement;
@@ -28,7 +32,7 @@ describe("ClearancePage component", () => {
   });
 
   it("renders the color legend with swatch indicators", () => {
-    renderClearancePage(root, { summaries: sampleSummaries });
+    renderClearancePage(root, { summaries: sampleSummaries, topology });
 
     const legendItems = Array.from(root.querySelectorAll(".legend-item")).map(
       (el) => el.textContent,
@@ -46,7 +50,7 @@ describe("ClearancePage component", () => {
   });
 
   it("renders both the map and table inside the layout container", () => {
-    renderClearancePage(root, { summaries: sampleSummaries });
+    renderClearancePage(root, { summaries: sampleSummaries, topology });
 
     expect(root.querySelector(".map-box svg.choropleth-svg")).not.toBeNull();
     expect(
@@ -217,7 +221,7 @@ describe("ClearancePage component", () => {
 
   describe("bi-directional map and table selection synchronization", () => {
     it("clicking a county path on the map visually highlights both the map path and corresponding table row with .is-selected and aria-selected='true'", () => {
-      renderClearancePage(root, { summaries: sampleSummaries });
+      renderClearancePage(root, { summaries: sampleSummaries, topology });
 
       const aikenPath = root.querySelector<SVGPathElement>(
         'path[data-county="Aiken"]',
@@ -254,7 +258,7 @@ describe("ClearancePage component", () => {
     });
 
     it("does not scroll corresponding table row into view when county is selected on the map", () => {
-      renderClearancePage(root, { summaries: sampleSummaries });
+      renderClearancePage(root, { summaries: sampleSummaries, topology });
 
       const aikenRow = Array.from(
         root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
@@ -275,7 +279,7 @@ describe("ClearancePage component", () => {
     });
 
     it("clicking a table row visually highlights both the table row and corresponding map path with .is-selected and aria-selected='true'", () => {
-      renderClearancePage(root, { summaries: sampleSummaries });
+      renderClearancePage(root, { summaries: sampleSummaries, topology });
 
       const aikenRow = Array.from(
         root.querySelectorAll<HTMLTableRowElement>("tr.county-row"),
@@ -297,7 +301,7 @@ describe("ClearancePage component", () => {
     });
 
     it("clicking an already-selected county on the map clears selection on both map and table", () => {
-      renderClearancePage(root, { summaries: sampleSummaries });
+      renderClearancePage(root, { summaries: sampleSummaries, topology });
 
       const aikenPath = root.querySelector<SVGPathElement>(
         'path[data-county="Aiken"]',
@@ -323,7 +327,7 @@ describe("ClearancePage component", () => {
     });
 
     it("clicking an already-selected county row in the table clears selection on both map and table", () => {
-      renderClearancePage(root, { summaries: sampleSummaries });
+      renderClearancePage(root, { summaries: sampleSummaries, topology });
 
       const aikenPath = root.querySelector<SVGPathElement>(
         'path[data-county="Aiken"]',
@@ -349,7 +353,7 @@ describe("ClearancePage component", () => {
     });
 
     it("clicking anywhere outside the map and table clears the selection", () => {
-      renderClearancePage(root, { summaries: sampleSummaries });
+      renderClearancePage(root, { summaries: sampleSummaries, topology });
 
       const aikenPath = root.querySelector<SVGPathElement>(
         'path[data-county="Aiken"]',
@@ -376,7 +380,7 @@ describe("ClearancePage component", () => {
     });
 
     it("supports keyboard selection using Enter and Space on map paths and table rows", () => {
-      renderClearancePage(root, { summaries: sampleSummaries });
+      renderClearancePage(root, { summaries: sampleSummaries, topology });
 
       const aikenPath = root.querySelector<SVGPathElement>(
         'path[data-county="Aiken"]',
@@ -404,7 +408,7 @@ describe("ClearancePage component", () => {
     });
 
     it("maintains a unified selected county state so selecting another county switches selection", () => {
-      renderClearancePage(root, { summaries: sampleSummaries });
+      renderClearancePage(root, { summaries: sampleSummaries, topology });
 
       const aikenPath = root.querySelector<SVGPathElement>(
         'path[data-county="Aiken"]',
@@ -441,6 +445,7 @@ describe("ClearancePage component", () => {
     it("clears county selection on map and table when interacting with date range dropdowns", () => {
       renderClearancePage(root, {
         summaries: sampleSummaries,
+        topology,
         dateRange: {
           start: { year: 2024, month: 7 },
           end: { year: 2025, month: 6 },
@@ -474,7 +479,7 @@ describe("ClearancePage component", () => {
     });
 
     it("[A11y] clears active county selection on map and table when Escape key is pressed", () => {
-      renderClearancePage(root, { summaries: sampleSummaries });
+      renderClearancePage(root, { summaries: sampleSummaries, topology });
 
       const aikenPath = root.querySelector<SVGPathElement>(
         'path[data-county="Aiken"]',
@@ -505,7 +510,7 @@ describe("ClearancePage component", () => {
     it("[A11y] mounts the map tooltip inside the main landmark", () => {
       document.body.appendChild(root);
       try {
-        renderClearancePage(root, { summaries: sampleSummaries });
+        renderClearancePage(root, { summaries: sampleSummaries, topology });
 
         const main = root.querySelector("main");
         expect(main).not.toBeNull();

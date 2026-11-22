@@ -3,7 +3,6 @@ import { select } from "d3-selection";
 import { feature } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
-import scTopologyJson from "../data/sc-counties-topo.json";
 import {
   getClearanceStatus,
   MAP_DIMENSIONS,
@@ -28,7 +27,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 
 export function renderChoroplethMap(
   summaries: readonly CountyClearanceSummary[],
-  topology: ScTopology = scTopologyJson as unknown as ScTopology,
+  topology?: ScTopology,
   dateRange?: DateRangeFilter,
   selectedCounty?: string | null,
   onSelectCounty?: (county: string | null) => void,
@@ -37,17 +36,6 @@ export function renderChoroplethMap(
   for (const item of summaries) {
     rateByCounty.set(item.county.toLowerCase(), item.clearanceRate);
   }
-
-  const geojson = feature(
-    topology,
-    topology.objects.counties,
-  ) as FeatureCollection<Geometry, CountyProperties>;
-
-  const projection = geoMercator().fitSize(
-    [MAP_DIMENSIONS.WIDTH, MAP_DIMENSIONS.HEIGHT],
-    geojson,
-  );
-  const pathGenerator = geoPath(projection);
 
   const titleText = dateRange
     ? `${t("mapTitle")} (${formatDateRange(dateRange.start, dateRange.end)})`
@@ -130,8 +118,23 @@ export function renderChoroplethMap(
     .attr("r", 1.5)
     .attr("fill", "rgba(255, 255, 255, 0.45)");
 
-  const tooltip = new MapTooltip();
   const countyGroup = svg.append("g").attr("class", "counties-layer");
+  if (!topology) {
+    return svgElement;
+  }
+
+  const geojson = feature(
+    topology,
+    topology.objects.counties,
+  ) as FeatureCollection<Geometry, CountyProperties>;
+
+  const projection = geoMercator().fitSize(
+    [MAP_DIMENSIONS.WIDTH, MAP_DIMENSIONS.HEIGHT],
+    geojson,
+  );
+  const pathGenerator = geoPath(projection);
+
+  const tooltip = new MapTooltip();
 
   countyGroup
     .selectAll<SVGPathElement, Feature<Geometry, CountyProperties>>(
