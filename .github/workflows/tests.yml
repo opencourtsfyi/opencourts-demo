@@ -64,6 +64,7 @@ jobs:
         run: |
           uv run coverage run -m pytest -v
           uv run coverage report -m
+          uv run coverage xml
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -89,3 +90,13 @@ jobs:
       - name: Run frontend tests
         working-directory: frontend
         run: npm test
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' }}
+        with:
+          name: coverage-reports
+          path: |
+            etl/coverage.xml
+            frontend/coverage/lcov.info
+          retention-days: 30
