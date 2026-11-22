@@ -1,0 +1,47 @@
+name: UI/UX Lighthouse & Accessibility Test
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse-and-a11y:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'frontend/.node-version'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies & build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Start preview server
+        working-directory: frontend
+        run: |
+          nohup npm run preview -- --port 3000 --strictPort > /tmp/preview.log 2>&1 &
+          npx --yes wait-on http://localhost:3000
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            http://localhost:3000/
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          configPath: ./.lighthouserc.json
+
+      - name: Run axe-core Accessibility Check
+        working-directory: frontend
+        run: npx --yes @axe-core/cli http://localhost:3000 --exit
