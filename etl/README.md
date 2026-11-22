@@ -50,17 +50,18 @@ source PDFs.
 
 ## Installation
 
+Install [uv](https://docs.astral.sh/uv/) and sync the project environment (Python version is pinned in `.python-version` and dependencies are locked in `uv.lock`):
+
 ```bash
-pip install -r requirements.txt
+uv sync --locked
 ```
 
-Requires Python 3.10 or later (uses the walrus operator and modern
-`pathlib` conventions).
+`uv` manages a project-local `.venv` automatically without modifying your system Python.
 
 The downloader uses `python-magic` to identify PDF content. On Windows,
-`python-magic-bin` supplies the required libmagic binary. On macOS and
-Linux, install the system `libmagic` library before installing the Python
-requirements.
+`python-magic-standalone` supplies the required libmagic binary. On macOS and
+Linux, install the system `libmagic` library (`brew install libmagic` or
+`sudo apt-get install libmagic1`) before running the pipeline.
 
 ## Usage
 
@@ -199,8 +200,8 @@ The ETL reads these values from the process environment; it does not load
 process, and later calls do not replace that configuration.
 
 ## Testing
-To run the ETL tests, install the developer dependencies and run pytest:
+To run the ETL tests, sync the dev dependencies and run pytest via `uv`:
 ```bash
-pip install -r requirements-dev.txt
-pytest
+uv sync --locked
+uv run pytest
 ```

@@ -1,0 +1,25 @@
+[project]
+name = "opencourts-etl"
+version = "0.1.0"
+description = "Extract-transform-load pipeline for South Carolina probate caseload reports."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "requests==2.34.2",
+    "pdfplumber==0.11.10",
+    "pandas==3.0.6",
+    "pyarrow==25.0.1",
+    "tenacity==9.2.1",
+    "python-magic==0.4.27; sys_platform != 'win32'",
+    "python-magic-standalone==0.4.28; sys_platform == 'win32'",
+    "pydantic==2.14.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "time-machine==3.5.1",
+    "pytest-cov",
+    "ruff==0.17.3",
+    "ty==0.0.95",
+]

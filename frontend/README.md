@@ -13,7 +13,7 @@ Frontend single-page application for visualizing South Carolina probate caseload
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v22+, see `.node-version`)
+- [Node.js](https://nodejs.org/) (v22+, pinned in `.node-version` — run `fnm use` to switch automatically)
 - [npm](https://www.npmjs.com/) (bundled with Node.js)
 
 ### Installation

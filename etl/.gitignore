@@ -22,13 +22,6 @@ coverage.xml
 .venv
 env/
 
-# UV artifacts. Ignoring for now since we haven't discussed
-# managing python version and dependencies as a team yet.
-# See Github issue #33
-.python-version
-pyproject.toml 
-uv.lock
-
 # Editors
 .idea
 .project
