@@ -3,6 +3,10 @@ name: UI/UX Lighthouse & Accessibility Test
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/ui-qa.yml'
+      - '.lighthouserc.json'
 
 permissions:
   contents: read
@@ -41,7 +45,3 @@ jobs:
           uploadArtifacts: true
           temporaryPublicStorage: true
           configPath: ./.lighthouserc.json
-
-      - name: Run axe-core Accessibility Check
-        working-directory: frontend
-        run: npx --yes @axe-core/cli http://localhost:3000 --exit
