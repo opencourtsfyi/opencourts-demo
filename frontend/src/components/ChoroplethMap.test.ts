@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderChoroplethMap } from "./ChoroplethMap";
+import { renderChoroplethMap, type ScTopology } from "./ChoroplethMap";
+import scTopologyJson from "../data/sc-counties-topo.json";
 import { MAP_DIMENSIONS } from "../constants/clearanceThresholds";
 import { t } from "../../src/i18n";
 import type { CountyClearanceSummary } from "../services/clearanceData";
+
+const topology = scTopologyJson as unknown as ScTopology;
 
 describe("ChoroplethMap component", () => {
   const sampleSummaries: CountyClearanceSummary[] = [
@@ -12,7 +15,7 @@ describe("ChoroplethMap component", () => {
   ];
 
   it("renders SVG with correct attributes and accessibility roles", () => {
-    const svg = renderChoroplethMap(sampleSummaries);
+    const svg = renderChoroplethMap(sampleSummaries, topology);
     expect(svg.tagName.toLowerCase()).toBe("svg");
     expect(svg.getAttribute("viewBox")).toBe(
       `0 0 ${MAP_DIMENSIONS.WIDTH} ${MAP_DIMENSIONS.HEIGHT}`,
@@ -33,13 +36,13 @@ describe("ChoroplethMap component", () => {
   });
 
   it("renders paths for all 46 South Carolina counties", () => {
-    const svg = renderChoroplethMap(sampleSummaries);
+    const svg = renderChoroplethMap(sampleSummaries, topology);
     const paths = svg.querySelectorAll("path.county-path");
     expect(paths).toHaveLength(46);
   });
 
   it("assigns clearance status classes to county paths based on rates", () => {
-    const svg = renderChoroplethMap(sampleSummaries);
+    const svg = renderChoroplethMap(sampleSummaries, topology);
 
     const abbevillePath = svg.querySelector('path[data-county="Abbeville"]');
     const aikenPath = svg.querySelector('path[data-county="Aiken"]');
@@ -53,7 +56,7 @@ describe("ChoroplethMap component", () => {
   });
 
   it("renders accessible aria-labels on county paths", () => {
-    const svg = renderChoroplethMap(sampleSummaries);
+    const svg = renderChoroplethMap(sampleSummaries, topology);
     const aikenLabel = svg
       .querySelector('path[data-county="Aiken"]')
       ?.getAttribute("aria-label");
@@ -72,7 +75,7 @@ describe("ChoroplethMap component", () => {
     };
     const svg = (renderChoroplethMap as any)(
       sampleSummaries,
-      undefined,
+      topology,
       dateRange,
     );
     const textContent = svg.textContent || svg.getAttribute("aria-label") || "";
@@ -81,7 +84,7 @@ describe("ChoroplethMap component", () => {
 
   describe("interactivity, selection, and accessibility", () => {
     it("renders county paths with keyboard focusability and initial aria-pressed attribute", () => {
-      const svg = renderChoroplethMap(sampleSummaries);
+      const svg = renderChoroplethMap(sampleSummaries, topology);
       const paths = svg.querySelectorAll<SVGPathElement>("path.county-path");
 
       expect(paths.length).toBeGreaterThan(0);
@@ -95,7 +98,7 @@ describe("ChoroplethMap component", () => {
     it("applies is-selected class and aria-pressed='true' to the path matching selectedCounty", () => {
       const svg: SVGSVGElement = (renderChoroplethMap as any)(
         sampleSummaries,
-        undefined,
+        topology,
         undefined,
         "Aiken",
       );
@@ -114,7 +117,7 @@ describe("ChoroplethMap component", () => {
       const onSelectCounty = vi.fn();
       const svg: SVGSVGElement = (renderChoroplethMap as any)(
         sampleSummaries,
-        undefined,
+        topology,
         undefined,
         null,
         onSelectCounty,
@@ -133,7 +136,7 @@ describe("ChoroplethMap component", () => {
       const onSelectCounty = vi.fn();
       const svg: SVGSVGElement = (renderChoroplethMap as any)(
         sampleSummaries,
-        undefined,
+        topology,
         undefined,
         "Aiken",
         onSelectCounty,
@@ -152,7 +155,7 @@ describe("ChoroplethMap component", () => {
       const onSelectCounty = vi.fn();
       const svg: SVGSVGElement = (renderChoroplethMap as any)(
         sampleSummaries,
-        undefined,
+        topology,
         undefined,
         null,
         onSelectCounty,
@@ -193,7 +196,7 @@ describe("ChoroplethMap component", () => {
     });
 
     it("mirrors county name and clearance rate in the county path aria-label for accessibility", () => {
-      const svg = renderChoroplethMap(sampleSummaries);
+      const svg = renderChoroplethMap(sampleSummaries, topology);
       container.appendChild(svg);
 
       const aikenPath = svg.querySelector('path[data-county="Aiken"]');
@@ -204,7 +207,7 @@ describe("ChoroplethMap component", () => {
     });
 
     it("displays a dynamic tooltip with county name and clearance rate percentage on mouseover", () => {
-      const svg = renderChoroplethMap(sampleSummaries);
+      const svg = renderChoroplethMap(sampleSummaries, topology);
       container.appendChild(svg);
 
       const aikenPath = svg.querySelector<SVGPathElement>(
@@ -229,7 +232,7 @@ describe("ChoroplethMap component", () => {
     });
 
     it("displays county name and N/A in the tooltip for counties with no clearance data", () => {
-      const svg = renderChoroplethMap(sampleSummaries);
+      const svg = renderChoroplethMap(sampleSummaries, topology);
       container.appendChild(svg);
 
       const pickensPath = svg.querySelector<SVGPathElement>(
@@ -254,7 +257,7 @@ describe("ChoroplethMap component", () => {
     });
 
     it("updates tooltip position when moving cursor (mousemove) over a county path", () => {
-      const svg = renderChoroplethMap(sampleSummaries);
+      const svg = renderChoroplethMap(sampleSummaries, topology);
       container.appendChild(svg);
 
       const aikenPath = svg.querySelector<SVGPathElement>(
@@ -289,7 +292,7 @@ describe("ChoroplethMap component", () => {
     });
 
     it("hides the tooltip when the mouse leaves the county path (mouseout)", () => {
-      const svg = renderChoroplethMap(sampleSummaries);
+      const svg = renderChoroplethMap(sampleSummaries, topology);
       container.appendChild(svg);
 
       const aikenPath = svg.querySelector<SVGPathElement>(
@@ -321,7 +324,7 @@ describe("ChoroplethMap component", () => {
     });
 
     it("displays tooltip on focus and hides on blur for keyboard navigation parity", () => {
-      const svg = renderChoroplethMap(sampleSummaries);
+      const svg = renderChoroplethMap(sampleSummaries, topology);
       container.appendChild(svg);
 
       const aikenPath = svg.querySelector<SVGPathElement>(

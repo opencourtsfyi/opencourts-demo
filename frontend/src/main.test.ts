@@ -93,4 +93,25 @@ describe("initApp", () => {
     );
     expect(root.textContent).toContain(t("noRecordsFound"));
   });
+
+  it("loads sc-counties-topo.json dynamically instead of rendering county paths synchronously on init", async () => {
+    let resolveRecords!: (records: GoldCaseloadRecord[]) => void;
+    const pendingRecords = new Promise<GoldCaseloadRecord[]>((resolve) => {
+      resolveRecords = resolve;
+    });
+
+    vi.spyOn(
+      clearanceDataService,
+      "loadGoldCaseloadRecords",
+    ).mockReturnValueOnce(pendingRecords);
+
+    const initPromise = initApp(root);
+
+    expect(root.querySelectorAll("path.county-path")).toHaveLength(0);
+
+    resolveRecords([]);
+    await initPromise;
+
+    expect(root.querySelectorAll("path.county-path")).toHaveLength(46);
+  });
 });
