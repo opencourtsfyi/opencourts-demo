@@ -11,7 +11,9 @@ test.describe("Map View", () => {
     await expect(
       page.getByRole("heading", { name: "SC County Probate Clearance Rates" }),
     ).toBeVisible();
-    await expect(page.getByRole("heading", { name: "County Probate Clearance Rate Map" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "County Probate Clearance Rate Map" }),
+    ).toBeVisible();
 
     const svgMap = page.locator("svg.choropleth-svg");
     await expect(svgMap).toBeVisible();
@@ -23,7 +25,9 @@ test.describe("Map View", () => {
 
     // Legend is at the bottom of the map box
     const svgBox = await svgMap.boundingBox();
-    const legendBox = await page.locator(".map-box .clearance-legend").boundingBox();
+    const legendBox = await page
+      .locator(".map-box .clearance-legend")
+      .boundingBox();
     expect(svgBox).not.toBeNull();
     expect(legendBox).not.toBeNull();
     if (svgBox && legendBox) {
@@ -95,15 +99,79 @@ test.describe("Map View", () => {
           contentType: "application/json",
           body: JSON.stringify([
             // Aiken: 2 of 3 months reported (Partial) with DNR in Aug
-            { file: "t.csv", category: "Estate", year: 2025, month: 7, county: "Aiken", metric: "Added", value: 50 },
-            { file: "t.csv", category: "Estate", year: 2025, month: 7, county: "Aiken", metric: "Disposed", value: 45 },
-            { file: "t.csv", category: "Estate", year: 2025, month: 8, county: "Aiken", metric: "Added", value: "DNR" },
-            { file: "t.csv", category: "Estate", year: 2025, month: 8, county: "Aiken", metric: "Disposed", value: "DNR" },
-            { file: "t.csv", category: "Estate", year: 2025, month: 9, county: "Aiken", metric: "Added", value: 50 },
-            { file: "t.csv", category: "Estate", year: 2025, month: 9, county: "Aiken", metric: "Disposed", value: 55 },
+            {
+              file: "t.csv",
+              category: "Estate",
+              year: 2025,
+              month: 7,
+              county: "Aiken",
+              metric: "Added",
+              value: 50,
+            },
+            {
+              file: "t.csv",
+              category: "Estate",
+              year: 2025,
+              month: 7,
+              county: "Aiken",
+              metric: "Disposed",
+              value: 45,
+            },
+            {
+              file: "t.csv",
+              category: "Estate",
+              year: 2025,
+              month: 8,
+              county: "Aiken",
+              metric: "Added",
+              value: "DNR",
+            },
+            {
+              file: "t.csv",
+              category: "Estate",
+              year: 2025,
+              month: 8,
+              county: "Aiken",
+              metric: "Disposed",
+              value: "DNR",
+            },
+            {
+              file: "t.csv",
+              category: "Estate",
+              year: 2025,
+              month: 9,
+              county: "Aiken",
+              metric: "Added",
+              value: 50,
+            },
+            {
+              file: "t.csv",
+              category: "Estate",
+              year: 2025,
+              month: 9,
+              county: "Aiken",
+              metric: "Disposed",
+              value: 55,
+            },
             // Barnwell: 1 of 3 months reported (<50% -> Insufficient Data)
-            { file: "t.csv", category: "Estate", year: 2025, month: 7, county: "Barnwell", metric: "Added", value: 20 },
-            { file: "t.csv", category: "Estate", year: 2025, month: 7, county: "Barnwell", metric: "Disposed", value: 10 },
+            {
+              file: "t.csv",
+              category: "Estate",
+              year: 2025,
+              month: 7,
+              county: "Barnwell",
+              metric: "Added",
+              value: 20,
+            },
+            {
+              file: "t.csv",
+              category: "Estate",
+              year: 2025,
+              month: 7,
+              county: "Barnwell",
+              metric: "Disposed",
+              value: 10,
+            },
           ]),
         });
       });

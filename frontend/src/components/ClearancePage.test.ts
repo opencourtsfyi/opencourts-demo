@@ -87,9 +87,9 @@ describe("ClearancePage component", () => {
 
     const legendList = root.querySelector(".legend-list");
     expect(legendList?.getAttribute("role")).toBe("list");
-    expect(
-      root.querySelectorAll('.legend-item[role="listitem"]').length,
-    ).toBe(5);
+    expect(root.querySelectorAll('.legend-item[role="listitem"]').length).toBe(
+      5,
+    );
 
     const closeBtn =
       drawer?.querySelector<HTMLButtonElement>(".drawer-close-btn");

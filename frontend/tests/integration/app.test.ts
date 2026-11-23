@@ -894,8 +894,9 @@ describe("App Integration", () => {
       // Table is hidden by default and toggles via button
       const toggleBtn =
         root.querySelector<HTMLButtonElement>(".table-toggle-btn");
-      const tableWrapper =
-        root.querySelector<HTMLElement>("#countyTableWrapper");
+      const tableWrapper = root.querySelector<HTMLElement>(
+        "#countyTableWrapper",
+      );
       expect(toggleBtn?.getAttribute("aria-expanded")).toBe("false");
       expect(tableWrapper?.hidden).toBe(true);
       toggleBtn?.click();

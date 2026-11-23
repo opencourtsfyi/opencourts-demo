@@ -68,12 +68,7 @@ export function renderCountyRateTable(
   periodsHeader.scope = "col";
   periodsHeader.textContent = t("tableHeaderReportedPeriods");
 
-  headerRow.append(
-    countyHeader,
-    rateHeader,
-    completenessHeader,
-    periodsHeader,
-  );
+  headerRow.append(countyHeader, rateHeader, completenessHeader, periodsHeader);
   thead.appendChild(headerRow);
 
   const tbody = document.createElement("tbody");
@@ -91,12 +86,11 @@ export function renderCountyRateTable(
   } else {
     for (const item of summaries) {
       const row = document.createElement("tr");
-      const isSufficient =
-        item.isSufficientData ?? item.clearanceRate !== null;
+      const isSufficient = item.isSufficientData ?? item.clearanceRate !== null;
       const statusClass = getClearanceStatus(item.clearanceRate, isSufficient);
       const isSelected = Boolean(
         selectedCounty &&
-          item.county.toLowerCase() === selectedCounty.toLowerCase(),
+        item.county.toLowerCase() === selectedCounty.toLowerCase(),
       );
       row.className = `county-row ${statusClass}${isSelected ? " is-selected" : ""}`;
       row.setAttribute("data-county", item.county);

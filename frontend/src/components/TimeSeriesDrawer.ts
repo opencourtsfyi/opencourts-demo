@@ -155,7 +155,10 @@ function renderTimeSeriesSvg(
   const baselineY = CHART_DIMENSIONS.PADDING_TOP + plotHeight;
   series.forEach((point, idx) => {
     const x = xForIndex(idx);
-    const monthLabel = formatMonthYear({ year: point.year, month: point.month });
+    const monthLabel = formatMonthYear({
+      year: point.year,
+      month: point.month,
+    });
     if (point.isReported && point.clearanceRate !== null) {
       const y = yForRate(point.clearanceRate);
       const circle = document.createElementNS(SVG_NS, "circle");

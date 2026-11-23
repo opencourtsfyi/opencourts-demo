@@ -169,7 +169,7 @@ export function renderChoroplethMap(
       );
       const isSelected = Boolean(
         selectedCounty &&
-          countyName.toLowerCase() === selectedCounty.toLowerCase(),
+        countyName.toLowerCase() === selectedCounty.toLowerCase(),
       );
       return `county-path ${statusClass}${isSelected ? " is-selected" : ""}`;
     })
@@ -185,7 +185,7 @@ export function renderChoroplethMap(
       const countyName = d.properties?.name ?? "";
       const isSelected = Boolean(
         selectedCounty &&
-          countyName.toLowerCase() === selectedCounty.toLowerCase(),
+        countyName.toLowerCase() === selectedCounty.toLowerCase(),
       );
       return isSelected ? "true" : "false";
     })

@@ -64,7 +64,9 @@ describe("TimeSeriesDrawer component", () => {
     const segments = drawer.querySelectorAll("path.chart-line-segment");
     expect(segments).toHaveLength(2);
 
-    const reportedPoints = drawer.querySelectorAll("circle.chart-point-reported");
+    const reportedPoints = drawer.querySelectorAll(
+      "circle.chart-point-reported",
+    );
     expect(reportedPoints).toHaveLength(3);
 
     const missingMarkers = drawer.querySelectorAll("g.chart-point-missing");

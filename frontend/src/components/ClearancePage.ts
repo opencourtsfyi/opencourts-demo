@@ -218,10 +218,7 @@ export function renderClearancePage(
     }
   }
 
-  function syncSelection(
-    county: string | null,
-    manageFocus = false,
-  ): void {
+  function syncSelection(county: string | null, manageFocus = false): void {
     if (
       county !== null &&
       currentSelectedCounty === null &&

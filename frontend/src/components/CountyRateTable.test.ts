@@ -92,18 +92,18 @@ describe("CountyRateTable component", () => {
     );
     expect(rows[0].querySelector(".county-rate-cell")?.textContent).toBe("22%");
     expect(rows[0].classList.contains("tier-1")).toBe(true);
-    expect(rows[0].querySelector(".county-completeness-cell")?.textContent).toBe(
-      t("completenessComplete"),
-    );
+    expect(
+      rows[0].querySelector(".county-completeness-cell")?.textContent,
+    ).toBe(t("completenessComplete"));
 
     expect(rows[1].querySelector(".county-name-cell")?.textContent).toBe(
       "Aiken",
     );
     expect(rows[1].querySelector(".county-rate-cell")?.textContent).toBe("88%");
     expect(rows[1].classList.contains("tier-2")).toBe(true);
-    expect(rows[1].querySelector(".county-completeness-cell")?.textContent).toBe(
-      t("completenessPartial"),
-    );
+    expect(
+      rows[1].querySelector(".county-completeness-cell")?.textContent,
+    ).toBe(t("completenessPartial"));
     expect(rows[1].querySelector(".county-periods-cell")?.textContent).toBe(
       "9/12 (75%)",
     );
