@@ -1,4 +1,6 @@
 import {
+  COMPLETENESS_CONFIG,
+  CompletenessTier,
   DATE_SELECTION_CONSTRAINTS,
   getClearanceStatus,
 } from "../constants/clearanceThresholds";
@@ -9,7 +11,22 @@ import type {
 } from "../services/clearanceData";
 import { formatClearanceRate, formatDateRange } from "../utils/formatters";
 
-const TABLE_COL_SPAN = 2;
+const TABLE_COL_SPAN = 4;
+
+function getCompletenessText(item: CountyClearanceSummary): string {
+  switch (item.completenessTier) {
+    case CompletenessTier.COMPLETE:
+      return t("completenessComplete");
+    case CompletenessTier.PARTIAL:
+      return t("completenessPartial");
+    case CompletenessTier.INSUFFICIENT:
+      return t("completenessInsufficient");
+    default:
+      return item.clearanceRate !== null
+        ? t("completenessComplete")
+        : t("completenessInsufficient");
+  }
+}
 
 export function renderCountyRateTable(
   summaries: readonly CountyClearanceSummary[],
@@ -43,7 +60,20 @@ export function renderCountyRateTable(
   rateHeader.scope = "col";
   rateHeader.textContent = t("tableHeaderRate");
 
-  headerRow.append(countyHeader, rateHeader);
+  const completenessHeader = document.createElement("th");
+  completenessHeader.scope = "col";
+  completenessHeader.textContent = t("tableHeaderCompleteness");
+
+  const periodsHeader = document.createElement("th");
+  periodsHeader.scope = "col";
+  periodsHeader.textContent = t("tableHeaderReportedPeriods");
+
+  headerRow.append(
+    countyHeader,
+    rateHeader,
+    completenessHeader,
+    periodsHeader,
+  );
   thead.appendChild(headerRow);
 
   const tbody = document.createElement("tbody");
@@ -61,10 +91,12 @@ export function renderCountyRateTable(
   } else {
     for (const item of summaries) {
       const row = document.createElement("tr");
-      const statusClass = getClearanceStatus(item.clearanceRate);
+      const isSufficient =
+        item.isSufficientData ?? item.clearanceRate !== null;
+      const statusClass = getClearanceStatus(item.clearanceRate, isSufficient);
       const isSelected = Boolean(
         selectedCounty &&
-        item.county.toLowerCase() === selectedCounty.toLowerCase(),
+          item.county.toLowerCase() === selectedCounty.toLowerCase(),
       );
       row.className = `county-row ${statusClass}${isSelected ? " is-selected" : ""}`;
       row.setAttribute("data-county", item.county);
@@ -111,9 +143,28 @@ export function renderCountyRateTable(
 
       const rateCell = document.createElement("td");
       rateCell.className = `county-rate-cell ${statusClass}`;
-      rateCell.textContent = formatClearanceRate(item.clearanceRate);
+      rateCell.textContent = isSufficient
+        ? formatClearanceRate(item.clearanceRate)
+        : t("insufficientDataLabel");
 
-      row.append(countyCell, rateCell);
+      const completenessCell = document.createElement("td");
+      completenessCell.className = "county-completeness-cell";
+      completenessCell.textContent = getCompletenessText(item);
+
+      const periodsCell = document.createElement("td");
+      periodsCell.className = "county-periods-cell";
+      if (item.totalPeriods !== undefined) {
+        const reported = item.reportedPeriods ?? 0;
+        const pct = Math.round(
+          (item.completenessRatio ?? 0) *
+            COMPLETENESS_CONFIG.PERCENT_MULTIPLIER,
+        );
+        periodsCell.textContent = `${reported}/${item.totalPeriods} (${pct}%)`;
+      } else {
+        periodsCell.textContent = t("noDataLabel");
+      }
+
+      row.append(countyCell, rateCell, completenessCell, periodsCell);
       tbody.appendChild(row);
     }
   }

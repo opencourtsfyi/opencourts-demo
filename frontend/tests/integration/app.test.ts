@@ -133,14 +133,14 @@ describe("App Integration", () => {
     expect(startSelect).not.toBeNull();
     expect(endSelect).not.toBeNull();
 
-    // Select 2023-2024
+    // Select 2023-07 (single reported month in mock)
     if (startSelect && endSelect) {
       startSelect.value = "2023-07";
       startSelect.dispatchEvent(new Event("change", { bubbles: true }));
-      endSelect.value = "2024-06";
+      endSelect.value = "2023-07";
       endSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
-      // Abbeville rate for 2023-2024 is 138%
+      // Abbeville rate for 2023-07 is 138%
       expect(root.querySelector(".county-name-cell")?.textContent).toBe(
         "Abbeville",
       );
@@ -242,10 +242,10 @@ describe("App Integration", () => {
       expect(startSelect.disabled).toBe(false);
       expect(endSelect.disabled).toBe(false);
 
-      // Verify user can select a range with data (July 2023 to June 2024) and see records
+      // Verify user can select a range with data (July 2023) and see records
       startSelect.value = "2023-07";
       startSelect.dispatchEvent(new Event("change", { bubbles: true }));
-      endSelect.value = "2024-06";
+      endSelect.value = "2023-07";
       endSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
       expect(root.querySelector(".county-name-cell")?.textContent).toBe(
@@ -757,8 +757,10 @@ describe("App Integration", () => {
         'path[data-county="Aiken"]',
       );
 
-      expect(abbevillePath?.getAttribute("aria-label")).toBe("Abbeville: 100%");
-      expect(aikenPath?.getAttribute("aria-label")).toBe("Aiken: 88%");
+      expect(abbevillePath?.getAttribute("aria-label")).toContain(
+        "Abbeville: 100%",
+      );
+      expect(aikenPath?.getAttribute("aria-label")).toContain("Aiken: 88%");
     });
 
     it("[A11y] displays tooltip on keyboard focus and hides on blur", async () => {

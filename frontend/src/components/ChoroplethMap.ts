@@ -4,6 +4,7 @@ import { feature } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import {
+  COMPLETENESS_CONFIG,
   getClearanceStatus,
   MAP_DIMENSIONS,
 } from "../constants/clearanceThresholds";
@@ -24,6 +25,46 @@ export type ScTopology = Topology<{
 }>;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
+const PATTERN_SIZE = 8;
+const CENTER_DIVISOR = 2;
+
+function getSummarySufficiency(summary?: CountyClearanceSummary): boolean {
+  if (!summary) {
+    return false;
+  }
+  if (summary.isSufficientData !== undefined) {
+    return summary.isSufficientData;
+  }
+  return summary.clearanceRate !== null;
+}
+
+function formatCompletenessText(summary?: CountyClearanceSummary): string {
+  if (!summary || summary.totalPeriods === undefined) {
+    return t("completenessInsufficient");
+  }
+  const reported = summary.reportedPeriods ?? 0;
+  const total = summary.totalPeriods;
+  const ratio = summary.completenessRatio ?? 0;
+  const percent = Math.round(ratio * COMPLETENESS_CONFIG.PERCENT_MULTIPLIER);
+  return t("completenessSummary")
+    .replace("{reported}", String(reported))
+    .replace("{total}", String(total))
+    .replace("{percent}", String(percent));
+}
+
+function buildRegionLabel(
+  countyName: string,
+  summary?: CountyClearanceSummary,
+): string {
+  const isSufficient = getSummarySufficiency(summary);
+  const rateText = isSufficient
+    ? formatClearanceRate(summary?.clearanceRate ?? null)
+    : t("insufficientDataLabel");
+  if (summary?.totalPeriods !== undefined) {
+    return `${countyName}: ${rateText} (${formatCompletenessText(summary)})`;
+  }
+  return `${countyName}: ${rateText}`;
+}
 
 export function renderChoroplethMap(
   summaries: readonly CountyClearanceSummary[],
@@ -31,10 +72,12 @@ export function renderChoroplethMap(
   dateRange?: DateRangeFilter,
   selectedCounty?: string | null,
   onSelectCounty?: (county: string | null) => void,
+  describedById?: string,
+  labelledById?: string,
 ): SVGSVGElement {
-  const rateByCounty = new Map<string, number | null>();
+  const summaryByCounty = new Map<string, CountyClearanceSummary>();
   for (const item of summaries) {
-    rateByCounty.set(item.county.toLowerCase(), item.clearanceRate);
+    summaryByCounty.set(item.county.toLowerCase(), item);
   }
 
   const titleText = dateRange
@@ -45,11 +88,18 @@ export function renderChoroplethMap(
     : t("mapDesc");
 
   const svgElement = document.createElementNS(SVG_NS, "svg");
+  const ariaLabelledBy = labelledById
+    ? `${labelledById} mapTitle`
+    : "mapTitle mapDesc";
   const svg = select(svgElement)
     .attr("class", "choropleth-svg")
     .attr("viewBox", `0 0 ${MAP_DIMENSIONS.WIDTH} ${MAP_DIMENSIONS.HEIGHT}`)
     .attr("role", "group")
-    .attr("aria-labelledby", "mapTitle mapDesc");
+    .attr("aria-labelledby", ariaLabelledBy);
+
+  if (describedById) {
+    svg.attr("aria-describedby", `mapDesc ${describedById}`);
+  }
 
   svg
     .append("desc")
@@ -58,67 +108,35 @@ export function renderChoroplethMap(
     .text(descText);
 
   const defs = svg.append("defs");
-  // Place <title> inside <defs> so Chrome does not show a native hover tooltip
-  // over our custom MapTooltip while aria-labelledby still resolves #mapTitle.
   defs.append("title").attr("id", "mapTitle").text(titleText);
 
-  const yellowPattern = defs
+  const insufficientPattern = defs
     .append("pattern")
-    .attr("id", "pattern-status-yellow")
-    .attr("width", 8)
-    .attr("height", 8)
+    .attr("id", "pattern-insufficient-data")
+    .attr("width", PATTERN_SIZE)
+    .attr("height", PATTERN_SIZE)
     .attr("patternUnits", "userSpaceOnUse")
     .attr("patternTransform", "rotate(45)");
-  yellowPattern
+  insufficientPattern
     .append("rect")
-    .attr("width", 8)
-    .attr("height", 8)
-    .attr("fill", "var(--color-yellow)");
-  yellowPattern
+    .attr("width", PATTERN_SIZE)
+    .attr("height", PATTERN_SIZE)
+    .attr("fill", "var(--color-insufficient-bg)");
+  insufficientPattern
     .append("line")
     .attr("x1", 0)
     .attr("y1", 0)
     .attr("x2", 0)
-    .attr("y2", 8)
-    .attr("stroke", "rgba(0, 0, 0, 0.22)")
-    .attr("stroke-width", 2);
-
-  const redPattern = defs
-    .append("pattern")
-    .attr("id", "pattern-status-red")
-    .attr("width", 8)
-    .attr("height", 8)
-    .attr("patternUnits", "userSpaceOnUse");
-  redPattern
-    .append("rect")
-    .attr("width", 8)
-    .attr("height", 8)
-    .attr("fill", "var(--color-red)");
-  redPattern
-    .append("path")
-    .attr("d", "M0 0 L8 8 M8 0 L0 8")
-    .attr("stroke", "rgba(255, 255, 255, 0.28)")
-    .attr("stroke-width", 1.5);
-
-  const noDataPattern = defs
-    .append("pattern")
-    .attr("id", "pattern-status-no-data")
-    .attr("width", 8)
-    .attr("height", 8)
-    .attr("patternUnits", "userSpaceOnUse");
-  noDataPattern
-    .append("rect")
-    .attr("width", 8)
-    .attr("height", 8)
-    .attr("fill", "var(--color-no-data)");
-  noDataPattern
-    .append("circle")
-    .attr("cx", 4)
-    .attr("cy", 4)
-    .attr("r", 1.5)
-    .attr("fill", "rgba(255, 255, 255, 0.45)");
+    .attr("y2", PATTERN_SIZE)
+    .attr("stroke", "var(--color-insufficient-stripe)")
+    .attr("stroke-width", 2.5);
 
   const countyGroup = svg.append("g").attr("class", "counties-layer");
+  const calloutGroup = svg
+    .append("g")
+    .attr("class", "callouts-layer")
+    .attr("aria-hidden", "true");
+
   if (!topology) {
     return svgElement;
   }
@@ -133,10 +151,9 @@ export function renderChoroplethMap(
     geojson,
   );
   const pathGenerator = geoPath(projection);
-
   const tooltip = new MapTooltip();
 
-  countyGroup
+  const paths = countyGroup
     .selectAll<SVGPathElement, Feature<Geometry, CountyProperties>>(
       "path.county-path",
     )
@@ -144,11 +161,15 @@ export function renderChoroplethMap(
     .join("path")
     .attr("class", (d) => {
       const countyName = d.properties?.name ?? "";
-      const rate = rateByCounty.get(countyName.toLowerCase()) ?? null;
-      const statusClass = getClearanceStatus(rate);
+      const summary = summaryByCounty.get(countyName.toLowerCase());
+      const isSufficient = getSummarySufficiency(summary);
+      const statusClass = getClearanceStatus(
+        summary?.clearanceRate ?? null,
+        isSufficient,
+      );
       const isSelected = Boolean(
         selectedCounty &&
-        countyName.toLowerCase() === selectedCounty.toLowerCase(),
+          countyName.toLowerCase() === selectedCounty.toLowerCase(),
       );
       return `county-path ${statusClass}${isSelected ? " is-selected" : ""}`;
     })
@@ -157,22 +178,22 @@ export function renderChoroplethMap(
     .attr("role", "button")
     .attr("aria-label", (d) => {
       const countyName = d.properties?.name ?? "";
-      const rate = rateByCounty.get(countyName.toLowerCase()) ?? null;
-      return `${countyName}: ${formatClearanceRate(rate)}`;
+      const summary = summaryByCounty.get(countyName.toLowerCase());
+      return buildRegionLabel(countyName, summary);
     })
     .attr("aria-pressed", (d) => {
       const countyName = d.properties?.name ?? "";
       const isSelected = Boolean(
         selectedCounty &&
-        countyName.toLowerCase() === selectedCounty.toLowerCase(),
+          countyName.toLowerCase() === selectedCounty.toLowerCase(),
       );
       return isSelected ? "true" : "false";
     })
     .attr("d", (d) => pathGenerator(d) ?? "")
     .on("mouseover", (event: MouseEvent, d) => {
       const countyName = d.properties?.name ?? "";
-      const rate = rateByCounty.get(countyName.toLowerCase()) ?? null;
-      tooltip.show(`${countyName}: ${formatClearanceRate(rate)}`, {
+      const summary = summaryByCounty.get(countyName.toLowerCase());
+      tooltip.show(buildRegionLabel(countyName, summary), {
         clientX: event.clientX,
         clientY: event.clientY,
       });
@@ -188,12 +209,9 @@ export function renderChoroplethMap(
     })
     .on("focus", (event: FocusEvent, d) => {
       const countyName = d.properties?.name ?? "";
-      const rate = rateByCounty.get(countyName.toLowerCase()) ?? null;
+      const summary = summaryByCounty.get(countyName.toLowerCase());
       const pathEl = event.currentTarget as SVGPathElement;
-      tooltip.showForElement(
-        `${countyName}: ${formatClearanceRate(rate)}`,
-        pathEl,
-      );
+      tooltip.showForElement(buildRegionLabel(countyName, summary), pathEl);
     })
     .on("blur", () => {
       tooltip.hide();
@@ -214,14 +232,7 @@ export function renderChoroplethMap(
     .on("keydown", (event: KeyboardEvent, d) => {
       if (event.key === "Escape") {
         tooltip.hide();
-        onSelectCounty?.(null);
-        const pathEl = event.currentTarget as SVGPathElement;
-        pathEl.dispatchEvent(
-          new CustomEvent("countySelected", {
-            bubbles: true,
-            detail: { county: null },
-          }),
-        );
+        event.stopPropagation();
         return;
       }
       if (event.key === "Enter" || event.key === " ") {
@@ -239,6 +250,36 @@ export function renderChoroplethMap(
         );
       }
     });
+
+  paths.each(function (d) {
+    const countyName = d.properties?.name ?? "";
+    const summary = summaryByCounty.get(countyName.toLowerCase());
+    if (getSummarySufficiency(summary)) {
+      return;
+    }
+    const centroid = pathGenerator.centroid(d);
+    if (
+      !Number.isFinite(centroid[0]) ||
+      !Number.isFinite(centroid[1]) ||
+      typeof this.getBBox !== "function"
+    ) {
+      return;
+    }
+    const bbox = this.getBBox();
+    if (
+      bbox.width >= MAP_DIMENSIONS.CALLOUT_MIN_WIDTH &&
+      bbox.height >= MAP_DIMENSIONS.CALLOUT_MIN_HEIGHT
+    ) {
+      calloutGroup
+        .append("text")
+        .attr("class", "insufficient-callout")
+        .attr("x", bbox.x + bbox.width / CENTER_DIVISOR)
+        .attr("y", bbox.y + bbox.height / CENTER_DIVISOR)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "central")
+        .text(t("insufficientDataShort"));
+    }
+  });
 
   return svgElement;
 }

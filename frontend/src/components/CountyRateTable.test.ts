@@ -1,14 +1,55 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderCountyRateTable } from "./CountyRateTable";
+import { CompletenessTier } from "../constants/clearanceThresholds";
 import { t } from "../i18n";
 import type { CountyClearanceSummary } from "../services/clearanceData";
 
 describe("CountyRateTable component", () => {
   const sampleSummaries: CountyClearanceSummary[] = [
-    { county: "Abbeville", added: 100, disposed: 22, clearanceRate: 0.22 },
-    { county: "Aiken", added: 100, disposed: 88, clearanceRate: 0.88 },
-    { county: "Charleston", added: 100, disposed: 104, clearanceRate: 1.04 },
-    { county: "Allendale", added: 0, disposed: 0, clearanceRate: null },
+    {
+      county: "Abbeville",
+      added: 100,
+      disposed: 22,
+      clearanceRate: 0.22,
+      reportedPeriods: 12,
+      totalPeriods: 12,
+      completenessRatio: 1,
+      completenessTier: CompletenessTier.COMPLETE,
+      isSufficientData: true,
+    },
+    {
+      county: "Aiken",
+      added: 100,
+      disposed: 88,
+      clearanceRate: 0.88,
+      reportedPeriods: 9,
+      totalPeriods: 12,
+      completenessRatio: 0.75,
+      completenessTier: CompletenessTier.PARTIAL,
+      isSufficientData: true,
+    },
+    {
+      county: "Charleston",
+      added: 100,
+      disposed: 104,
+      clearanceRate: 1.04,
+      reportedPeriods: 12,
+      totalPeriods: 12,
+      completenessRatio: 1,
+      completenessTier: CompletenessTier.COMPLETE,
+      isSufficientData: true,
+    },
+    {
+      county: "Allendale",
+      added: 0,
+      disposed: 0,
+      clearanceRate: null,
+      reportedPeriods: 2,
+      totalPeriods: 12,
+      completenessRatio: 2 / 12,
+      completenessTier: CompletenessTier.INSUFFICIENT,
+      isSufficientData: false,
+    },
   ];
 
   it("renders table headers with localized titles and scope='col'", () => {
@@ -19,6 +60,8 @@ describe("CountyRateTable component", () => {
     expect(headerEls.map((th) => th.textContent)).toEqual([
       t("tableHeaderCounty"),
       t("tableHeaderRate"),
+      t("tableHeaderCompleteness"),
+      t("tableHeaderReportedPeriods"),
     ]);
     expect(headerEls.every((th) => th.scope === "col")).toBe(true);
   });
@@ -39,7 +82,7 @@ describe("CountyRateTable component", () => {
     expect(caption?.textContent).toContain(t("pageTitle"));
   });
 
-  it("renders all county rows with formatted percentages and status classes", () => {
+  it("renders all county rows with formatted percentages, tiers, and completeness", () => {
     const table = renderCountyRateTable(sampleSummaries);
     const rows = Array.from(table.querySelectorAll("tbody tr"));
     expect(rows).toHaveLength(4);
@@ -48,13 +91,22 @@ describe("CountyRateTable component", () => {
       "Abbeville",
     );
     expect(rows[0].querySelector(".county-rate-cell")?.textContent).toBe("22%");
-    expect(rows[0].classList.contains("status-red")).toBe(true);
+    expect(rows[0].classList.contains("tier-1")).toBe(true);
+    expect(rows[0].querySelector(".county-completeness-cell")?.textContent).toBe(
+      t("completenessComplete"),
+    );
 
     expect(rows[1].querySelector(".county-name-cell")?.textContent).toBe(
       "Aiken",
     );
     expect(rows[1].querySelector(".county-rate-cell")?.textContent).toBe("88%");
-    expect(rows[1].classList.contains("status-yellow")).toBe(true);
+    expect(rows[1].classList.contains("tier-2")).toBe(true);
+    expect(rows[1].querySelector(".county-completeness-cell")?.textContent).toBe(
+      t("completenessPartial"),
+    );
+    expect(rows[1].querySelector(".county-periods-cell")?.textContent).toBe(
+      "9/12 (75%)",
+    );
 
     expect(rows[2].querySelector(".county-name-cell")?.textContent).toBe(
       "Charleston",
@@ -62,10 +114,10 @@ describe("CountyRateTable component", () => {
     expect(rows[2].querySelector(".county-rate-cell")?.textContent).toBe(
       "104%",
     );
-    expect(rows[2].classList.contains("status-green")).toBe(true);
+    expect(rows[2].classList.contains("tier-3")).toBe(true);
   });
 
-  it("renders N/A and status-no-data when clearance rate is null", () => {
+  it("renders Insufficient Data when county is below reporting threshold", () => {
     const table = renderCountyRateTable(sampleSummaries);
     const rows = Array.from(table.querySelectorAll("tbody tr"));
     const allendaleRow = rows[3];
@@ -74,9 +126,11 @@ describe("CountyRateTable component", () => {
       "Allendale",
     );
     expect(allendaleRow.querySelector(".county-rate-cell")?.textContent).toBe(
-      "N/A",
+      t("insufficientDataLabel"),
     );
-    expect(allendaleRow.classList.contains("status-no-data")).toBe(true);
+    expect(allendaleRow.classList.contains("status-insufficient-data")).toBe(
+      true,
+    );
   });
 
   it("indicates 'No records found' when there is no data for a given date range", () => {
@@ -89,8 +143,7 @@ describe("CountyRateTable component", () => {
       start: { year: 2024, month: 7 },
       end: { year: 2025, month: 6 },
     };
-    // When dateRange is provided in table options or context
-    const table = (renderCountyRateTable as any)(sampleSummaries, dateRange);
+    const table = renderCountyRateTable(sampleSummaries, dateRange);
     expect(table.textContent).toMatch(/July 2024\s+to\s+June 2025/i);
   });
 
@@ -101,10 +154,9 @@ describe("CountyRateTable component", () => {
     };
 
     const loadingTable = renderCountyRateTable([], dateRange, true);
-    const loadingCaption = loadingTable.querySelector(
-      ".table-date-range-caption",
-    );
-    expect(loadingCaption?.textContent).toBe(t("loadingData"));
+    expect(
+      loadingTable.querySelector(".table-date-range-caption")?.textContent,
+    ).toBe(t("loadingData"));
 
     const loadedTable = renderCountyRateTable(
       sampleSummaries,
@@ -120,8 +172,7 @@ describe("CountyRateTable component", () => {
 
   it("displays no table body rows while loading is in progress", () => {
     const loadingTable = renderCountyRateTable([], undefined, true);
-    const rows = loadingTable.querySelectorAll("tbody tr");
-    expect(rows).toHaveLength(0);
+    expect(loadingTable.querySelectorAll("tbody tr")).toHaveLength(0);
     expect(loadingTable.querySelector(".empty-table-row")).toBeNull();
   });
 
@@ -141,7 +192,7 @@ describe("CountyRateTable component", () => {
     });
 
     it("applies is-selected class and aria-selected='true' to the row matching selectedCounty", () => {
-      const table: HTMLTableElement = (renderCountyRateTable as any)(
+      const table = renderCountyRateTable(
         sampleSummaries,
         undefined,
         false,
@@ -162,14 +213,13 @@ describe("CountyRateTable component", () => {
 
       expect(aikenRow?.classList.contains("is-selected")).toBe(true);
       expect(aikenRow?.getAttribute("aria-selected")).toBe("true");
-
       expect(abbevilleRow?.classList.contains("is-selected")).toBe(false);
       expect(abbevilleRow?.getAttribute("aria-selected")).toBe("false");
     });
 
     it("invokes onSelectCounty callback with county name when an unselected row is clicked", () => {
       const onSelectCounty = vi.fn();
-      const table: HTMLTableElement = (renderCountyRateTable as any)(
+      const table = renderCountyRateTable(
         sampleSummaries,
         undefined,
         false,
@@ -182,7 +232,6 @@ describe("CountyRateTable component", () => {
       ).find(
         (r) => r.querySelector(".county-name-cell")?.textContent === "Aiken",
       );
-      expect(aikenRow).not.toBeNull();
       aikenRow?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
       expect(onSelectCounty).toHaveBeenCalledWith("Aiken");
@@ -190,7 +239,7 @@ describe("CountyRateTable component", () => {
 
     it("invokes onSelectCounty callback with null when the already-selected row is clicked", () => {
       const onSelectCounty = vi.fn();
-      const table: HTMLTableElement = (renderCountyRateTable as any)(
+      const table = renderCountyRateTable(
         sampleSummaries,
         undefined,
         false,
@@ -203,7 +252,6 @@ describe("CountyRateTable component", () => {
       ).find(
         (r) => r.querySelector(".county-name-cell")?.textContent === "Aiken",
       );
-      expect(aikenRow).not.toBeNull();
       aikenRow?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
       expect(onSelectCounty).toHaveBeenCalledWith(null);
@@ -211,7 +259,7 @@ describe("CountyRateTable component", () => {
 
     it("supports keyboard selection on rows using Enter and Space keys", () => {
       const onSelectCounty = vi.fn();
-      const table: HTMLTableElement = (renderCountyRateTable as any)(
+      const table = renderCountyRateTable(
         sampleSummaries,
         undefined,
         false,
@@ -224,7 +272,6 @@ describe("CountyRateTable component", () => {
       ).find(
         (r) => r.querySelector(".county-name-cell")?.textContent === "Aiken",
       );
-      expect(aikenRow).not.toBeNull();
 
       aikenRow?.dispatchEvent(
         new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),

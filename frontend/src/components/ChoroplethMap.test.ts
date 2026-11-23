@@ -27,11 +27,7 @@ describe("ChoroplethMap component", () => {
     );
     expect(svg.querySelector("desc#mapDesc")?.textContent).toBe(t("mapDesc"));
     expect(
-      svg.querySelector("defs pattern#pattern-status-yellow"),
-    ).not.toBeNull();
-    expect(svg.querySelector("defs pattern#pattern-status-red")).not.toBeNull();
-    expect(
-      svg.querySelector("defs pattern#pattern-status-no-data"),
+      svg.querySelector("defs pattern#pattern-insufficient-data"),
     ).not.toBeNull();
   });
 
@@ -49,10 +45,12 @@ describe("ChoroplethMap component", () => {
     const charlestonPath = svg.querySelector('path[data-county="Charleston"]');
     const pickensPath = svg.querySelector('path[data-county="Pickens"]'); // not in sample
 
-    expect(abbevillePath?.classList.contains("status-red")).toBe(true);
-    expect(aikenPath?.classList.contains("status-yellow")).toBe(true);
-    expect(charlestonPath?.classList.contains("status-green")).toBe(true);
-    expect(pickensPath?.classList.contains("status-no-data")).toBe(true);
+    expect(abbevillePath?.classList.contains("tier-1")).toBe(true);
+    expect(aikenPath?.classList.contains("tier-2")).toBe(true);
+    expect(charlestonPath?.classList.contains("tier-3")).toBe(true);
+    expect(pickensPath?.classList.contains("status-insufficient-data")).toBe(
+      true,
+    );
   });
 
   it("renders accessible aria-labels on county paths", () => {
@@ -65,7 +63,7 @@ describe("ChoroplethMap component", () => {
     const unrankedLabel = svg
       .querySelector('path[data-county="Pickens"]')
       ?.getAttribute("aria-label");
-    expect(unrankedLabel).toBe("Pickens: N/A");
+    expect(unrankedLabel).toBe(`Pickens: ${t("insufficientDataLabel")}`);
   });
 
   it("displays the start and end date on the map to indicate its date range", () => {
@@ -203,7 +201,9 @@ describe("ChoroplethMap component", () => {
       const pickensPath = svg.querySelector('path[data-county="Pickens"]');
 
       expect(aikenPath?.getAttribute("aria-label")).toBe("Aiken: 88%");
-      expect(pickensPath?.getAttribute("aria-label")).toBe("Pickens: N/A");
+      expect(pickensPath?.getAttribute("aria-label")).toBe(
+        `Pickens: ${t("insufficientDataLabel")}`,
+      );
     });
 
     it("displays a dynamic tooltip with county name and clearance rate percentage on mouseover", () => {
@@ -231,7 +231,7 @@ describe("ChoroplethMap component", () => {
       expect(tooltip?.textContent).toContain("88%");
     });
 
-    it("displays county name and N/A in the tooltip for counties with no clearance data", () => {
+    it("displays county name and Insufficient Data in the tooltip for counties with no clearance data", () => {
       const svg = renderChoroplethMap(sampleSummaries, topology);
       container.appendChild(svg);
 
@@ -253,7 +253,7 @@ describe("ChoroplethMap component", () => {
       );
       expect(tooltip).not.toBeNull();
       expect(tooltip?.textContent).toContain("Pickens");
-      expect(tooltip?.textContent).toContain("N/A");
+      expect(tooltip?.textContent).toContain(t("insufficientDataLabel"));
     });
 
     it("updates tooltip position when moving cursor (mousemove) over a county path", () => {

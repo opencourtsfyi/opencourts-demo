@@ -5,6 +5,7 @@ import {
   loadGoldCaseloadRecords,
   type GoldCaseloadRecord,
 } from "./clearanceData";
+import { CompletenessTier } from "../constants/clearanceThresholds";
 
 describe("clearanceData service", () => {
   afterEach(() => {
@@ -37,7 +38,7 @@ describe("clearanceData service", () => {
           file: "test.csv",
           category: "Estate",
           year: 2025,
-          month: 8,
+          month: 7,
           county: "Aiken",
           metric: "Disposed",
           value: 85,
@@ -46,15 +47,20 @@ describe("clearanceData service", () => {
 
       const summaries = aggregateClearanceRates(records, {
         start: { year: 2025, month: 7 },
-        end: { year: 2026, month: 6 },
+        end: { year: 2025, month: 7 },
       });
 
       expect(summaries).toHaveLength(1);
-      expect(summaries[0]).toEqual({
+      expect(summaries[0]).toMatchObject({
         county: "Aiken",
         added: 100,
         disposed: 85,
         clearanceRate: 0.85,
+        reportedPeriods: 1,
+        totalPeriods: 1,
+        completenessRatio: 1,
+        completenessTier: CompletenessTier.COMPLETE,
+        isSufficientData: true,
       });
     });
 
@@ -100,17 +106,16 @@ describe("clearanceData service", () => {
 
       const summaries = aggregateClearanceRates(records, {
         start: { year: 2025, month: 7 },
-        end: { year: 2026, month: 6 },
+        end: { year: 2025, month: 7 },
       });
 
-      expect(summaries).toEqual([
-        {
-          county: "Aiken",
-          added: 100,
-          disposed: 80,
-          clearanceRate: 0.8,
-        },
-      ]);
+      expect(summaries).toHaveLength(1);
+      expect(summaries[0]).toMatchObject({
+        county: "Aiken",
+        added: 100,
+        disposed: 80,
+        clearanceRate: 0.8,
+      });
     });
 
     it("ignores records outside the specified date range", () => {
@@ -133,24 +138,32 @@ describe("clearanceData service", () => {
           metric: "Added",
           value: 30,
         },
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 7,
+          county: "Abbeville",
+          metric: "Disposed",
+          value: 0,
+        },
       ];
 
       const summaries = aggregateClearanceRates(records, {
         start: { year: 2025, month: 7 },
-        end: { year: 2026, month: 6 },
+        end: { year: 2025, month: 7 },
       });
 
-      expect(summaries).toEqual([
-        {
-          county: "Abbeville",
-          added: 30,
-          disposed: 0,
-          clearanceRate: 0,
-        },
-      ]);
+      expect(summaries).toHaveLength(1);
+      expect(summaries[0]).toMatchObject({
+        county: "Abbeville",
+        added: 30,
+        disposed: 0,
+        clearanceRate: 0,
+      });
     });
 
-    it("handles non-numeric or string numeric values correctly", () => {
+    it("tracks non-numeric missingness reasons (DNR, TI, Blank, null) without treating them as 0", () => {
       const records: GoldCaseloadRecord[] = [
         {
           file: "test.csv",
@@ -167,6 +180,15 @@ describe("clearanceData service", () => {
           year: 2025,
           month: 7,
           county: "Charleston",
+          metric: "Disposed",
+          value: 36,
+        },
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 8,
+          county: "Charleston",
           metric: "Added",
           value: "DNR",
         },
@@ -174,20 +196,83 @@ describe("clearanceData service", () => {
           file: "test.csv",
           category: "Estate",
           year: 2025,
-          month: 7,
+          month: 8,
           county: "Charleston",
           metric: "Disposed",
-          value: null,
+          value: "DNR",
         },
       ];
 
       const summaries = aggregateClearanceRates(records, {
         start: { year: 2025, month: 7 },
-        end: { year: 2026, month: 6 },
+        end: { year: 2025, month: 8 },
       });
 
       expect(summaries[0].added).toBe(40);
-      expect(summaries[0].disposed).toBe(0);
+      expect(summaries[0].disposed).toBe(36);
+      expect(summaries[0].reportedPeriods).toBe(1);
+      expect(summaries[0].totalPeriods).toBe(2);
+      expect(summaries[0].completenessTier).toBe(CompletenessTier.PARTIAL);
+      expect(summaries[0].isSufficientData).toBe(true);
+      expect(summaries[0].monthlySeries?.[1]).toMatchObject({
+        year: 2025,
+        month: 8,
+        isReported: false,
+        missingReason: "DNR",
+        clearanceRate: null,
+      });
+    });
+
+    it("excludes counties below 50% reporting threshold as Insufficient Data", () => {
+      const records: GoldCaseloadRecord[] = [
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 7,
+          county: "Barnwell",
+          metric: "Added",
+          value: 20,
+        },
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 7,
+          county: "Barnwell",
+          metric: "Disposed",
+          value: 15,
+        },
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 8,
+          county: "Barnwell",
+          metric: "Added",
+          value: "TI",
+        },
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 9,
+          county: "Barnwell",
+          metric: "Added",
+          value: "",
+        },
+      ];
+
+      const summaries = aggregateClearanceRates(records, {
+        start: { year: 2025, month: 7 },
+        end: { year: 2025, month: 9 },
+      });
+
+      expect(summaries[0].reportedPeriods).toBe(1);
+      expect(summaries[0].totalPeriods).toBe(3);
+      expect(summaries[0].completenessTier).toBe(CompletenessTier.INSUFFICIENT);
+      expect(summaries[0].isSufficientData).toBe(false);
+      expect(summaries[0].clearanceRate).toBeNull();
     });
 
     it("returns null clearanceRate when added cases is 0", () => {
@@ -205,7 +290,7 @@ describe("clearanceData service", () => {
 
       const summaries = aggregateClearanceRates(records, {
         start: { year: 2025, month: 7 },
-        end: { year: 2026, month: 6 },
+        end: { year: 2025, month: 7 },
       });
 
       expect(summaries[0].clearanceRate).toBeNull();
@@ -235,7 +320,7 @@ describe("clearanceData service", () => {
 
       const summaries = aggregateClearanceRates(records, {
         start: { year: 2025, month: 7 },
-        end: { year: 2026, month: 6 },
+        end: { year: 2025, month: 7 },
       });
 
       expect(summaries.map((s) => s.county)).toEqual(["Aiken", "York"]);
@@ -243,7 +328,6 @@ describe("clearanceData service", () => {
 
     it("aggregates data correctly across multiple years", () => {
       const records: GoldCaseloadRecord[] = [
-        // Year 2023-2024
         {
           file: "2023_to_2024.csv",
           category: "Estate",
@@ -262,7 +346,6 @@ describe("clearanceData service", () => {
           metric: "Disposed",
           value: 69,
         },
-        // Year 2024-2025
         {
           file: "2024_to_2025.csv",
           category: "Estate",
@@ -283,20 +366,18 @@ describe("clearanceData service", () => {
         },
       ];
 
-      // Aggregating only 2024-2025 range
       const summaries2024 = aggregateClearanceRates(records, {
-        start: { year: 2024, month: 7 },
-        end: { year: 2025, month: 6 },
+        start: { year: 2024, month: 8 },
+        end: { year: 2024, month: 8 },
       });
       expect(summaries2024).toHaveLength(1);
       expect(summaries2024[0].added).toBe(100);
       expect(summaries2024[0].disposed).toBe(89);
       expect(summaries2024[0].clearanceRate).toBe(0.89);
 
-      // Aggregating only 2023-2024 range
       const summaries2023 = aggregateClearanceRates(records, {
-        start: { year: 2023, month: 7 },
-        end: { year: 2024, month: 6 },
+        start: { year: 2023, month: 8 },
+        end: { year: 2023, month: 8 },
       });
       expect(summaries2023).toHaveLength(1);
       expect(summaries2023[0].added).toBe(50);

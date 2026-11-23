@@ -1,10 +1,14 @@
 import {
   CASELOAD_METRICS,
+  COMPLETENESS_CONFIG,
+  CompletenessTier,
+  type CompletenessTierType,
   DATE_SELECTION_CONSTRAINTS,
   DEFAULT_REPORT_PERIOD,
   GOLD_DATA_PATH,
+  getCompletenessTier,
 } from "../constants/clearanceThresholds";
-import type { YearMonth } from "../utils/formatters";
+import { generateMonthYearList, type YearMonth } from "../utils/formatters";
 
 export interface GoldCaseloadRecord {
   file: string;
@@ -16,11 +20,27 @@ export interface GoldCaseloadRecord {
   value: number | string | null;
 }
 
+export interface MonthlyPeriodPoint {
+  year: number;
+  month: number;
+  added: number | null;
+  disposed: number | null;
+  clearanceRate: number | null;
+  isReported: boolean;
+  missingReason: string | null;
+}
+
 export interface CountyClearanceSummary {
   county: string;
   added: number;
   disposed: number;
   clearanceRate: number | null;
+  reportedPeriods?: number;
+  totalPeriods?: number;
+  completenessRatio?: number;
+  completenessTier?: CompletenessTierType;
+  isSufficientData?: boolean;
+  monthlySeries?: MonthlyPeriodPoint[];
 }
 
 export interface DateRangeFilter {
@@ -30,22 +50,32 @@ export interface DateRangeFilter {
 
 const YEAR_MULTIPLIER = 100;
 const ZERO_CASES = 0;
+const BLANK_REASON = "Blank";
+const MISSING_REASON = "Missing";
 
 function toYearMonthIndex(ym: YearMonth): number {
   return ym.year * YEAR_MULTIPLIER + ym.month;
 }
 
-function parseNumericValue(raw: number | string | null): number | null {
+function parseNumericValue(raw: number | string | null | undefined): {
+  numeric: number | null;
+  reason: string | null;
+} {
   if (typeof raw === "number" && Number.isFinite(raw)) {
-    return raw;
+    return { numeric: raw, reason: null };
   }
-  if (typeof raw === "string" && raw.trim() !== "") {
-    const parsed = Number(raw);
-    if (Number.isFinite(parsed)) {
-      return parsed;
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (trimmed === "") {
+      return { numeric: null, reason: BLANK_REASON };
     }
+    const parsed = Number(trimmed);
+    if (Number.isFinite(parsed)) {
+      return { numeric: parsed, reason: null };
+    }
+    return { numeric: null, reason: trimmed };
   }
-  return null;
+  return { numeric: null, reason: MISSING_REASON };
 }
 
 export function getDefaultDateRange(): DateRangeFilter {
@@ -93,14 +123,23 @@ export function getDataDateBounds(
   return { start: earliestYM, end: latestYM };
 }
 
+interface PeriodAccumulator {
+  added: number | null;
+  disposed: number | null;
+  addedReason: string | null;
+  disposedReason: string | null;
+}
+
 export function aggregateClearanceRates(
   records: readonly GoldCaseloadRecord[],
   dateRange: DateRangeFilter = getDefaultDateRange(),
 ): CountyClearanceSummary[] {
   const startIdx = toYearMonthIndex(dateRange.start);
   const endIdx = toYearMonthIndex(dateRange.end);
+  const expectedMonths = generateMonthYearList(dateRange.start, dateRange.end);
+  const totalPeriods = expectedMonths.length;
 
-  const totalsByCounty = new Map<string, { added: number; disposed: number }>();
+  const countyMap = new Map<string, Map<number, PeriodAccumulator>>();
 
   for (const record of records) {
     if (record.category.trim().toLowerCase() !== "estate") {
@@ -127,33 +166,101 @@ export function aggregateClearanceRates(
       continue;
     }
 
-    let totals = totalsByCounty.get(countyName);
-    if (!totals) {
-      totals = { added: ZERO_CASES, disposed: ZERO_CASES };
-      totalsByCounty.set(countyName, totals);
+    let periodMap = countyMap.get(countyName);
+    if (!periodMap) {
+      periodMap = new Map<number, PeriodAccumulator>();
+      countyMap.set(countyName, periodMap);
     }
 
-    const numericVal = parseNumericValue(record.value);
-    if (numericVal === null) {
-      continue;
+    let acc = periodMap.get(recordIdx);
+    if (!acc) {
+      acc = {
+        added: null,
+        disposed: null,
+        addedReason: null,
+        disposedReason: null,
+      };
+      periodMap.set(recordIdx, acc);
     }
 
+    const { numeric, reason } = parseNumericValue(record.value);
     if (record.metric === CASELOAD_METRICS.ADDED) {
-      totals.added += numericVal;
+      acc.added = numeric;
+      acc.addedReason = reason;
     } else if (record.metric === CASELOAD_METRICS.DISPOSED) {
-      totals.disposed += numericVal;
+      acc.disposed = numeric;
+      acc.disposedReason = reason;
     }
   }
 
   const summaries: CountyClearanceSummary[] = [];
-  for (const [county, totals] of totalsByCounty.entries()) {
+  for (const [county, periodMap] of countyMap.entries()) {
+    let totalAdded = ZERO_CASES;
+    let totalDisposed = ZERO_CASES;
+    let reportedPeriods = ZERO_CASES;
+    const monthlySeries: MonthlyPeriodPoint[] = [];
+
+    for (const ym of expectedMonths) {
+      const idx = toYearMonthIndex(ym);
+      const acc = periodMap.get(idx);
+      const isReported =
+        acc !== undefined && acc.added !== null && acc.disposed !== null;
+
+      if (isReported && acc) {
+        reportedPeriods += 1;
+        totalAdded += acc.added ?? ZERO_CASES;
+        totalDisposed += acc.disposed ?? ZERO_CASES;
+        const periodRate =
+          (acc.added ?? ZERO_CASES) > ZERO_CASES
+            ? (acc.disposed ?? ZERO_CASES) / (acc.added ?? ZERO_CASES)
+            : null;
+        monthlySeries.push({
+          year: ym.year,
+          month: ym.month,
+          added: acc.added,
+          disposed: acc.disposed,
+          clearanceRate: periodRate,
+          isReported: true,
+          missingReason: null,
+        });
+      } else {
+        const reason =
+          acc?.addedReason ?? acc?.disposedReason ?? MISSING_REASON;
+        monthlySeries.push({
+          year: ym.year,
+          month: ym.month,
+          added: acc?.added ?? null,
+          disposed: acc?.disposed ?? null,
+          clearanceRate: null,
+          isReported: false,
+          missingReason: reason,
+        });
+      }
+    }
+
+    const completenessRatio =
+      totalPeriods > ZERO_CASES ? reportedPeriods / totalPeriods : ZERO_CASES;
+    const completenessTier = getCompletenessTier(reportedPeriods, totalPeriods);
+    const isSufficientData =
+      completenessTier !== CompletenessTier.INSUFFICIENT &&
+      completenessRatio >= COMPLETENESS_CONFIG.MIN_REPORTING_RATIO;
+
     const clearanceRate =
-      totals.added > ZERO_CASES ? totals.disposed / totals.added : null;
+      isSufficientData && totalAdded > ZERO_CASES
+        ? totalDisposed / totalAdded
+        : null;
+
     summaries.push({
       county,
-      added: totals.added,
-      disposed: totals.disposed,
+      added: totalAdded,
+      disposed: totalDisposed,
       clearanceRate,
+      reportedPeriods,
+      totalPeriods,
+      completenessRatio,
+      completenessTier,
+      isSufficientData,
+      monthlySeries,
     });
   }
 
