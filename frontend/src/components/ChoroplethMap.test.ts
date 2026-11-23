@@ -351,5 +351,40 @@ describe("ChoroplethMap component", () => {
         tooltip?.getAttribute("aria-hidden") === "true";
       expect(isHidden).toBe(true);
     });
+
+    it("dismisses tooltip on Escape without moving focus and links aria-describedby", () => {
+      const svg = renderChoroplethMap(
+        sampleSummaries,
+        topology,
+        undefined,
+        null,
+        undefined,
+        "mapMethodology",
+        "mapHeading",
+      );
+      container.appendChild(svg);
+
+      expect(svg.getAttribute("aria-labelledby")).toBe("mapHeading mapTitle");
+      expect(svg.getAttribute("aria-describedby")).toBe(
+        "mapDesc mapMethodology",
+      );
+
+      const aikenPath = svg.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      aikenPath?.focus();
+      aikenPath?.dispatchEvent(new FocusEvent("focus", { bubbles: true }));
+
+      const tooltip = document.querySelector<HTMLElement>(
+        ".map-tooltip, [role='tooltip']",
+      );
+      expect(tooltip?.getAttribute("aria-hidden")).toBe("false");
+
+      aikenPath?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      expect(tooltip?.getAttribute("aria-hidden")).toBe("true");
+      expect(document.activeElement).toBe(aikenPath);
+    });
   });
 });

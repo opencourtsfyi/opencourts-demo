@@ -84,6 +84,17 @@ describe("ClearancePage component", () => {
     const drawer = root.querySelector(".trendline-drawer");
     expect(drawer).not.toBeNull();
     expect(drawer?.textContent).toContain("Aiken");
+
+    const legendList = root.querySelector(".legend-list");
+    expect(legendList?.getAttribute("role")).toBe("list");
+    expect(
+      root.querySelectorAll('.legend-item[role="listitem"]').length,
+    ).toBe(5);
+
+    const closeBtn =
+      drawer?.querySelector<HTMLButtonElement>(".drawer-close-btn");
+    closeBtn?.click();
+    expect(root.querySelector(".trendline-drawer")).toBeNull();
   });
 
   it("renders both the map and table inside the layout container", () => {

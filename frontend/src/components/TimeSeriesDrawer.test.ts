@@ -91,4 +91,29 @@ describe("TimeSeriesDrawer component", () => {
     closeBtn?.click();
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("announces complete reporting when no periods are missing and handles empty series", () => {
+    const completeSummary: CountyClearanceSummary = {
+      ...partialSummary,
+      reportedPeriods: 1,
+      totalPeriods: 1,
+      completenessRatio: 1,
+      completenessTier: CompletenessTier.COMPLETE,
+      monthlySeries: [partialSummary.monthlySeries![0]],
+    };
+    expect(buildTimelineSummaryText(completeSummary)).toContain(
+      "All 1 periods reported",
+    );
+
+    const emptySummary: CountyClearanceSummary = {
+      county: "Pickens",
+      added: 0,
+      disposed: 0,
+      clearanceRate: null,
+      isSufficientData: false,
+      monthlySeries: [],
+    };
+    const drawer = renderTimeSeriesDrawer(emptySummary, vi.fn());
+    expect(drawer.querySelector(".drawer-empty-msg")).not.toBeNull();
+  });
 });
