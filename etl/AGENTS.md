@@ -7,11 +7,11 @@ Extract-transform-load for south carolina probate courts.
 - **Languages:** Python
 
 ## Commands
-- **Install (dev):** `python -m venv .venv` then activate and `pip install -r requirements-dev.txt`
-- **Run:** `python orchestrator.py` (from `src/`, or with `src` on `PYTHONPATH`)
-- **Test:** `pytest`
-- **Lint:** `ruff check src tests`
-- **Typecheck:** `ty check`
+- **Install (dev):** `uv sync`
+- **Run:** `uv run python src/orchestrator.py` (or `uv run python orchestrator.py` from `src/`)
+- **Test:** `uv run pytest`
+- **Lint:** `uv run ruff check src tests`
+- **Typecheck:** `uv run ty check`
 
 Lint and typecheck must exit non-zero on findings. Prefer a local `.venv` so `ty` can resolve third-party imports.
 

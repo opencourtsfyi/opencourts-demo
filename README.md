@@ -4,6 +4,10 @@
 
 A fullstack demonstration of opencourts.
 
+## Requirements
+- **[uv](https://docs.astral.sh/uv/getting-started/installation/)** — Python version and dependency management (`etl/.python-version`, `etl/pyproject.toml`, `etl/uv.lock`). Run `cd etl && uv sync --locked` to create the local `.venv` using the locked dependencies in the `etl/pyproject.toml`.
+- **[fnm](https://github.com/Schniz/fnm#installation)** — Node.js version management ([`frontend/.node-version`](frontend/.node-version)). Run `cd frontend && fnm use` to install & use the correct Node.js version. Then to install dependencies using the lockfile, run `npm ci`.
+
 ## Project Structure
 - [`etl/`](etl/README.md): Local-only data pipeline transforming annual court reports into clean data.
 - [`backend/`](backend/README.md): Python Flask web API for browsing and downloading data.
