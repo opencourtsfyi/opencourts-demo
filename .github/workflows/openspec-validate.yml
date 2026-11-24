@@ -23,7 +23,7 @@ jobs:
           node-version-file: 'frontend/.node-version'
 
       - name: Install OpenSpec CLI
-        run: npm install -g @fission-ai/openspec@latest
+        run: npm install -g @fission-ai/openspec@2.1.1
 
       - name: Validate OpenSpec
         run: openspec validate --all --strict
