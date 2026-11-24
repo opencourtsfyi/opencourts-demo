@@ -1,0 +1,15 @@
+schema: spec-driven
+
+context: |
+  This repository only commits long-lived specifications in `openspec/specs/`.
+  Do NOT document code structure, file paths, function signatures, or implementation details that can be read directly from the codebase.
+
+rules:
+  proposal:
+    - Focus strictly on the business problem, user impact, and rejected alternatives.
+  specs:
+    - Capture only non-obvious business rules, domain invariants, external API constraints, and compliance requirements.
+    - Explain the "why" behind architectural decisions and edge cases, never the "how" of the code.
+    - Keep requirements concise and scannable for human engineers onboarding later.
+  design:
+    - Document only trade-offs, security boundaries, and failure modes not visible in code.

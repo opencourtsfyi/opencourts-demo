@@ -1,0 +1,29 @@
+name: Validate OpenSpec
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'openspec/**'
+      - '.github/workflows/openspec-validate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'frontend/.node-version'
+
+      - name: Install OpenSpec CLI
+        run: npm install -g @fission-ai/openspec@2.1.1
+
+      - name: Validate OpenSpec
+        run: openspec validate --all --strict

@@ -234,3 +234,6 @@ secrets.json
 
 # ignore the topojson files, should be regenerated
 topojson/
+
+# ignore transient OpenSpec changes and local archives
+openspec/changes/
