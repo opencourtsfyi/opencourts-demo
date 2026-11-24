@@ -21,7 +21,6 @@ A fullstack demonstration of opencourts.
 This repository uses [OpenSpec](https://openspec.dev) on an opt-in basis to capture long-lived business rules, domain invariants, and architectural trade-offs in `openspec/specs/`. You do not need OpenSpec to contribute code.
 
 If you choose to use it with an AI coding assistant:
-1. Install the CLI globally: `npm install -g @fission-ai/openspec@latest`
-2. Initialize AI assistant skills globally: `openspec init --global`
-3. Keep active proposals and archived changes local in `openspec/changes/` (gitignored), and commit only finalized specs under `openspec/specs/`.
+1. Install the [OpenSpec CLI](https://openspec.dev/docs/installation)
+2. Keep active proposals and archived changes local in `openspec/changes/` (gitignored), and commit only finalized specs under `openspec/specs/`.
 
