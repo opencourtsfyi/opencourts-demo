@@ -3,7 +3,7 @@ name = "opencourts-etl"
 version = "0.1.0"
 description = "Extract-transform-load pipeline for South Carolina probate caseload reports."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
     "requests==2.34.2",
     "pdfplumber==0.11.10",

@@ -16,6 +16,7 @@ import {
   updateDateRangeSelector,
   type DateRangeSelectorElement,
 } from "./DateRangeSelector";
+import { renderTimeSeriesDrawer } from "./TimeSeriesDrawer";
 
 export interface ClearancePageOptions {
   summaries: readonly CountyClearanceSummary[];
@@ -45,17 +46,23 @@ function createLegend(): HTMLElement {
 
   const list = document.createElement("ul");
   list.className = "legend-list";
+  list.setAttribute("role", "list");
 
   const items = [
-    { status: ClearanceStatus.GREEN, text: t("legendGreen") },
-    { status: ClearanceStatus.YELLOW, text: t("legendYellow") },
-    { status: ClearanceStatus.RED, text: t("legendRed") },
-    { status: ClearanceStatus.NO_DATA, text: t("legendNoData") },
+    { status: ClearanceStatus.TIER_1, text: t("legendTier1") },
+    { status: ClearanceStatus.TIER_2, text: t("legendTier2") },
+    { status: ClearanceStatus.TIER_3, text: t("legendTier3") },
+    { status: ClearanceStatus.TIER_4, text: t("legendTier4") },
+    {
+      status: ClearanceStatus.INSUFFICIENT_DATA,
+      text: t("legendInsufficientData"),
+    },
   ];
 
   for (const item of items) {
     const li = document.createElement("li");
     li.className = "legend-item";
+    li.setAttribute("role", "listitem");
 
     const swatch = document.createElement("span");
     swatch.className = `legend-swatch ${item.status}`;
@@ -88,6 +95,7 @@ export function renderClearancePage(
 
   const isLoading = options.loading ?? false;
   let currentSelectedCounty: string | null = initialSelectedCounty;
+  let lastTriggerElement: HTMLElement | SVGElement | null = null;
 
   const isDataEmpty =
     !isLoading &&
@@ -104,45 +112,6 @@ export function renderClearancePage(
   }
   const mainElement = main;
 
-  function syncSelection(county: string | null): void {
-    currentSelectedCounty = county;
-
-    const allPaths =
-      mainElement.querySelectorAll<SVGPathElement>("path.county-path");
-    for (const path of allPaths) {
-      const name = path.getAttribute("data-county") ?? "";
-      const isTarget =
-        county !== null && name.toLowerCase() === county.toLowerCase();
-      if (isTarget) {
-        path.classList.add("is-selected");
-        path.setAttribute("aria-pressed", "true");
-      } else {
-        path.classList.remove("is-selected");
-        path.setAttribute("aria-pressed", "false");
-      }
-    }
-
-    const allRows =
-      mainElement.querySelectorAll<HTMLTableRowElement>("tr.county-row");
-    for (const row of allRows) {
-      const name =
-        row.getAttribute("data-county") ??
-        row.querySelector(".county-name-cell")?.textContent ??
-        "";
-      const isTarget =
-        county !== null && name.toLowerCase() === county.toLowerCase();
-      if (isTarget) {
-        row.classList.add("is-selected");
-        row.setAttribute("aria-selected", "true");
-      } else {
-        row.classList.remove("is-selected");
-        row.setAttribute("aria-selected", "false");
-      }
-    }
-
-    onSelectCounty?.(county);
-  }
-
   let header = main.querySelector<HTMLElement>(".clearance-header");
   if (!header) {
     header = document.createElement("header");
@@ -155,10 +124,6 @@ export function renderClearancePage(
     heading = document.createElement("h1");
     heading.textContent = t("pageTitle");
     header.appendChild(heading);
-  }
-
-  if (!header.querySelector(".clearance-legend")) {
-    header.appendChild(createLegend());
   }
 
   let selectorContainer = header.querySelector<DateRangeSelectorElement>(
@@ -196,58 +161,221 @@ export function renderClearancePage(
     emptyNotice.remove();
   }
 
-  let mapSection = main.querySelector<HTMLElement>(".map-box");
+  let workspace = main.querySelector<HTMLElement>(".workspace-layout");
+  if (!workspace) {
+    workspace = document.createElement("div");
+    workspace.className = "workspace-layout";
+    main.appendChild(workspace);
+  }
+
+  let mapSection = workspace.querySelector<HTMLElement>(".map-box");
   if (!mapSection) {
     mapSection = document.createElement("section");
     mapSection.className = "map-box";
-    main.appendChild(mapSection);
+    workspace.appendChild(mapSection);
   }
+
+  let drawerSlot = workspace.querySelector<HTMLElement>(".drawer-slot");
+  if (!drawerSlot) {
+    drawerSlot = document.createElement("div");
+    drawerSlot.className = "drawer-slot";
+    workspace.appendChild(drawerSlot);
+  }
+
+  function updateDrawer(county: string | null, manageFocus = false): void {
+    if (!drawerSlot || !workspace) return;
+    drawerSlot.replaceChildren();
+    if (!county) {
+      workspace.classList.remove("has-drawer");
+      if (manageFocus && lastTriggerElement) {
+        lastTriggerElement.focus();
+        lastTriggerElement = null;
+      }
+      return;
+    }
+
+    const summary = summaries.find(
+      (s) => s.county.toLowerCase() === county.toLowerCase(),
+    ) ?? {
+      county,
+      added: 0,
+      disposed: 0,
+      clearanceRate: null,
+      isSufficientData: false,
+      monthlySeries: [],
+    };
+
+    const drawerEl = renderTimeSeriesDrawer(summary, () => {
+      syncSelection(null, true);
+    });
+    drawerSlot.appendChild(drawerEl);
+    workspace.classList.add("has-drawer");
+
+    if (manageFocus) {
+      const closeBtn =
+        drawerEl.querySelector<HTMLButtonElement>(".drawer-close-btn");
+      closeBtn?.focus();
+    }
+  }
+
+  function syncSelection(county: string | null, manageFocus = false): void {
+    if (
+      county !== null &&
+      currentSelectedCounty === null &&
+      container.ownerDocument?.activeElement
+    ) {
+      const active = container.ownerDocument.activeElement;
+      if (active instanceof HTMLElement || active instanceof SVGElement) {
+        lastTriggerElement = active;
+      }
+    }
+    currentSelectedCounty = county;
+
+    const allPaths =
+      mainElement.querySelectorAll<SVGPathElement>("path.county-path");
+    for (const path of allPaths) {
+      const name = path.getAttribute("data-county") ?? "";
+      const isTarget =
+        county !== null && name.toLowerCase() === county.toLowerCase();
+      if (isTarget) {
+        path.classList.add("is-selected");
+        path.setAttribute("aria-pressed", "true");
+      } else {
+        path.classList.remove("is-selected");
+        path.setAttribute("aria-pressed", "false");
+      }
+    }
+
+    const allRows =
+      mainElement.querySelectorAll<HTMLTableRowElement>("tr.county-row");
+    for (const row of allRows) {
+      const name =
+        row.getAttribute("data-county") ??
+        row.querySelector(".county-name-cell")?.textContent ??
+        "";
+      const isTarget =
+        county !== null && name.toLowerCase() === county.toLowerCase();
+      if (isTarget) {
+        row.classList.add("is-selected");
+        row.setAttribute("aria-selected", "true");
+      } else {
+        row.classList.remove("is-selected");
+        row.setAttribute("aria-selected", "false");
+      }
+    }
+
+    updateDrawer(county, manageFocus);
+    onSelectCounty?.(county);
+  }
+
   mapSection.replaceChildren();
+  const mapHeading = document.createElement("h2");
+  mapHeading.id = "mapHeading";
+  mapHeading.className = "map-heading";
+  mapHeading.textContent = t("mapHeading");
+
   const mapDateRange = document.createElement("p");
   mapDateRange.className = "map-date-range";
   mapDateRange.textContent = isLoading
     ? t("loadingData")
     : formatDateRange(dateRange.start, dateRange.end);
+
   const svgMap = renderChoroplethMap(
     summaries,
     topology,
     dateRange,
     currentSelectedCounty,
-    (county) => syncSelection(county),
+    (county) => syncSelection(county, true),
+    "mapMethodology",
+    "mapHeading",
   );
-  mapSection.append(mapDateRange, svgMap);
+  const legend = createLegend();
+  mapSection.append(mapHeading, mapDateRange, svgMap, legend);
 
-  const tableSection =
-    main.querySelector<HTMLElement>(".table-section") ??
-    document.createElement("section");
-  tableSection.className = "table-section";
-  if (!main.contains(tableSection)) {
+  updateDrawer(currentSelectedCounty, false);
+
+  let tableSection = main.querySelector<HTMLElement>(".table-section");
+  const wasTableExpanded =
+    tableSection
+      ?.querySelector<HTMLButtonElement>(".table-toggle-btn")
+      ?.getAttribute("aria-expanded") === "true";
+
+  if (!tableSection) {
+    tableSection = document.createElement("section");
+    tableSection.className = "table-section";
     main.appendChild(tableSection);
   }
   tableSection.replaceChildren();
-  const tableDateRange = document.createElement("p");
+
+  const toggleBtn = document.createElement("button");
+  toggleBtn.type = "button";
+  toggleBtn.className = "table-toggle-btn";
+  toggleBtn.setAttribute("aria-controls", "countyTableWrapper");
+  toggleBtn.setAttribute("aria-expanded", wasTableExpanded ? "true" : "false");
+  toggleBtn.textContent = wasTableExpanded
+    ? t("tableToggleHide")
+    : t("tableToggleShow");
+
+  const tableWrapper = document.createElement("div");
+  tableWrapper.id = "countyTableWrapper";
+  tableWrapper.className = "table-wrapper";
+  tableWrapper.hidden = !wasTableExpanded;
+
+  toggleBtn.addEventListener("click", () => {
+    const nextExpanded = toggleBtn.getAttribute("aria-expanded") !== "true";
+    toggleBtn.setAttribute("aria-expanded", nextExpanded ? "true" : "false");
+    toggleBtn.textContent = nextExpanded
+      ? t("tableToggleHide")
+      : t("tableToggleShow");
+    tableWrapper.hidden = !nextExpanded;
+  });
+
   const table = renderCountyRateTable(
     summaries,
     dateRange,
     isLoading,
     currentSelectedCounty,
-    (county) => syncSelection(county),
+    (county) => syncSelection(county, true),
   );
-  tableSection.append(tableDateRange, table);
+  tableWrapper.appendChild(table);
+  tableSection.append(toggleBtn, tableWrapper);
+
+  let methodologySection = main.querySelector<HTMLElement>(
+    ".methodology-section",
+  );
+  if (!methodologySection) {
+    methodologySection = document.createElement("section");
+    methodologySection.className = "methodology-section";
+    main.appendChild(methodologySection);
+  }
+  methodologySection.replaceChildren();
+  const methodologyHeading = document.createElement("h2");
+  methodologyHeading.textContent = t("methodologyHeading");
+  const methodologyText = document.createElement("p");
+  methodologyText.id = "mapMethodology";
+  methodologyText.className = "methodology-text";
+  methodologyText.textContent = t("methodologyText");
+  methodologySection.append(methodologyHeading, methodologyText);
 
   const handleOutsideClick = (event: MouseEvent) => {
     const target = event.target as Node | null;
     if (!target) return;
     const isInsideMap = mapSection.contains(target);
     const isInsideTable = tableSection.contains(target);
-    if (!isInsideMap && !isInsideTable && currentSelectedCounty !== null) {
-      syncSelection(null);
+    const isInsideDrawer = drawerSlot.contains(target);
+    if (
+      !isInsideMap &&
+      !isInsideTable &&
+      !isInsideDrawer &&
+      currentSelectedCounty !== null
+    ) {
+      syncSelection(null, false);
     }
   };
 
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape" && currentSelectedCounty !== null) {
-      syncSelection(null);
+      syncSelection(null, true);
     }
   };
 

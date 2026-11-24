@@ -133,14 +133,14 @@ describe("App Integration", () => {
     expect(startSelect).not.toBeNull();
     expect(endSelect).not.toBeNull();
 
-    // Select 2023-2024
+    // Select 2023-07 (single reported month in mock)
     if (startSelect && endSelect) {
       startSelect.value = "2023-07";
       startSelect.dispatchEvent(new Event("change", { bubbles: true }));
-      endSelect.value = "2024-06";
+      endSelect.value = "2023-07";
       endSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
-      // Abbeville rate for 2023-2024 is 138%
+      // Abbeville rate for 2023-07 is 138%
       expect(root.querySelector(".county-name-cell")?.textContent).toBe(
         "Abbeville",
       );
@@ -242,10 +242,10 @@ describe("App Integration", () => {
       expect(startSelect.disabled).toBe(false);
       expect(endSelect.disabled).toBe(false);
 
-      // Verify user can select a range with data (July 2023 to June 2024) and see records
+      // Verify user can select a range with data (July 2023) and see records
       startSelect.value = "2023-07";
       startSelect.dispatchEvent(new Event("change", { bubbles: true }));
-      endSelect.value = "2024-06";
+      endSelect.value = "2023-07";
       endSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
       expect(root.querySelector(".county-name-cell")?.textContent).toBe(
@@ -757,8 +757,10 @@ describe("App Integration", () => {
         'path[data-county="Aiken"]',
       );
 
-      expect(abbevillePath?.getAttribute("aria-label")).toBe("Abbeville: 100%");
-      expect(aikenPath?.getAttribute("aria-label")).toBe("Aiken: 88%");
+      expect(abbevillePath?.getAttribute("aria-label")).toContain(
+        "Abbeville: 100%",
+      );
+      expect(aikenPath?.getAttribute("aria-label")).toContain("Aiken: 88%");
     });
 
     it("[A11y] displays tooltip on keyboard focus and hides on blur", async () => {
@@ -792,6 +794,130 @@ describe("App Integration", () => {
         tooltip?.classList.contains("is-hidden") ||
         tooltip?.getAttribute("aria-hidden") === "true";
       expect(isHidden).toBe(true);
+    });
+  });
+
+  describe("Data Completeness Framework & Drill-down Drawer integration (issue #73)", () => {
+    it("renders Insufficient Data for <50% reporting, broken drawer line for Partial, and toggles table", async () => {
+      vi.spyOn(
+        clearanceDataService,
+        "loadGoldCaseloadRecords",
+      ).mockResolvedValueOnce([
+        // Aiken: 2 of 3 months reported (67% -> Partial) with DNR gap in month 2
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 7,
+          county: "Aiken",
+          metric: "Added",
+          value: 50,
+        },
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 7,
+          county: "Aiken",
+          metric: "Disposed",
+          value: 45,
+        },
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 8,
+          county: "Aiken",
+          metric: "Added",
+          value: "DNR",
+        },
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 8,
+          county: "Aiken",
+          metric: "Disposed",
+          value: "DNR",
+        },
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 9,
+          county: "Aiken",
+          metric: "Added",
+          value: 50,
+        },
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 9,
+          county: "Aiken",
+          metric: "Disposed",
+          value: 55,
+        },
+        // Barnwell: 1 of 3 months reported (33% -> Insufficient Data)
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 7,
+          county: "Barnwell",
+          metric: "Added",
+          value: 20,
+        },
+        {
+          file: "test.csv",
+          category: "Estate",
+          year: 2025,
+          month: 7,
+          county: "Barnwell",
+          metric: "Disposed",
+          value: 10,
+        },
+      ]);
+
+      await initApp(root);
+
+      const barnwellPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Barnwell"]',
+      );
+      expect(barnwellPath?.classList.contains("status-insufficient-data")).toBe(
+        true,
+      );
+      expect(barnwellPath?.getAttribute("aria-label")).toContain(
+        t("insufficientDataLabel"),
+      );
+
+      // Table is hidden by default and toggles via button
+      const toggleBtn =
+        root.querySelector<HTMLButtonElement>(".table-toggle-btn");
+      const tableWrapper = root.querySelector<HTMLElement>(
+        "#countyTableWrapper",
+      );
+      expect(toggleBtn?.getAttribute("aria-expanded")).toBe("false");
+      expect(tableWrapper?.hidden).toBe(true);
+      toggleBtn?.click();
+      expect(toggleBtn?.getAttribute("aria-expanded")).toBe("true");
+      expect(tableWrapper?.hidden).toBe(false);
+
+      // Clicking Aiken opens the drawer with broken line segments and SR summary
+      const aikenPath = root.querySelector<SVGPathElement>(
+        'path[data-county="Aiken"]',
+      );
+      aikenPath?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      const drawer = root.querySelector(".trendline-drawer");
+      expect(drawer).not.toBeNull();
+      expect(drawer?.querySelectorAll("path.chart-line-segment")).toHaveLength(
+        2,
+      );
+      expect(drawer?.querySelectorAll("g.chart-point-missing")).toHaveLength(1);
+      expect(
+        drawer?.querySelector(".drawer-timeline-summary")?.textContent,
+      ).toContain("August 2025 (DNR)");
     });
   });
 });

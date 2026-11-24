@@ -31,22 +31,70 @@ describe("ClearancePage component", () => {
     expect(heading?.textContent).toBe(t("pageTitle"));
   });
 
-  it("renders the color legend with swatch indicators", () => {
+  it("renders the color legend with swatch indicators at the bottom of the map", () => {
     renderClearancePage(root, { summaries: sampleSummaries, topology });
 
     const legendItems = Array.from(root.querySelectorAll(".legend-item")).map(
       (el) => el.textContent,
     );
     expect(legendItems).toEqual([
-      t("legendGreen"),
-      t("legendYellow"),
-      t("legendRed"),
-      t("legendNoData"),
+      t("legendTier1"),
+      t("legendTier2"),
+      t("legendTier3"),
+      t("legendTier4"),
+      t("legendInsufficientData"),
     ]);
 
-    expect(root.querySelector(".legend-swatch.status-green")).not.toBeNull();
-    expect(root.querySelector(".legend-swatch.status-yellow")).not.toBeNull();
-    expect(root.querySelector(".legend-swatch.status-red")).not.toBeNull();
+    expect(root.querySelector(".legend-swatch.tier-1")).not.toBeNull();
+    expect(root.querySelector(".legend-swatch.tier-2")).not.toBeNull();
+    expect(root.querySelector(".legend-swatch.tier-3")).not.toBeNull();
+    expect(root.querySelector(".legend-swatch.tier-4")).not.toBeNull();
+    expect(
+      root.querySelector(".legend-swatch.status-insufficient-data"),
+    ).not.toBeNull();
+    expect(root.querySelector(".map-box .clearance-legend")).not.toBeNull();
+  });
+
+  it("hides the data table by default and toggles it with aria-expanded", () => {
+    renderClearancePage(root, { summaries: sampleSummaries, topology });
+
+    const toggleBtn =
+      root.querySelector<HTMLButtonElement>(".table-toggle-btn");
+    const wrapper = root.querySelector<HTMLElement>("#countyTableWrapper");
+    expect(toggleBtn?.getAttribute("aria-expanded")).toBe("false");
+    expect(wrapper?.hidden).toBe(true);
+
+    toggleBtn?.click();
+    expect(toggleBtn?.getAttribute("aria-expanded")).toBe("true");
+    expect(wrapper?.hidden).toBe(false);
+  });
+
+  it("renders lower-page methodology linked via aria-describedby and opens drawer on selection", () => {
+    renderClearancePage(root, {
+      summaries: sampleSummaries,
+      topology,
+      selectedCounty: "Aiken",
+    });
+
+    const svg = root.querySelector("svg.choropleth-svg");
+    const methodology = root.querySelector("#mapMethodology");
+    expect(methodology?.textContent).toBe(t("methodologyText"));
+    expect(svg?.getAttribute("aria-describedby")).toContain("mapMethodology");
+
+    const drawer = root.querySelector(".trendline-drawer");
+    expect(drawer).not.toBeNull();
+    expect(drawer?.textContent).toContain("Aiken");
+
+    const legendList = root.querySelector(".legend-list");
+    expect(legendList?.getAttribute("role")).toBe("list");
+    expect(root.querySelectorAll('.legend-item[role="listitem"]').length).toBe(
+      5,
+    );
+
+    const closeBtn =
+      drawer?.querySelector<HTMLButtonElement>(".drawer-close-btn");
+    closeBtn?.click();
+    expect(root.querySelector(".trendline-drawer")).toBeNull();
   });
 
   it("renders both the map and table inside the layout container", () => {
